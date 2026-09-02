@@ -8,15 +8,9 @@
 </head>
 <body>
   <!-- A normal (non-fixed) banner — it scrolls away with the rest of the
-       page like anything else. The title sits over it inside a frosted,
-       white-tinted glass panel so the image stays vaguely visible behind
-       the text instead of being fully covered. -->
+       page like anything else, just a short strip up top. -->
   <div class="hero">
     <div class="hero-image" aria-hidden="true"></div>
-    <div class="hero-overlay">
-      <h1>Clash Ratings</h1>
-      <p class="subtitle">Enter a Clash of Clans clan tag to pull the current member list.</p>
-    </div>
   </div>
 
   <button id="menu-toggle" class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="side-drawer">
@@ -58,6 +52,11 @@
   </nav>
 
   <div class="page-content">
+    <header class="site-header">
+      <h1 class="brand-title">Clash Ratings</h1>
+      <p class="subtitle">Enter a Clash of Clans clan tag to pull the current member list.</p>
+    </header>
+
     <main>
       <form id="search-form">
         <input
