@@ -28,63 +28,67 @@ body {
   background: var(--bg);
 }
 
-/* ---------- Top/bottom banners ---------- */
-/* Both are fixed in the viewport and never move. It's .page-content
-   sliding over them (normal document scroll) that makes the top one look
-   like it gets "covered" as you scroll down, and a transparent gap at the
-   very end of the document (.bottom-reveal-spacer) that lets the bottom
-   one peek out only once you've scrolled all the way down. Blurred and
-   tinted on purpose — the source art is small, and this keeps it moody
-   and on-theme rather than looking stretched. */
-.hero-banner {
-  position: fixed;
-  left: 0;
-  width: 100%;
-  height: 100vh;
-  z-index: 0;
-  background-image: linear-gradient(180deg, rgba(4, 5, 10, 0.6), rgba(10, 20, 45, 0.78)),
-    url('assets/banner.jpg');
+/* ---------- Hero banner ---------- */
+/* A normal, non-fixed element — it scrolls away with the rest of the page
+   like anything else here, rather than staying pinned. Kept short on
+   purpose. The title sits in a frosted, white-tinted glass panel over the
+   image so it stays vaguely visible behind the text instead of being
+   fully covered. */
+.hero {
+  position: relative;
+  height: 34vh;
+  min-height: 230px;
+  max-height: 380px;
+  overflow: hidden;
+}
+
+.hero-image {
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/banner.jpg');
   background-size: cover;
-  background-position: center;
-  filter: blur(3px) saturate(1.05);
-  transform: scale(1.06);
-  pointer-events: none;
+  background-position: center 38%;
+  filter: blur(2px) saturate(1.05);
+  transform: scale(1.05);
 }
 
-.hero-banner-top {
-  top: 0;
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(12px) saturate(1.1);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
 }
 
-.hero-banner-bottom {
-  bottom: 0;
+.hero-overlay h1 {
+  color: #fff;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
 }
 
-.bottom-reveal-spacer {
-  height: 25vh;
-  background: transparent;
+.hero-overlay .subtitle {
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
 }
 
-/* ---------- Page content card that slides over the banners ---------- */
+/* ---------- Page content ---------- */
 .page-content {
   position: relative;
-  z-index: 1;
-  margin-top: 75vh;
-  min-height: 25vh;
   background: var(--bg);
-  border-radius: 28px 28px 0 0;
-  box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.5);
+  border-radius: 22px 22px 0 0;
+  margin-top: -22px;
+  box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.35);
   padding: 3rem 1.25rem 4rem;
-}
-
-header {
-  max-width: 720px;
-  margin: 0 auto 2rem;
-  text-align: center;
 }
 
 h1 {
   margin: 0 0 0.4rem;
-  font-size: clamp(2.75rem, 9vw, 4.5rem);
+  font-size: clamp(2.25rem, 9vw, 4.25rem);
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -93,6 +97,7 @@ h1 {
 .subtitle {
   color: var(--muted);
   margin: 0;
+  max-width: 420px;
 }
 
 main {
@@ -333,6 +338,7 @@ tbody tr.rank-bronze td:nth-child(2) {
   height: 2px;
   border-radius: 2px;
   background: var(--text);
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
   transition: transform 0.25s ease, opacity 0.2s ease;
 }
 
@@ -446,7 +452,25 @@ tbody tr.rank-bronze td:nth-child(2) {
 }
 
 @media (max-width: 600px) {
+  .hero {
+    height: 28vh;
+    min-height: 190px;
+  }
+
   .page-content {
-    padding: 2.5rem 1rem 3rem;
+    padding: 2rem 1rem 3rem;
+  }
+
+  #search-form {
+    flex-wrap: wrap;
+  }
+
+  #clan-info {
+    flex-wrap: wrap;
+  }
+
+  th, td {
+    padding: 0.5rem 0.55rem;
+    font-size: 0.85rem;
   }
 }

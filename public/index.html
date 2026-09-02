@@ -7,13 +7,17 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Fixed, full-viewport banners that sit behind everything. The top one
-       peeks out above the page on load and gets covered as you scroll down
-       into it; the bottom one is only ever uncovered once you scroll all
-       the way to the very end (see .bottom-reveal-spacer). Both stay put —
-       it's the page content sliding over them that creates the reveal. -->
-  <div class="hero-banner hero-banner-top" aria-hidden="true"></div>
-  <div class="hero-banner hero-banner-bottom" aria-hidden="true"></div>
+  <!-- A normal (non-fixed) banner — it scrolls away with the rest of the
+       page like anything else. The title sits over it inside a frosted,
+       white-tinted glass panel so the image stays vaguely visible behind
+       the text instead of being fully covered. -->
+  <div class="hero">
+    <div class="hero-image" aria-hidden="true"></div>
+    <div class="hero-overlay">
+      <h1>Clash Ratings</h1>
+      <p class="subtitle">Enter a Clash of Clans clan tag to pull the current member list.</p>
+    </div>
+  </div>
 
   <button id="menu-toggle" class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="side-drawer">
     <span></span><span></span><span></span>
@@ -54,11 +58,6 @@
   </nav>
 
   <div class="page-content">
-    <header>
-      <h1>Clash Ratings</h1>
-      <p class="subtitle">Enter a Clash of Clans clan tag to pull the current member list.</p>
-    </header>
-
     <main>
       <form id="search-form">
         <input
@@ -92,19 +91,21 @@
 
       <h3 id="month-title" class="month-title"></h3>
 
-      <table id="member-table" hidden>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Name</th>
-            <th title="Member Rating: 1 pt/donation, 25 pts/raid attack this month, 50 pts per war star this month from regular wars and CWL (adjusted by how much harder or easier the target's town hall was)">MR</th>
-            <th>War Stars</th>
-            <th>Donated</th>
-            <th>Raid Attacks</th>
-          </tr>
-        </thead>
-        <tbody id="member-rows"></tbody>
-      </table>
+      <div class="table-scroll">
+        <table id="member-table" hidden>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th title="Member Rating: 1 pt/donation, 25 pts/raid attack this month, 50 pts per war star this month from regular wars and CWL (adjusted by how much harder or easier the target's town hall was)">MR</th>
+              <th>War Stars</th>
+              <th>Donated</th>
+              <th>Raid Attacks</th>
+            </tr>
+          </thead>
+          <tbody id="member-rows"></tbody>
+        </table>
+      </div>
 
       <section id="war-section" hidden>
         <h2>Current War</h2>
@@ -187,10 +188,6 @@
       </section>
     </main>
   </div>
-
-  <!-- Transparent gap after the page content — this is what lets the fixed
-       bottom banner show through once you've scrolled all the way down. -->
-  <div class="bottom-reveal-spacer" aria-hidden="true"></div>
 
   <script src="app.js"></script>
 </body>
