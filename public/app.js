@@ -183,11 +183,13 @@ async function fetchCurrentWar(tag) {
   const warStatus = document.getElementById('war-status');
   const warTable = document.getElementById('war-table');
   const warRows = document.getElementById('war-rows');
+  const liveDot = document.getElementById('war-live-dot');
 
   section.hidden = false;
   warStatus.textContent = 'Checking current war...';
   warStatus.classList.remove('error');
   warTable.hidden = true;
+  liveDot.hidden = true;
 
   try {
     const res = await fetch(`${BACKEND_URL}/api/currentwar?tag=${encodeURIComponent(tag)}`);
@@ -198,6 +200,10 @@ async function fetchCurrentWar(tag) {
       warStatus.classList.add('error');
       return;
     }
+
+    // The pulsing dot means "a war is actively happening right now" —
+    // preparation day or the war itself, not once it's ended.
+    liveDot.hidden = !(data.state === 'inWar' || data.state === 'preparation');
 
     if (data.state === 'notInWar') {
       warStatus.textContent = 'This clan is not currently in a war.';

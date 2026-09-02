@@ -7,12 +7,6 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- A normal (non-fixed) banner — it scrolls away with the rest of the
-       page like anything else, just a short strip up top. -->
-  <div class="hero">
-    <div class="hero-image" aria-hidden="true"></div>
-  </div>
-
   <button id="menu-toggle" class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="side-drawer">
     <span></span><span></span><span></span>
   </button>
@@ -53,8 +47,8 @@
 
   <div class="page-content">
     <header class="site-header">
-      <h1 class="brand-title">Clash Ratings</h1>
-      <p class="subtitle">Enter a Clash of Clans clan tag to pull the current member list.</p>
+      <h1>Clash Ratings</h1>
+      <p class="subtitle">Enter a clan tag.</p>
     </header>
 
     <main>
@@ -107,7 +101,7 @@
       </div>
 
       <section id="war-section" hidden>
-        <h2>Current War</h2>
+        <h2>Current War <span id="war-live-dot" class="live-dot" hidden title="A war is active right now" aria-hidden="true"></span></h2>
         <p id="war-status"></p>
         <div class="table-scroll">
           <table id="war-table" hidden>
