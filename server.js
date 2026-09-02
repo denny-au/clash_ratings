@@ -157,8 +157,7 @@ app.get('/api/clan', async (req, res) => {
       donations: m.donations,
       clanRank: m.clanRank,
       monthWarStars: 0, // filled in below
-      raidAttacks: 0, // filled in below
-      raidAttacksMax: null,
+      raidAttacks: 0, // filled in below — stacks across the whole month, see below
       mr: 0, // filled in below
     }));
 
@@ -193,15 +192,25 @@ app.get('/api/clan', async (req, res) => {
 
     const raidSeason = await fetchLatestRaidSeason(tag);
 
-    const raidMemberByTag = new Map();
-    for (const rm of (raidSeason && raidSeason.members) || []) {
-      raidMemberByTag.set(rm.tag, rm);
+    // Same live/recorded split as war stars above: a raid weekend counts
+    // once — while it's ongoing its attacks are live (below), the moment
+    // it ends this records it into raid history, so the monthly total
+    // never double-counts and never briefly disappears in between.
+    let liveRaidByTag = new Map();
+    if (raidSeason && raidSeason.state === 'ended') {
+      await warTracker.recordRaidSeasonIfNew(tag, raidSeason);
+    } else if (raidSeason && raidSeason.state === 'ongoing') {
+      liveRaidByTag = new Map((raidSeason.members || []).map((m) => [m.tag, m.attacks || 0]));
     }
 
+    const monthRaidSeasons = await warTracker.getRaidHistoryForClanInMonth(tag, currentYear, currentMonth);
+    const monthRaidSummary = warTracker.summarizeRaidByMember(monthRaidSeasons);
+    const monthRaidByTag = new Map(monthRaidSummary.map((s) => [s.tag, s.attacks]));
+
     // MR (Member Rating) — this site's main ranking. 1 point per donation,
-    // 25 per raid weekend attack, and this month's war stars weighted by
-    // how much harder/easier the target's town hall was (see warTracker's
-    // warStarMrMultiplier for the exact table).
+    // 25 per raid attack this month, and this month's war stars weighted
+    // by how much harder/easier the target's town hall was (see
+    // warTracker's warStarMrMultiplier for the exact table).
     members.forEach((m) => {
       const monthStats = monthStatsByTag.get(m.tag);
       const liveStats = liveStatsByTag.get(m.tag);
@@ -212,11 +221,9 @@ app.get('/api/clan', async (req, res) => {
       m.monthWarStars = recordedStars + liveStars;
       const warStarMR = recordedWarStarMR + liveWarStarMR;
 
-      const rm = raidMemberByTag.get(m.tag);
-      if (rm) {
-        m.raidAttacks = rm.attacks;
-        m.raidAttacksMax = rm.attackLimit + rm.bonusAttackLimit;
-      }
+      const recordedRaidAttacks = monthRaidByTag.get(m.tag) || 0;
+      const liveRaidAttacks = liveRaidByTag.get(m.tag) || 0;
+      m.raidAttacks = recordedRaidAttacks + liveRaidAttacks;
 
       const donationMR = m.donations * 1;
       const raidMR = m.raidAttacks * 25;
@@ -382,6 +389,51 @@ app.get('/api/history-months', async (req, res) => {
   res.json({ months });
 });
 
+// Aggregated per-member raid attacks for one calendar month. Same
+// month-default/?month=YYYY-MM pattern as /api/war-history. Raid history
+// only ever covers the current month plus the previous one — anything
+// older is pruned automatically (see warTracker.js), so a request for an
+// older month will just come back with zero weekends recorded.
+app.get('/api/raid-history', async (req, res) => {
+  const tag = normalizeTag(req.query.tag);
+  if (!tag || tag.length < 2) {
+    return res.status(400).json({ error: 'Please provide a clan tag, e.g. #2Y8V0YLQ' });
+  }
+
+  const now = new Date();
+  let year = now.getFullYear();
+  let month = now.getMonth() + 1;
+  const requested = /^(\d{4})-(\d{1,2})$/.exec(req.query.month || '');
+  if (requested) {
+    year = Number(requested[1]);
+    month = Number(requested[2]);
+  }
+
+  const seasons = await warTracker.getRaidHistoryForClanInMonth(tag, year, month);
+  const members = warTracker.summarizeRaidByMember(seasons);
+
+  res.json({
+    year,
+    month,
+    monthLabel: warTracker.monthLabel(year, month),
+    isCurrentMonth: year === now.getFullYear() && month === now.getMonth() + 1,
+    weekendsRecorded: seasons.length,
+    members,
+  });
+});
+
+// Past calendar months that have at least one recorded raid weekend for
+// this clan — what populates the "Raid Archive" dropdown. In practice
+// this will only ever list last month, since older raid data is erased.
+app.get('/api/raid-history-months', async (req, res) => {
+  const tag = normalizeTag(req.query.tag);
+  if (!tag || tag.length < 2) {
+    return res.status(400).json({ error: 'Please provide a clan tag, e.g. #2Y8V0YLQ' });
+  }
+  const months = await warTracker.getPastRaidMonthsWithData(tag);
+  res.json({ months });
+});
+
 // Checks the tracked clan's current war and, if it just ended, records it.
 // Runs once shortly after startup and then on a timer, so history builds up
 // even if nobody has the page open when a war finishes.
@@ -406,11 +458,41 @@ async function pollTrackedClanForWarEnd() {
   }
 }
 
+// Same idea as pollTrackedClanForWarEnd, but for the tracked clan's Capital
+// Raid Weekend — so a finished weekend gets recorded into raid history even
+// if nobody has the page open right when it ends.
+async function pollTrackedClanForRaidEnd() {
+  if (!API_KEY) return;
+  const tag = await warTracker.getTrackedTag();
+  if (!tag) return;
+
+  try {
+    const encodedTag = encodeURIComponent(tag);
+    const response = await fetch(`${COC_BASE}/clans/${encodedTag}/capitalraidseasons?limit=1`, {
+      headers: authHeaders(),
+    });
+    if (!response.ok) return; // rate limited, etc. — just skip this round
+    const data = await response.json();
+    const items = data.items || [];
+    const season = items.length ? items[0] : null;
+    if (season && season.state === 'ended') {
+      const recorded = await warTracker.recordRaidSeasonIfNew(tag, season);
+      if (recorded) {
+        console.log(`Recorded a finished raid weekend for ${tag}.`);
+      }
+    }
+  } catch (err) {
+    console.error('Background raid poll failed:', err.message);
+  }
+}
+
 app.listen(PORT, () => {
   console.log(`Clash Ratings running at http://localhost:${PORT}`);
   if (!API_KEY) {
     console.warn('Warning: COC_API_KEY is not set. Copy .env.example to .env and add your key.');
   }
   setTimeout(pollTrackedClanForWarEnd, 5000);
+  setTimeout(pollTrackedClanForRaidEnd, 7000);
   setInterval(pollTrackedClanForWarEnd, POLL_INTERVAL_MINUTES * 60 * 1000);
+  setInterval(pollTrackedClanForRaidEnd, POLL_INTERVAL_MINUTES * 60 * 1000);
 });

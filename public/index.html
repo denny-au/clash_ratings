@@ -31,21 +31,27 @@
       <div class="clan-info-text">
         <div class="clan-name-row">
           <h2 id="clan-name"></h2>
+          <a id="open-in-game-btn" class="pill-button" href="#" target="_blank" rel="noopener" hidden>Open in Clash of Clans</a>
           <select id="old-history-select" hidden>
             <option value="">Old History</option>
+          </select>
+          <select id="raid-history-select" hidden>
+            <option value="">Raid Archive</option>
           </select>
         </div>
         <p id="clan-meta"></p>
       </div>
     </section>
 
+    <h3 id="month-title" class="month-title"></h3>
+
     <table id="member-table" hidden>
       <thead>
         <tr>
           <th>#</th>
           <th>Name</th>
-          <th title="Member Rating: 1 pt/donation, 25 pts/raid attack, 50 pts per war star this month (adjusted by how much harder or easier the target's town hall was)">MR</th>
-          <th id="month-stars-header">War Stars</th>
+          <th title="Member Rating: 1 pt/donation, 25 pts/raid attack this month, 50 pts per war star this month (adjusted by how much harder or easier the target's town hall was)">MR</th>
+          <th>War Stars</th>
           <th>Donated</th>
           <th>Raid Attacks</th>
         </tr>
@@ -112,6 +118,23 @@
             </tr>
           </thead>
           <tbody id="old-history-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="raid-archive-section" hidden>
+      <h2 id="raid-archive-title">Raid Archive</h2>
+      <p id="raid-archive-status"></p>
+      <div class="table-scroll">
+        <table id="raid-archive-table" hidden>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Raid Weekends</th>
+              <th>Total Attacks</th>
+            </tr>
+          </thead>
+          <tbody id="raid-archive-rows"></tbody>
         </table>
       </div>
     </section>

@@ -108,13 +108,40 @@ button:hover {
   margin: 0;
 }
 
-#old-history-select {
+#old-history-select,
+#raid-history-select {
   padding: 0.3rem 0.5rem;
   border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--panel);
   color: var(--text);
   font-size: 0.8rem;
+}
+
+.pill-button {
+  display: inline-block;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pill-button:hover {
+  filter: brightness(1.2);
+}
+
+.month-title {
+  text-align: center;
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 #clan-meta {
@@ -156,20 +183,23 @@ tbody tr:hover {
 
 #war-section,
 #history-section,
-#old-history-section {
+#old-history-section,
+#raid-archive-section {
   margin-top: 2rem;
 }
 
 #war-section h2,
 #history-section h2,
-#old-history-section h2 {
+#old-history-section h2,
+#raid-archive-section h2 {
   font-size: 1.15rem;
   margin: 0 0 0.4rem;
 }
 
 #war-section table,
 #history-section table,
-#old-history-section table {
+#old-history-section table,
+#raid-archive-section table {
   margin-top: 0.5rem;
 }
 

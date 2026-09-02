@@ -7,8 +7,10 @@ const clanName = document.getElementById('clan-name');
 const clanMeta = document.getElementById('clan-meta');
 const table = document.getElementById('member-table');
 const rowsEl = document.getElementById('member-rows');
-const monthStarsHeader = document.getElementById('month-stars-header');
+const monthTitle = document.getElementById('month-title');
+const openInGameBtn = document.getElementById('open-in-game-btn');
 const oldHistorySelect = document.getElementById('old-history-select');
+const raidHistorySelect = document.getElementById('raid-history-select');
 
 let currentClanTag = null;
 
@@ -55,6 +57,7 @@ async function searchClan(tag) {
     fetchCurrentWar(data.tag);
     fetchWarHistory(data.tag);
     fetchHistoryMonths(data.tag);
+    fetchRaidHistoryMonths(data.tag);
   } catch (err) {
     setStatus('Could not reach the server. Is it running?', true);
   }
@@ -72,13 +75,19 @@ oldHistorySelect.addEventListener('change', () => {
   fetchOldHistory(currentClanTag, value);
 });
 
+raidHistorySelect.addEventListener('change', () => {
+  const value = raidHistorySelect.value;
+  const section = document.getElementById('raid-archive-section');
+  if (!value || !currentClanTag) {
+    section.hidden = true;
+    return;
+  }
+  fetchRaidArchive(currentClanTag, value);
+});
+
 function setStatus(message, isError) {
   statusEl.textContent = message;
   statusEl.classList.toggle('error', isError);
-}
-
-function shortMonthName(monthLabel) {
-  return monthLabel ? monthLabel.split(' ')[0].slice(0, 3) : '';
 }
 
 function renderClan(data) {
@@ -95,19 +104,26 @@ function renderClan(data) {
   }
   clanInfo.hidden = false;
 
-  monthStarsHeader.textContent = `War Stars (${shortMonthName(data.monthLabel)})`;
+  monthTitle.textContent = data.monthLabel || '';
+
+  const rawTag = (data.tag || '').replace('#', '');
+  if (rawTag) {
+    openInGameBtn.href = `https://link.clashofclans.com/en?action=OpenClanProfile&tag=${encodeURIComponent(rawTag)}`;
+    openInGameBtn.hidden = false;
+  } else {
+    openInGameBtn.hidden = true;
+  }
 
   rowsEl.innerHTML = '';
   for (const m of data.members) {
     const tr = document.createElement('tr');
-    const raidCell = m.raidAttacksMax != null ? `${m.raidAttacks}/${m.raidAttacksMax}` : `${m.raidAttacks}`;
     tr.innerHTML = `
       <td>${m.mrRank}</td>
       <td>${escapeHtml(m.name)}</td>
       <td><strong>${m.mr.toLocaleString()}</strong></td>
       <td>${m.monthWarStars.toLocaleString()}</td>
       <td>${m.donations.toLocaleString()}</td>
-      <td>${raidCell}</td>
+      <td>${m.raidAttacks.toLocaleString()}</td>
     `;
     rowsEl.appendChild(tr);
   }
@@ -315,6 +331,81 @@ async function fetchOldHistory(tag, monthValue) {
   } catch (err) {
     oldStatus.textContent = 'Could not reach the server.';
     oldStatus.classList.add('error');
+  }
+}
+
+async function fetchRaidHistoryMonths(tag) {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/raid-history-months?tag=${encodeURIComponent(tag)}`);
+    const data = await res.json();
+
+    // Reset to just the placeholder option, then add one per past month.
+    raidHistorySelect.innerHTML = '<option value="">Raid Archive</option>';
+    document.getElementById('raid-archive-section').hidden = true;
+
+    if (!res.ok || !data.months || data.months.length === 0) {
+      raidHistorySelect.hidden = true;
+      return;
+    }
+
+    for (const m of data.months) {
+      const opt = document.createElement('option');
+      opt.value = `${m.year}-${m.month}`;
+      opt.textContent = m.label;
+      raidHistorySelect.appendChild(opt);
+    }
+    raidHistorySelect.hidden = false;
+  } catch (err) {
+    raidHistorySelect.hidden = true;
+  }
+}
+
+async function fetchRaidArchive(tag, monthValue) {
+  const section = document.getElementById('raid-archive-section');
+  const title = document.getElementById('raid-archive-title');
+  const archiveStatus = document.getElementById('raid-archive-status');
+  const archiveTable = document.getElementById('raid-archive-table');
+  const archiveRows = document.getElementById('raid-archive-rows');
+
+  section.hidden = false;
+  title.textContent = 'Raid Archive';
+  archiveStatus.textContent = 'Loading...';
+  archiveStatus.classList.remove('error');
+  archiveTable.hidden = true;
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/raid-history?tag=${encodeURIComponent(tag)}&month=${monthValue}`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      archiveStatus.textContent = data.error || 'Could not load that month.';
+      archiveStatus.classList.add('error');
+      return;
+    }
+
+    title.textContent = `Raid Archive — ${data.monthLabel}`;
+
+    if (data.weekendsRecorded === 0) {
+      archiveStatus.textContent = 'No raid weekends recorded for this month.';
+      return;
+    }
+
+    archiveStatus.textContent = `${data.weekendsRecorded} raid weekend${data.weekendsRecorded === 1 ? '' : 's'} recorded.`;
+
+    archiveRows.innerHTML = '';
+    for (const m of data.members) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(m.name)}</td>
+        <td>${m.weekends}</td>
+        <td>${m.attacks.toLocaleString()}</td>
+      `;
+      archiveRows.appendChild(tr);
+    }
+    archiveTable.hidden = false;
+  } catch (err) {
+    archiveStatus.textContent = 'Could not reach the server.';
+    archiveStatus.classList.add('error');
   }
 }
 

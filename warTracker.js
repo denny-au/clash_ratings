@@ -128,6 +128,7 @@ async function saveData(fileName, data, message) {
 
 const HISTORY_FILE = 'war-history.json';
 const CONFIG_FILE = 'config.json';
+const RAID_HISTORY_FILE = 'raid-history.json';
 
 // Clash's API returns timestamps like "20260815T183000.000Z" (ISO 8601
 // "basic" format, no dashes/colons). Convert to something Date() reliably
@@ -344,6 +345,120 @@ function summarizeByMember(wars) {
   return Array.from(byTag.values()).sort((a, b) => b.stars - a.stars);
 }
 
+// --- Capital Raid Weekend tracking (stacks through the month) ---
+//
+// The member table shows a running total of raid attacks for the whole
+// calendar month, not just the most recent weekend — so, same as wars,
+// each finished raid weekend gets snapshotted into its own history file
+// the moment it ends. Unlike war history, raid records are deliberately
+// short-lived: every time this runs it also prunes anything older than
+// last calendar month, so raid history only ever covers "this month and
+// last month" before it's erased for good (not just hidden from the UI —
+// actually removed from storage).
+
+// Drops any recorded raid weekend that ended before the start of last
+// calendar month.
+function pruneOldRaidSeasons(records, now = new Date()) {
+  const cutoff = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+  return records.filter((r) => {
+    const ended = parseClashTimestamp(r.endTime);
+    return ended && ended >= cutoff;
+  });
+}
+
+// Records a finished Capital Raid Weekend (from the capitalraidseasons
+// shape) if we haven't already recorded one with the same clan + endTime.
+// Prunes old records on every call (not just when a new one is found), so
+// pruning stays current even on requests/polls that don't find anything
+// new to record. Returns true if a new weekend was newly recorded.
+async function recordRaidSeasonIfNew(clanTag, season) {
+  const rawHistory = await loadData(RAID_HISTORY_FILE, []);
+  const pruned = pruneOldRaidSeasons(rawHistory);
+  let changed = pruned.length !== rawHistory.length;
+
+  let recorded = false;
+  if (season && season.state === 'ended' && season.endTime) {
+    const alreadyRecorded = pruned.some((r) => r.clanTag === clanTag && r.endTime === season.endTime);
+    if (!alreadyRecorded) {
+      pruned.push({
+        clanTag,
+        startTime: season.startTime,
+        endTime: season.endTime,
+        recordedAt: new Date().toISOString(),
+        members: (season.members || []).map((m) => ({
+          tag: m.tag,
+          name: m.name,
+          attacks: m.attacks || 0,
+        })),
+      });
+      changed = true;
+      recorded = true;
+    }
+  }
+
+  if (changed) {
+    await saveData(
+      RAID_HISTORY_FILE,
+      pruned,
+      `Record raid weekend for ${clanTag}${season && season.endTime ? ` (ended ${season.endTime})` : ''}`
+    );
+  }
+  return recorded;
+}
+
+// Recorded (completed) raid weekends for a clan whose endTime falls
+// within the given calendar month (1-indexed month, local time).
+async function getRaidHistoryForClanInMonth(clanTag, year, month) {
+  const start = new Date(year, month - 1, 1, 0, 0, 0, 0);
+  const end = new Date(year, month, 1, 0, 0, 0, 0);
+  const history = await loadData(RAID_HISTORY_FILE, []);
+  return history.filter((r) => {
+    if (r.clanTag !== clanTag) return false;
+    const ended = parseClashTimestamp(r.endTime);
+    return ended && ended >= start && ended < end;
+  });
+}
+
+// Sums raid attacks per member across a set of recorded raid weekends.
+function summarizeRaidByMember(seasons) {
+  const byTag = new Map();
+  for (const season of seasons) {
+    for (const member of season.members) {
+      if (!byTag.has(member.tag)) {
+        byTag.set(member.tag, { tag: member.tag, name: member.name, weekends: 0, attacks: 0 });
+      }
+      const entry = byTag.get(member.tag);
+      entry.weekends += 1;
+      entry.name = member.name; // keep most recent
+      entry.attacks += member.attacks;
+    }
+  }
+  return Array.from(byTag.values()).sort((a, b) => b.attacks - a.attacks);
+}
+
+// Distinct past calendar months (excluding the current one) that have at
+// least one recorded raid weekend. In practice this only ever holds last
+// month, since anything older is pruned away as soon as it's touched
+// (see pruneOldRaidSeasons) — same "no separate archiving step" idea as
+// getPastMonthsWithData above.
+async function getPastRaidMonthsWithData(clanTag) {
+  const now = new Date();
+  const currentKey = monthKey(now);
+  const seen = new Map();
+  const history = await loadData(RAID_HISTORY_FILE, []);
+  for (const r of history) {
+    if (r.clanTag !== clanTag) continue;
+    const ended = parseClashTimestamp(r.endTime);
+    if (!ended) continue;
+    const key = monthKey(ended);
+    if (key === currentKey || seen.has(key)) continue;
+    const year = ended.getFullYear();
+    const month = ended.getMonth() + 1;
+    seen.set(key, { year, month, label: monthLabel(year, month) });
+  }
+  return Array.from(seen.values()).sort((a, b) => b.year - a.year || b.month - a.month);
+}
+
 module.exports = {
   getTrackedTag,
   setTrackedTag,
@@ -354,4 +469,8 @@ module.exports = {
   summarizeByMember,
   parseClashTimestamp,
   annotateMembers,
+  recordRaidSeasonIfNew,
+  getRaidHistoryForClanInMonth,
+  summarizeRaidByMember,
+  getPastRaidMonthsWithData,
 };
