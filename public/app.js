@@ -26,7 +26,7 @@ const DEFAULT_CLAN_TAG = '#2RJPU9JY0';
 const BACKEND_URL =
   location.hostname === 'localhost' || location.hostname === '127.0.0.1'
     ? ''
-    : 'https://REPLACE-WITH-YOUR-RENDER-URL.onrender.com';
+    : 'https://147-224-36-247.sslip.io';
 
 form.addEventListener('submit', (e) => {
   e.preventDefault();
