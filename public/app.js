@@ -11,8 +11,53 @@ const monthTitle = document.getElementById('month-title');
 const openInGameBtn = document.getElementById('open-in-game-btn');
 const oldHistorySelect = document.getElementById('old-history-select');
 const raidHistorySelect = document.getElementById('raid-history-select');
+const menuToggle = document.getElementById('menu-toggle');
+const sideDrawer = document.getElementById('side-drawer');
+const drawerOverlay = document.getElementById('drawer-overlay');
+const drawerTabs = document.querySelectorAll('.drawer-tab');
 
 let currentClanTag = null;
+
+// --- Hamburger menu / FAQ / About drawer ---
+function openDrawer() {
+  sideDrawer.classList.add('open');
+  drawerOverlay.classList.add('open');
+  menuToggle.setAttribute('aria-expanded', 'true');
+}
+
+function closeDrawer() {
+  sideDrawer.classList.remove('open');
+  drawerOverlay.classList.remove('open');
+  menuToggle.setAttribute('aria-expanded', 'false');
+}
+
+function showDrawerPanel(name) {
+  for (const tab of drawerTabs) {
+    tab.classList.toggle('active', tab.dataset.panel === name);
+  }
+  document.getElementById('drawer-panel-faq').hidden = name !== 'faq';
+  document.getElementById('drawer-panel-about').hidden = name !== 'about';
+}
+
+menuToggle.addEventListener('click', () => {
+  if (sideDrawer.classList.contains('open')) {
+    closeDrawer();
+  } else {
+    openDrawer();
+    // Default to FAQ the first time it's opened if nothing's selected yet.
+    if (!document.querySelector('.drawer-tab.active')) showDrawerPanel('faq');
+  }
+});
+
+drawerOverlay.addEventListener('click', closeDrawer);
+
+for (const tab of drawerTabs) {
+  tab.addEventListener('click', () => showDrawerPanel(tab.dataset.panel));
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDrawer();
+});
 
 // Loaded automatically on page open so there's always something on screen
 // without typing anything — the search bar stays empty, with this tag
@@ -117,6 +162,9 @@ function renderClan(data) {
   rowsEl.innerHTML = '';
   for (const m of data.members) {
     const tr = document.createElement('tr');
+    if (m.mrRank === 1) tr.classList.add('rank-gold');
+    else if (m.mrRank === 2) tr.classList.add('rank-silver');
+    else if (m.mrRank === 3) tr.classList.add('rank-bronze');
     tr.innerHTML = `
       <td>${m.mrRank}</td>
       <td>${escapeHtml(m.name)}</td>

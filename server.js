@@ -103,6 +103,112 @@ async function fetchLatestRaidSeason(tag) {
   }
 }
 
+// --- Clan War League (CWL) tracking ---
+//
+// CWL doesn't show up through /currentwar at all — Supercell runs it as a
+// separate system: /clans/{tag}/currentwar/leaguegroup gives the group
+// (which clans, which rounds), and each round's individual war lives at
+// /clanwarleagues/wars/{warTag}. A finished CWL war is fed through the
+// exact same warTracker.recordWarIfNew used for regular wars — same
+// per-attack town-hall-adjusted MR math, same storage — so CWL stars just
+// add onto the same monthly War Stars total with no separate tracking.
+const CWL_LIVE_CACHE_TTL_MS = 30 * 1000; // matches currentWarCache — feel live
+const cwlLiveCache = makeCache(CWL_LIVE_CACHE_TTL_MS);
+const CWL_WAR_FETCH_CACHE_TTL_MS = 3 * 60 * 1000;
+const cwlWarFetchCache = makeCache(CWL_WAR_FETCH_CACHE_TTL_MS);
+// War tags we've already confirmed are finished and recorded (or found to
+// already be recorded) — avoids re-fetching+re-checking the same finished
+// CWL war on every poll for the rest of the season. In-memory only: worst
+// case after a restart is a handful of harmless re-fetches that land on
+// warTracker's own endTime-based dedupe and do nothing.
+const recordedCwlWarTags = new Set();
+
+async function fetchCwlGroup(tag) {
+  try {
+    const encoded = encodeURIComponent(tag);
+    const r = await fetch(`${COC_BASE}/clans/${encoded}/currentwar/leaguegroup`, {
+      headers: authHeaders(),
+    });
+    // 404 here just means "no CWL running right now" — true most of the
+    // month, not an error.
+    if (!r.ok) return null;
+    return await r.json();
+  } catch {
+    return null;
+  }
+}
+
+async function fetchCwlWar(warTag) {
+  const cached = cwlWarFetchCache.get(warTag);
+  if (cached !== undefined) return cached;
+  try {
+    const encoded = encodeURIComponent(warTag);
+    const r = await fetch(`${COC_BASE}/clanwarleagues/wars/${encoded}`, {
+      headers: authHeaders(),
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    cwlWarFetchCache.set(warTag, data);
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+// The raw CWL war payload doesn't promise which side ("clan" vs
+// "opponent") is us — normalize so warData.clan is always our own clan,
+// matching the shape the rest of this app (annotateMembers,
+// recordWarIfNew) already assumes from the regular /currentwar endpoint.
+function orientCwlWar(warData, ourTag) {
+  if (!warData) return null;
+  if (warData.clan && warData.clan.tag === ourTag) return warData;
+  if (warData.opponent && warData.opponent.tag === ourTag) {
+    return { ...warData, clan: warData.opponent, opponent: warData.clan };
+  }
+  return null; // neither side matches — shouldn't happen, but don't guess
+}
+
+// Checks the clan's current CWL group, if any: records any finished CWL
+// war round we haven't seen yet (so it lands in the same war history/War
+// Stars total as regular wars), and returns live per-member star stats
+// for whichever CWL war is happening right now (inWar/preparation), if
+// any — same "counts once, live or recorded" idea as regular wars.
+async function processCwlForClan(tag) {
+  const cached = cwlLiveCache.get(tag);
+  if (cached !== undefined) return cached;
+
+  let liveStatsByTag = new Map();
+  try {
+    const group = await fetchCwlGroup(tag);
+    if (group && group.state && group.state !== 'notInWar') {
+      const warTags = (group.rounds || [])
+        .flatMap((round) => round.warTags || [])
+        .filter((t) => t && t !== '#0');
+
+      for (const warTag of warTags) {
+        if (recordedCwlWarTags.has(warTag)) continue;
+        const raw = await fetchCwlWar(warTag);
+        const warData = orientCwlWar(raw, tag);
+        if (!warData) continue;
+
+        if (warData.state === 'warEnded') {
+          await warTracker.recordWarIfNew(tag, warData);
+          recordedCwlWarTags.add(warTag); // done with this one for good
+        } else if (warData.state === 'inWar' || warData.state === 'preparation') {
+          const liveAnnotated = warTracker.annotateMembers(warData);
+          const liveSummary = warTracker.summarizeByMember([{ members: liveAnnotated }]);
+          for (const s of liveSummary) liveStatsByTag.set(s.tag, s);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('CWL check failed:', err.message);
+  }
+
+  cwlLiveCache.set(tag, liveStatsByTag);
+  return liveStatsByTag;
+}
+
 function describeRaidWeekend(season) {
   if (!season) return null;
   const end = warTracker.parseClashTimestamp(season.endTime);
@@ -184,6 +290,26 @@ app.get('/api/clan', async (req, res) => {
       const liveAnnotated = warTracker.annotateMembers(currentWarData);
       const liveSummary = warTracker.summarizeByMember([{ members: liveAnnotated }]);
       liveStatsByTag = new Map(liveSummary.map((s) => [s.tag, s]));
+    }
+
+    // Clan War League runs alongside/instead of regular wars for about a
+    // week each month. This also records any newly-finished CWL round into
+    // the same war history used above, and hands back live stats for
+    // whichever CWL war is happening right now — merged additively into
+    // liveStatsByTag so CWL stars land in the exact same War Stars total
+    // and MR math as regular wars, live or recorded either way.
+    const cwlLiveStatsByTag = await processCwlForClan(tag);
+    for (const [cwlTag, cwlStats] of cwlLiveStatsByTag) {
+      const existing = liveStatsByTag.get(cwlTag);
+      if (existing) {
+        liveStatsByTag.set(cwlTag, {
+          ...existing,
+          stars: existing.stars + cwlStats.stars,
+          warStarMR: existing.warStarMR + cwlStats.warStarMR,
+        });
+      } else {
+        liveStatsByTag.set(cwlTag, cwlStats);
+      }
     }
 
     const monthWars = await warTracker.getHistoryForClanInMonth(tag, currentYear, currentMonth);
@@ -486,6 +612,17 @@ async function pollTrackedClanForRaidEnd() {
   }
 }
 
+// Same idea again, but for Clan War League — checks the tracked clan's CWL
+// group (if a season is running) and records any round that just ended,
+// same as processCwlForClan does on a page load, so CWL history builds up
+// even if nobody visits the site while a round wraps up.
+async function pollTrackedClanForCwl() {
+  if (!API_KEY) return;
+  const tag = await warTracker.getTrackedTag();
+  if (!tag) return;
+  await processCwlForClan(tag);
+}
+
 app.listen(PORT, () => {
   console.log(`Clash Ratings running at http://localhost:${PORT}`);
   if (!API_KEY) {
@@ -493,6 +630,8 @@ app.listen(PORT, () => {
   }
   setTimeout(pollTrackedClanForWarEnd, 5000);
   setTimeout(pollTrackedClanForRaidEnd, 7000);
+  setTimeout(pollTrackedClanForCwl, 9000);
   setInterval(pollTrackedClanForWarEnd, POLL_INTERVAL_MINUTES * 60 * 1000);
   setInterval(pollTrackedClanForRaidEnd, POLL_INTERVAL_MINUTES * 60 * 1000);
+  setInterval(pollTrackedClanForCwl, POLL_INTERVAL_MINUTES * 60 * 1000);
 });
