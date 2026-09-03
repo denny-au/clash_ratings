@@ -10,7 +10,6 @@ const rowsEl = document.getElementById('member-rows');
 const monthTitle = document.getElementById('month-title');
 const openInGameBtn = document.getElementById('open-in-game-btn');
 const oldHistorySelect = document.getElementById('old-history-select');
-const raidHistorySelect = document.getElementById('raid-history-select');
 const menuToggle = document.getElementById('menu-toggle');
 const sideDrawer = document.getElementById('side-drawer');
 const drawerOverlay = document.getElementById('drawer-overlay');
@@ -118,16 +117,6 @@ oldHistorySelect.addEventListener('change', () => {
     return;
   }
   fetchOldHistory(currentClanTag, value);
-});
-
-raidHistorySelect.addEventListener('change', () => {
-  const value = raidHistorySelect.value;
-  const section = document.getElementById('raid-archive-section');
-  if (!value || !currentClanTag) {
-    section.hidden = true;
-    return;
-  }
-  fetchRaidArchive(currentClanTag, value);
 });
 
 function setStatus(message, isError) {
@@ -391,29 +380,25 @@ async function fetchOldHistory(tag, monthValue) {
   }
 }
 
+// No dropdown — this just finds the most recent past raid month (if any)
+// and shows its leaderboard directly, titled with the month itself (e.g.
+// "August 2026") rather than a generic "Raid Archive" label.
 async function fetchRaidHistoryMonths(tag) {
+  const section = document.getElementById('raid-archive-section');
   try {
     const res = await fetch(`${BACKEND_URL}/api/raid-history-months?tag=${encodeURIComponent(tag)}`);
     const data = await res.json();
 
-    // Reset to just the placeholder option, then add one per past month.
-    raidHistorySelect.innerHTML = '<option value="">Raid Archive</option>';
-    document.getElementById('raid-archive-section').hidden = true;
-
     if (!res.ok || !data.months || data.months.length === 0) {
-      raidHistorySelect.hidden = true;
+      section.hidden = true;
       return;
     }
 
-    for (const m of data.months) {
-      const opt = document.createElement('option');
-      opt.value = `${m.year}-${m.month}`;
-      opt.textContent = m.label;
-      raidHistorySelect.appendChild(opt);
-    }
-    raidHistorySelect.hidden = false;
+    // Months come back most-recent-first — only the latest past month is shown.
+    const latest = data.months[0];
+    fetchRaidArchive(tag, `${latest.year}-${latest.month}`);
   } catch (err) {
-    raidHistorySelect.hidden = true;
+    section.hidden = true;
   }
 }
 
@@ -425,7 +410,6 @@ async function fetchRaidArchive(tag, monthValue) {
   const archiveRows = document.getElementById('raid-archive-rows');
 
   section.hidden = false;
-  title.textContent = 'Raid Archive';
   archiveStatus.textContent = 'Loading...';
   archiveStatus.classList.remove('error');
   archiveTable.hidden = true;
@@ -440,7 +424,7 @@ async function fetchRaidArchive(tag, monthValue) {
       return;
     }
 
-    title.textContent = `Raid Archive — ${data.monthLabel}`;
+    title.textContent = data.monthLabel;
 
     if (data.weekendsRecorded === 0) {
       archiveStatus.textContent = 'No raid weekends recorded for this month.';
