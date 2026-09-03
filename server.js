@@ -209,6 +209,44 @@ async function processCwlForClan(tag) {
   return liveStatsByTag;
 }
 
+// The clan's regular /currentwar endpoint goes quiet ("notInWar") for the
+// entire week a clan is in Clan War League — CWL runs as a separate system
+// (see the comment above fetchCwlGroup), so without this, the "Current War"
+// section and its live dot would look empty all week during CWL even
+// though a war is actively happening. Returns the oriented war payload
+// (same shape /currentwar itself returns) for whichever CWL round is
+// in-progress right now, or null if the clan isn't in CWL / no round is
+// currently active.
+const cwlCurrentWarViewCache = makeCache(CWL_LIVE_CACHE_TTL_MS);
+async function fetchCurrentCwlWar(tag) {
+  const cached = cwlCurrentWarViewCache.get(tag);
+  if (cached !== undefined) return cached;
+
+  let activeWar = null;
+  try {
+    const group = await fetchCwlGroup(tag);
+    if (group && group.state && group.state !== 'notInWar') {
+      const warTags = (group.rounds || [])
+        .flatMap((round) => round.warTags || [])
+        .filter((t) => t && t !== '#0');
+
+      for (const warTag of warTags) {
+        const raw = await fetchCwlWar(warTag);
+        const warData = orientCwlWar(raw, tag);
+        if (warData && (warData.state === 'inWar' || warData.state === 'preparation')) {
+          activeWar = warData;
+          break; // only one round is ever active for a clan at a time
+        }
+      }
+    }
+  } catch (err) {
+    console.error('CWL current-war check failed:', err.message);
+  }
+
+  cwlCurrentWarViewCache.set(tag, activeWar);
+  return activeWar;
+}
+
 function describeRaidWeekend(season) {
   if (!season) return null;
   const end = warTracker.parseClashTimestamp(season.endTime);
@@ -430,14 +468,26 @@ app.get('/api/currentwar', async (req, res) => {
     // have it, or if the war isn't finished yet).
     await warTracker.recordWarIfNew(tag, data);
 
-    if (data.state === 'notInWar') {
+    let warData = data;
+    let isCwl = false;
+    if (warData.state === 'notInWar') {
+      // Regular war log is empty — check whether a Clan War League round
+      // is live instead (see fetchCurrentCwlWar).
+      const cwlWar = await fetchCurrentCwlWar(tag);
+      if (cwlWar) {
+        warData = cwlWar;
+        isCwl = true;
+      }
+    }
+
+    if (warData.state === 'notInWar') {
       return res.json({ state: 'notInWar' });
     }
 
     // Same per-attack annotation (mirror match, town hall difference) used
     // for saved war history, so the live view and history agree.
     const members = warTracker
-      .annotateMembers(data)
+      .annotateMembers(warData)
       .slice()
       .sort((a, b) => a.mapPosition - b.mapPosition)
       .map((m) => ({
@@ -451,11 +501,12 @@ app.get('/api/currentwar', async (req, res) => {
       }));
 
     res.json({
-      state: data.state,
-      teamSize: data.teamSize,
-      attacksPerMember: data.attacksPerMember || 2,
-      opponentName: data.opponent ? data.opponent.name : null,
-      endTime: data.endTime || null,
+      state: warData.state,
+      teamSize: warData.teamSize,
+      attacksPerMember: warData.attacksPerMember || (isCwl ? 1 : 2),
+      opponentName: warData.opponent ? warData.opponent.name : null,
+      endTime: warData.endTime || null,
+      isCwl,
       members,
     });
   } catch (err) {

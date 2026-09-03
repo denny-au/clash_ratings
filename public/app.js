@@ -217,7 +217,10 @@ async function fetchCurrentWar(tag) {
         warEnded: 'War has ended.',
       }[data.state] || data.state;
 
-    warStatus.textContent = data.opponentName ? `${stateLabel} Opponent: ${data.opponentName}.` : stateLabel;
+    const cwlPrefix = data.isCwl ? '[CWL] ' : '';
+    warStatus.textContent = data.opponentName
+      ? `${cwlPrefix}${stateLabel} Opponent: ${data.opponentName}.`
+      : `${cwlPrefix}${stateLabel}`;
 
     warRows.innerHTML = '';
     for (const m of data.members) {
