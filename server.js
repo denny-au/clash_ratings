@@ -186,7 +186,11 @@ function orientCwlWar(warData, ourTag) {
 // live round.
 async function scanCwlForClan(tag) {
   const cached = cwlScanCache.get(tag);
-  if (cached !== undefined) return cached;
+  if (cached !== undefined) {
+    console.log(`[CWL-DEBUG ${new Date().toISOString()}] scanCwlForClan(${tag}) cache HIT — liveStatsByTag.size=${cached.liveStatsByTag.size}, activeWar=${cached.activeWar ? cached.activeWar.state : null}`);
+    return cached;
+  }
+  console.log(`[CWL-DEBUG ${new Date().toISOString()}] scanCwlForClan(${tag}) cache MISS — running fresh scan`);
 
   let liveStatsByTag = new Map();
   let activeWar = null;
@@ -222,6 +226,7 @@ async function scanCwlForClan(tag) {
     console.error('CWL check failed:', err.message);
   }
 
+  console.log(`[CWL-DEBUG ${new Date().toISOString()}] scanCwlForClan(${tag}) scan complete — liveStatsByTag.size=${liveStatsByTag.size}, keys=${JSON.stringify([...liveStatsByTag.keys()])}, activeWar=${activeWar ? activeWar.state : null}`);
   const result = { liveStatsByTag, activeWar };
   cwlScanCache.set(tag, result);
   return result;
@@ -340,6 +345,7 @@ app.get('/api/clan', async (req, res) => {
     // liveStatsByTag so CWL stars land in the exact same War Stars total
     // and MR math as regular wars, live or recorded either way.
     const cwlLiveStatsByTag = await processCwlForClan(tag);
+    console.log(`[CWL-DEBUG ${new Date().toISOString()}] /api/clan for ${tag}: cwlLiveStatsByTag.size=${cwlLiveStatsByTag.size}, keys=${JSON.stringify([...cwlLiveStatsByTag.keys()])}`);
     for (const [cwlTag, cwlStats] of cwlLiveStatsByTag) {
       const existing = liveStatsByTag.get(cwlTag);
       if (existing) {
@@ -481,6 +487,7 @@ app.get('/api/currentwar', async (req, res) => {
         warData = cwlWar;
         isCwl = true;
       }
+      console.log(`[CWL-DEBUG ${new Date().toISOString()}] /api/currentwar for ${tag}: isCwl=${isCwl}`);
     }
 
     if (warData.state === 'notInWar') {
