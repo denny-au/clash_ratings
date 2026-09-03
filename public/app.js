@@ -431,16 +431,20 @@ async function fetchRaidArchive(tag, monthValue) {
       return;
     }
 
-    archiveStatus.textContent = `${data.weekendsRecorded} raid weekend${data.weekendsRecorded === 1 ? '' : 's'} recorded.`;
+    // No caption here, same as the main leaderboard — the title alone is enough.
+    archiveStatus.textContent = '';
 
     // Same look as the main leaderboard (#, Name, MR, War Stars, Donated,
-    // Raid Attacks + gold/silver/bronze podium rows) — but MR, War Stars,
-    // and Donated aren't tracked for past months, so those just show 0.
-    // Members already come back sorted by raid attacks (most first), so
-    // that ordering becomes the rank here.
+    // Raid Attacks + gold/silver/bronze podium rows). War Stars and Donated
+    // aren't tracked for past months, so those show 0 — but MR is still
+    // computed from what IS known (25 pts per raid attack, same formula as
+    // the live leaderboard), not just zeroed out. Since donations/war stars
+    // contribute 0 for everyone here, ranking by attacks (what the backend
+    // already sorts by) and ranking by MR come out identical.
     archiveRows.innerHTML = '';
     data.members.forEach((m, i) => {
       const rank = i + 1;
+      const mr = m.attacks * 25;
       const tr = document.createElement('tr');
       if (rank === 1) tr.classList.add('rank-gold');
       else if (rank === 2) tr.classList.add('rank-silver');
@@ -448,7 +452,7 @@ async function fetchRaidArchive(tag, monthValue) {
       tr.innerHTML = `
         <td>${rank}</td>
         <td>${escapeHtml(m.name)}</td>
-        <td><strong>0</strong></td>
+        <td><strong>${mr.toLocaleString()}</strong></td>
         <td>0</td>
         <td>0</td>
         <td>${m.attacks.toLocaleString()}</td>
