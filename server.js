@@ -184,52 +184,71 @@ function orientCwlWar(warData, ourTag) {
 // ours — a single malformed/failed response among the other clans'
 // pairings must never be able to stop the scan before it reaches our own
 // live round.
+//
+// Also coalesces concurrent callers: two requests for the same clan
+// landing close together (e.g. a browser tab loading the page while a CWL
+// round is live) used to each see a cache miss and kick off their own
+// independent scan in parallel. Two near-simultaneous requests to
+// Supercell's API for the very same war have been observed to come back
+// inconsistent with each other — one with real attack data, one reporting
+// zero attacks for everyone — and whichever finished first silently "won"
+// the cache. Tracking one in-flight scan per clan means a second request
+// that arrives while a scan is already running just waits for and reuses
+// that same result instead of starting a competing one.
+const cwlScanInFlight = new Map(); // tag -> Promise
 async function scanCwlForClan(tag) {
   const cached = cwlScanCache.get(tag);
-  if (cached !== undefined) {
-    console.log(`[CWL-DEBUG ${new Date().toISOString()}] scanCwlForClan(${tag}) cache HIT — liveStatsByTag.size=${cached.liveStatsByTag.size}, activeWar=${cached.activeWar ? cached.activeWar.state : null}`);
-    return cached;
-  }
-  console.log(`[CWL-DEBUG ${new Date().toISOString()}] scanCwlForClan(${tag}) cache MISS — running fresh scan`);
+  if (cached !== undefined) return cached;
 
-  let liveStatsByTag = new Map();
-  let activeWar = null;
-  try {
-    const group = await fetchCwlGroup(tag);
-    if (group && group.state && group.state !== 'notInWar') {
-      const warTags = (group.rounds || [])
-        .flatMap((round) => round.warTags || [])
-        .filter((t) => t && t !== '#0');
+  const existingScan = cwlScanInFlight.get(tag);
+  if (existingScan) return existingScan;
 
-      for (const warTag of warTags) {
-        if (recordedCwlWarTags.has(warTag)) continue;
-        try {
-          const raw = await fetchCwlWar(warTag);
-          const warData = orientCwlWar(raw, tag);
-          if (!warData) continue;
+  const scanPromise = (async () => {
+    let liveStatsByTag = new Map();
+    let activeWar = null;
+    try {
+      const group = await fetchCwlGroup(tag);
+      if (group && group.state && group.state !== 'notInWar') {
+        const warTags = (group.rounds || [])
+          .flatMap((round) => round.warTags || [])
+          .filter((t) => t && t !== '#0');
 
-          if (warData.state === 'warEnded') {
-            await warTracker.recordWarIfNew(tag, warData);
-            recordedCwlWarTags.add(warTag); // done with this one for good
-          } else if (warData.state === 'inWar' || warData.state === 'preparation') {
-            const liveAnnotated = warTracker.annotateMembers(warData);
-            const liveSummary = warTracker.summarizeByMember([{ members: liveAnnotated }]);
-            for (const s of liveSummary) liveStatsByTag.set(s.tag, s);
-            if (!activeWar) activeWar = warData; // only one round is ever active for a clan at a time
+        for (const warTag of warTags) {
+          if (recordedCwlWarTags.has(warTag)) continue;
+          try {
+            const raw = await fetchCwlWar(warTag);
+            const warData = orientCwlWar(raw, tag);
+            if (!warData) continue;
+
+            if (warData.state === 'warEnded') {
+              await warTracker.recordWarIfNew(tag, warData);
+              recordedCwlWarTags.add(warTag); // done with this one for good
+            } else if (warData.state === 'inWar' || warData.state === 'preparation') {
+              const liveAnnotated = warTracker.annotateMembers(warData);
+              const liveSummary = warTracker.summarizeByMember([{ members: liveAnnotated }]);
+              for (const s of liveSummary) liveStatsByTag.set(s.tag, s);
+              if (!activeWar) activeWar = warData; // only one round is ever active for a clan at a time
+            }
+          } catch (warErr) {
+            console.error(`CWL war ${warTag} check failed:`, warErr.message);
           }
-        } catch (warErr) {
-          console.error(`CWL war ${warTag} check failed:`, warErr.message);
         }
       }
+    } catch (err) {
+      console.error('CWL check failed:', err.message);
     }
-  } catch (err) {
-    console.error('CWL check failed:', err.message);
-  }
 
-  console.log(`[CWL-DEBUG ${new Date().toISOString()}] scanCwlForClan(${tag}) scan complete — liveStatsByTag.size=${liveStatsByTag.size}, keys=${JSON.stringify([...liveStatsByTag.keys()])}, activeWar=${activeWar ? activeWar.state : null}`);
-  const result = { liveStatsByTag, activeWar };
-  cwlScanCache.set(tag, result);
-  return result;
+    const result = { liveStatsByTag, activeWar };
+    cwlScanCache.set(tag, result);
+    return result;
+  })();
+
+  cwlScanInFlight.set(tag, scanPromise);
+  try {
+    return await scanPromise;
+  } finally {
+    cwlScanInFlight.delete(tag); // done either way — next miss starts a fresh scan
+  }
 }
 
 // Records any finished CWL war round we haven't seen yet (so it lands in
@@ -345,7 +364,6 @@ app.get('/api/clan', async (req, res) => {
     // liveStatsByTag so CWL stars land in the exact same War Stars total
     // and MR math as regular wars, live or recorded either way.
     const cwlLiveStatsByTag = await processCwlForClan(tag);
-    console.log(`[CWL-DEBUG ${new Date().toISOString()}] /api/clan for ${tag}: cwlLiveStatsByTag.size=${cwlLiveStatsByTag.size}, entries=${JSON.stringify([...cwlLiveStatsByTag.entries()].map(([k, v]) => [k, v.stars, v.warStarMR]))}`);
     for (const [cwlTag, cwlStats] of cwlLiveStatsByTag) {
       const existing = liveStatsByTag.get(cwlTag);
       if (existing) {
@@ -358,7 +376,6 @@ app.get('/api/clan', async (req, res) => {
         liveStatsByTag.set(cwlTag, cwlStats);
       }
     }
-    console.log(`[CWL-DEBUG ${new Date().toISOString()}] /api/clan for ${tag}: after merge, liveStatsByTag.entries=${JSON.stringify([...liveStatsByTag.entries()].map(([k, v]) => [k, v.stars, v.warStarMR]))}`);
 
     const monthWars = await warTracker.getHistoryForClanInMonth(tag, currentYear, currentMonth);
     const monthSummary = warTracker.summarizeByMember(monthWars);
@@ -388,9 +405,6 @@ app.get('/api/clan', async (req, res) => {
     members.forEach((m) => {
       const monthStats = monthStatsByTag.get(m.tag);
       const liveStats = liveStatsByTag.get(m.tag);
-      if (liveStatsByTag.size > 0) {
-        console.log(`[CWL-DEBUG ${new Date().toISOString()}] members.forEach tag=${JSON.stringify(m.tag)} liveStats=${liveStats ? JSON.stringify({ stars: liveStats.stars, warStarMR: liveStats.warStarMR }) : 'undefined'}`);
-      }
       const recordedStars = monthStats ? monthStats.stars : 0;
       const recordedWarStarMR = monthStats ? monthStats.warStarMR : 0;
       const liveStars = liveStats ? liveStats.stars : 0;
@@ -491,7 +505,6 @@ app.get('/api/currentwar', async (req, res) => {
         warData = cwlWar;
         isCwl = true;
       }
-      console.log(`[CWL-DEBUG ${new Date().toISOString()}] /api/currentwar for ${tag}: isCwl=${isCwl}`);
     }
 
     if (warData.state === 'notInWar') {
