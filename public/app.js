@@ -433,16 +433,28 @@ async function fetchRaidArchive(tag, monthValue) {
 
     archiveStatus.textContent = `${data.weekendsRecorded} raid weekend${data.weekendsRecorded === 1 ? '' : 's'} recorded.`;
 
+    // Same look as the main leaderboard (#, Name, MR, War Stars, Donated,
+    // Raid Attacks + gold/silver/bronze podium rows) — but MR, War Stars,
+    // and Donated aren't tracked for past months, so those just show 0.
+    // Members already come back sorted by raid attacks (most first), so
+    // that ordering becomes the rank here.
     archiveRows.innerHTML = '';
-    for (const m of data.members) {
+    data.members.forEach((m, i) => {
+      const rank = i + 1;
       const tr = document.createElement('tr');
+      if (rank === 1) tr.classList.add('rank-gold');
+      else if (rank === 2) tr.classList.add('rank-silver');
+      else if (rank === 3) tr.classList.add('rank-bronze');
       tr.innerHTML = `
+        <td>${rank}</td>
         <td>${escapeHtml(m.name)}</td>
-        <td>${m.weekends}</td>
+        <td><strong>0</strong></td>
+        <td>0</td>
+        <td>0</td>
         <td>${m.attacks.toLocaleString()}</td>
       `;
       archiveRows.appendChild(tr);
-    }
+    });
     archiveTable.hidden = false;
   } catch (err) {
     archiveStatus.textContent = 'Could not reach the server.';
