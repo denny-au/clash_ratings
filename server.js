@@ -140,9 +140,15 @@ async function fetchCwlGroup(tag) {
   }
 }
 
-async function fetchCwlWar(warTag) {
-  const cached = cwlWarFetchCache.get(warTag);
-  if (cached !== undefined) return cached;
+// forceFresh skips the cache READ (but still writes the result to it) —
+// used for the "suspicious all-zero" retry below, where a cached copy of
+// the exact stale response we don't trust would defeat the point of
+// retrying at all.
+async function fetchCwlWar(warTag, { forceFresh = false } = {}) {
+  if (!forceFresh) {
+    const cached = cwlWarFetchCache.get(warTag);
+    if (cached !== undefined) return cached;
+  }
   try {
     const encoded = encodeURIComponent(warTag);
     const r = await fetch(`${COC_BASE}/clanwarleagues/wars/${encoded}`, {
@@ -206,6 +212,7 @@ async function scanCwlForClan(tag) {
   const scanPromise = (async () => {
     let liveStatsByTag = new Map();
     let activeWar = null;
+    let activeWarTag = null;
     try {
       const group = await fetchCwlGroup(tag);
       if (group && group.state && group.state !== 'notInWar') {
@@ -227,7 +234,10 @@ async function scanCwlForClan(tag) {
               const liveAnnotated = warTracker.annotateMembers(warData);
               const liveSummary = warTracker.summarizeByMember([{ members: liveAnnotated }]);
               for (const s of liveSummary) liveStatsByTag.set(s.tag, s);
-              if (!activeWar) activeWar = warData; // only one round is ever active for a clan at a time
+              if (!activeWar) {
+                activeWar = warData; // only one round is ever active for a clan at a time
+                activeWarTag = warTag;
+              }
             }
           } catch (warErr) {
             console.error(`CWL war ${warTag} check failed:`, warErr.message);
@@ -236,6 +246,36 @@ async function scanCwlForClan(tag) {
       }
     } catch (err) {
       console.error('CWL check failed:', err.message);
+    }
+
+    // Supercell's CWL war-detail endpoint has been observed to occasionally
+    // return an incomplete snapshot — every member present with a full
+    // roster, but zero attacks recorded for anyone — even on a single,
+    // isolated request well after real attacks have landed (confirmed by
+    // comparing against the same war tag moments later, which came back
+    // correct). Once the war is actually underway (not just prep day),
+    // "literally nobody in a 15-person clan has attacked" is suspicious
+    // enough to warrant one bypass-the-cache retry before trusting it —
+    // legitimate early-round zeros just get retried and confirmed as zero.
+    if (activeWar && activeWar.state === 'inWar' && activeWarTag) {
+      const totalAttacks = [...liveStatsByTag.values()].reduce((sum, s) => sum + s.attacks, 0);
+      if (totalAttacks === 0) {
+        try {
+          const raw = await fetchCwlWar(activeWarTag, { forceFresh: true });
+          const warData = orientCwlWar(raw, tag);
+          if (warData && warData.state === 'inWar') {
+            const liveAnnotated = warTracker.annotateMembers(warData);
+            const liveSummary = warTracker.summarizeByMember([{ members: liveAnnotated }]);
+            const retryTotalAttacks = liveSummary.reduce((sum, s) => sum + s.attacks, 0);
+            if (retryTotalAttacks > 0) {
+              liveStatsByTag = new Map(liveSummary.map((s) => [s.tag, s]));
+              activeWar = warData;
+            }
+          }
+        } catch (retryErr) {
+          console.error(`CWL war ${activeWarTag} retry failed:`, retryErr.message);
+        }
+      }
     }
 
     const result = { liveStatsByTag, activeWar };
