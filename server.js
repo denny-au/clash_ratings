@@ -345,7 +345,7 @@ app.get('/api/clan', async (req, res) => {
     // liveStatsByTag so CWL stars land in the exact same War Stars total
     // and MR math as regular wars, live or recorded either way.
     const cwlLiveStatsByTag = await processCwlForClan(tag);
-    console.log(`[CWL-DEBUG ${new Date().toISOString()}] /api/clan for ${tag}: cwlLiveStatsByTag.size=${cwlLiveStatsByTag.size}, keys=${JSON.stringify([...cwlLiveStatsByTag.keys()])}`);
+    console.log(`[CWL-DEBUG ${new Date().toISOString()}] /api/clan for ${tag}: cwlLiveStatsByTag.size=${cwlLiveStatsByTag.size}, entries=${JSON.stringify([...cwlLiveStatsByTag.entries()].map(([k, v]) => [k, v.stars, v.warStarMR]))}`);
     for (const [cwlTag, cwlStats] of cwlLiveStatsByTag) {
       const existing = liveStatsByTag.get(cwlTag);
       if (existing) {
@@ -358,6 +358,7 @@ app.get('/api/clan', async (req, res) => {
         liveStatsByTag.set(cwlTag, cwlStats);
       }
     }
+    console.log(`[CWL-DEBUG ${new Date().toISOString()}] /api/clan for ${tag}: after merge, liveStatsByTag.entries=${JSON.stringify([...liveStatsByTag.entries()].map(([k, v]) => [k, v.stars, v.warStarMR]))}`);
 
     const monthWars = await warTracker.getHistoryForClanInMonth(tag, currentYear, currentMonth);
     const monthSummary = warTracker.summarizeByMember(monthWars);
@@ -387,6 +388,9 @@ app.get('/api/clan', async (req, res) => {
     members.forEach((m) => {
       const monthStats = monthStatsByTag.get(m.tag);
       const liveStats = liveStatsByTag.get(m.tag);
+      if (liveStatsByTag.size > 0) {
+        console.log(`[CWL-DEBUG ${new Date().toISOString()}] members.forEach tag=${JSON.stringify(m.tag)} liveStats=${liveStats ? JSON.stringify({ stars: liveStats.stars, warStarMR: liveStats.warStarMR }) : 'undefined'}`);
+      }
       const recordedStars = monthStats ? monthStats.stars : 0;
       const recordedWarStarMR = monthStats ? monthStats.warStarMR : 0;
       const liveStars = liveStats ? liveStats.stars : 0;
