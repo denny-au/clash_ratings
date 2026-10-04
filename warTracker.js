@@ -129,6 +129,7 @@ async function saveData(fileName, data, message) {
 const HISTORY_FILE = 'war-history.json';
 const CONFIG_FILE = 'config.json';
 const RAID_HISTORY_FILE = 'raid-history.json';
+const DONATION_HISTORY_FILE = 'donation-history.json';
 
 // Clash's API returns timestamps like "20260815T183000.000Z" (ISO 8601
 // "basic" format, no dashes/colons). Convert to something Date() reliably
@@ -374,6 +375,61 @@ function summarizeByMember(wars) {
   return Array.from(byTag.values()).sort((a, b) => b.stars - a.stars);
 }
 
+// --- Donation snapshots ("a screenshot before the month rolls over") ---
+//
+// Supercell only exposes each member's *current* donation count, never a
+// past one, so a month's final numbers have to be captured while that month
+// is still running. Every time we see the clan's member list (any page
+// load, plus the background poller), we overwrite that calendar month's
+// snapshot with exactly what the leaderboard currently shows. The last
+// overwrite before the month ends is what stays — i.e. the end-of-month
+// "screenshot". Only this month and last month are kept (same window as
+// war/raid history), and the file is only written when something actually
+// changed, so frequent calls cost nothing.
+function sameDonations(a, b) {
+  if (a.length !== b.length) return false;
+  const byTag = new Map(a.map((m) => [m.tag, m.donations]));
+  return b.every((m) => byTag.get(m.tag) === m.donations);
+}
+
+async function recordDonationSnapshot(clanTag, memberList, now = new Date()) {
+  // An empty/failed member list must never wipe out a good snapshot.
+  if (!Array.isArray(memberList) || memberList.length === 0) return false;
+
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const cutoff = historyCutoff(now);
+
+  const raw = await loadData(DONATION_HISTORY_FILE, []);
+  const kept = raw.filter((s) => new Date(s.year, s.month - 1, 1) >= cutoff);
+  let changed = kept.length !== raw.length;
+
+  const members = memberList.map((m) => ({ tag: m.tag, name: m.name, donations: m.donations || 0 }));
+  const idx = kept.findIndex((s) => s.clanTag === clanTag && s.year === year && s.month === month);
+  const snapshot = { clanTag, year, month, capturedAt: now.toISOString(), members };
+
+  if (idx === -1) {
+    kept.push(snapshot);
+    changed = true;
+  } else if (!sameDonations(kept[idx].members, members)) {
+    kept[idx] = snapshot;
+    changed = true;
+  }
+
+  if (changed) {
+    await saveData(DONATION_HISTORY_FILE, kept, `Snapshot donations for ${clanTag} (${year}-${month})`);
+  }
+  return changed;
+}
+
+// The saved donation snapshot for a clan + calendar month, or [] if none
+// was ever captured (e.g. any month from before this feature existed).
+async function getDonationSnapshot(clanTag, year, month) {
+  const history = await loadData(DONATION_HISTORY_FILE, []);
+  const snap = history.find((s) => s.clanTag === clanTag && s.year === year && s.month === month);
+  return snap ? snap.members : [];
+}
+
 // --- Capital Raid Weekend tracking (stacks through the month) ---
 //
 // The member table shows a running total of raid attacks for the whole
@@ -487,6 +543,8 @@ module.exports = {
   getPreviousMonth,
   pruneWarHistory,
   pruneRaidHistory,
+  recordDonationSnapshot,
+  getDonationSnapshot,
   monthLabel,
   summarizeByMember,
   parseClashTimestamp,

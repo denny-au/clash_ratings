@@ -345,8 +345,8 @@ async function fetchPreviousMonth(tag) {
       lbStatus.textContent = ''; // no caption — the title alone is enough, same as the main leaderboard
 
       // Same look as the main leaderboard (#, Name, MR, War Stars, Donated,
-      // Raid Attacks + gold/silver/bronze podium rows). Donated isn't
-      // recorded for past months, so it shows 0; everything else is real.
+      // Raid Attacks + gold/silver/bronze podium rows). Donated is the
+      // end-of-month snapshot (0 for a month that was never captured).
       lbRows.innerHTML = '';
       data.members.forEach((m, i) => {
         const rank = i + 1;
@@ -359,7 +359,7 @@ async function fetchPreviousMonth(tag) {
           <td>${escapeHtml(m.name)}</td>
           <td><strong>${m.mr.toLocaleString()}</strong></td>
           <td>${m.warStars.toLocaleString()}</td>
-          <td>0</td>
+          <td>${m.donated.toLocaleString()}</td>
           <td>${m.raidAttacks.toLocaleString()}</td>
         `;
         lbRows.appendChild(tr);

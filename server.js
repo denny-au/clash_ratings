@@ -361,6 +361,14 @@ app.get('/api/clan', async (req, res) => {
 
     const data = await response.json();
 
+    // Keep this month's donation "screenshot" fresh (see warTracker.js). A
+    // storage hiccup here must never break the leaderboard itself.
+    try {
+      await warTracker.recordDonationSnapshot(data.tag, data.memberList);
+    } catch (snapErr) {
+      console.error('Donation snapshot failed:', snapErr.message);
+    }
+
     // Shape a clean payload for the frontend
     const members = (data.memberList || []).map((m) => ({
       tag: m.tag,
@@ -627,11 +635,12 @@ app.get('/api/war-history', async (req, res) => {
 // month this automatically starts describing the month that just ended and
 // the one before it is gone.
 //
-// Donations aren't recorded anywhere historically (Supercell only exposes
-// the live running count), so they're not part of this — Donated is shown
-// as 0 by the frontend. MR here is built from what IS recorded: 25 per raid
-// attack plus the town-hall-adjusted MR of every recorded war star (regular
-// wars and CWL), same formulas as the live leaderboard.
+// Donations come from the end-of-month snapshot warTracker saved while that
+// month was still running (Supercell only exposes the live count). A month
+// with no snapshot — e.g. anything before this was added — just shows 0.
+// MR is the same formula as the live leaderboard: 1 per donation, 25 per
+// raid attack, plus the town-hall-adjusted MR of every recorded war star
+// (regular wars and CWL).
 app.get('/api/previous-month', async (req, res) => {
   const tag = normalizeTag(req.query.tag);
   if (!tag || tag.length < 2) {
@@ -644,15 +653,26 @@ app.get('/api/previous-month', async (req, res) => {
   const seasons = await warTracker.getRaidHistoryForClanInMonth(tag, prev.year, prev.month);
   const raidMembers = warTracker.summarizeRaidByMember(seasons);
 
+  const donationMembers = await warTracker.getDonationSnapshot(tag, prev.year, prev.month);
+
   const byTag = new Map();
+  const blank = (m) => ({ tag: m.tag, name: m.name, warStars: 0, warStarMR: 0, raidAttacks: 0, donated: 0 });
   for (const r of raidMembers) {
-    byTag.set(r.tag, { tag: r.tag, name: r.name, warStars: 0, warStarMR: 0, raidAttacks: r.attacks });
+    const entry = byTag.get(r.tag) || blank(r);
+    entry.raidAttacks = r.attacks;
+    byTag.set(r.tag, entry);
   }
   for (const w of warMembers) {
-    const entry = byTag.get(w.tag) || { tag: w.tag, name: w.name, warStars: 0, warStarMR: 0, raidAttacks: 0 };
+    const entry = byTag.get(w.tag) || blank(w);
     entry.warStars = w.stars;
     entry.warStarMR = w.warStarMR;
     byTag.set(w.tag, entry);
+  }
+  for (const d of donationMembers) {
+    if (!d.donations) continue; // a member with nothing recorded at all isn't worth a row
+    const entry = byTag.get(d.tag) || blank(d);
+    entry.donated = d.donations;
+    byTag.set(d.tag, entry);
   }
 
   const members = Array.from(byTag.values()).map((m) => ({
@@ -660,7 +680,8 @@ app.get('/api/previous-month', async (req, res) => {
     name: m.name,
     warStars: m.warStars,
     raidAttacks: m.raidAttacks,
-    mr: Math.round(m.raidAttacks * 25 + m.warStarMR),
+    donated: m.donated,
+    mr: Math.round(m.donated + m.raidAttacks * 25 + m.warStarMR),
   }));
   members.sort((a, b) => b.mr - a.mr);
 
@@ -745,6 +766,23 @@ async function pollTrackedClanForCwl() {
   await processCwlForClan(tag);
 }
 
+// Keeps the donation snapshot current even when nobody has the site open —
+// so the last reading before a month rolls over is never more than one
+// poll interval stale.
+async function pollTrackedClanForDonations() {
+  if (!API_KEY) return;
+  const tag = await warTracker.getTrackedTag();
+  if (!tag) return;
+  try {
+    const response = await fetch(`${COC_BASE}/clans/${encodeURIComponent(tag)}`, { headers: authHeaders() });
+    if (!response.ok) return;
+    const data = await response.json();
+    await warTracker.recordDonationSnapshot(data.tag, data.memberList);
+  } catch (err) {
+    console.error('Background donation snapshot failed:', err.message);
+  }
+}
+
 app.listen(PORT, () => {
   console.log(`Clash Ratings running at http://localhost:${PORT}`);
   if (!API_KEY) {
@@ -753,7 +791,9 @@ app.listen(PORT, () => {
   setTimeout(pollTrackedClanForWarEnd, 5000);
   setTimeout(pollTrackedClanForRaidEnd, 7000);
   setTimeout(pollTrackedClanForCwl, 9000);
+  setTimeout(pollTrackedClanForDonations, 11000);
   setInterval(pollTrackedClanForWarEnd, POLL_INTERVAL_MINUTES * 60 * 1000);
   setInterval(pollTrackedClanForRaidEnd, POLL_INTERVAL_MINUTES * 60 * 1000);
   setInterval(pollTrackedClanForCwl, POLL_INTERVAL_MINUTES * 60 * 1000);
+  setInterval(pollTrackedClanForDonations, POLL_INTERVAL_MINUTES * 60 * 1000);
 });
