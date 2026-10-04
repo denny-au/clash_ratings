@@ -321,10 +321,14 @@ async function fetchPreviousMonth(tag) {
   try {
     const res = await fetch(`${BACKEND_URL}/api/previous-month?tag=${encodeURIComponent(tag)}`);
     const data = await res.json();
-    if (!res.ok) return;
+    if (!res.ok) {
+      showPreviousMonthError(lbSection, lbTitle, lbStatus, "Couldn't load last month's leaderboard.");
+      return;
+    }
 
-    if (data.members.length > 0) {
+    if (data.members && data.members.length > 0) {
       lbTitle.textContent = data.monthLabel;
+      lbStatus.classList.remove('error');
       lbStatus.textContent = ''; // no caption — the title alone is enough, same as the main leaderboard
 
       // Same look as the main leaderboard (#, Name, MR, War Stars, Donated,
@@ -340,10 +344,10 @@ async function fetchPreviousMonth(tag) {
         tr.innerHTML = `
           <td>${rank}</td>
           <td>${escapeHtml(m.name)}</td>
-          <td><strong>${m.mr.toLocaleString()}</strong></td>
-          <td>${m.warStars.toLocaleString()}</td>
-          <td>${m.donated.toLocaleString()}</td>
-          <td>${m.raidAttacks.toLocaleString()}</td>
+          <td><strong>${(m.mr || 0).toLocaleString()}</strong></td>
+          <td>${(m.warStars || 0).toLocaleString()}</td>
+          <td>${(m.donated || 0).toLocaleString()}</td>
+          <td>${(m.raidAttacks || 0).toLocaleString()}</td>
         `;
         lbRows.appendChild(tr);
       });
@@ -351,8 +355,18 @@ async function fetchPreviousMonth(tag) {
       lbTable.hidden = false;
     }
   } catch (err) {
-    // Last month's panels are a bonus — if this fails, just leave them hidden.
+    console.error('Last month leaderboard failed:', err);
+    showPreviousMonthError(lbSection, lbTitle, lbStatus, "Couldn't load last month's leaderboard.");
   }
+}
+
+// A failure here used to just hide the whole section with no clue why —
+// say so instead, so a problem is visible rather than looking like "no data".
+function showPreviousMonthError(section, title, status, message) {
+  title.textContent = 'Last month';
+  status.textContent = message;
+  status.classList.add('error');
+  section.hidden = false;
 }
 
 function escapeHtml(str) {
