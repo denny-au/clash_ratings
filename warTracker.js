@@ -476,7 +476,12 @@ async function recordRaidSeasonIfNew(clanTag, season) {
   let changed = pruned.length !== rawHistory.length;
 
   let recorded = false;
-  if (season && season.state === 'ended' && season.endTime) {
+  // The API keeps returning the most recent weekend until a new one starts,
+  // which can be older than our 2-month window (e.g. a clan that skipped
+  // raids for a while) — don't re-add something that would just be pruned
+  // again on the very next call (same guard recordWarIfNew has).
+  const endedAt = season && season.endTime ? parseClashTimestamp(season.endTime) : null;
+  if (season && season.state === 'ended' && endedAt && endedAt >= historyCutoff()) {
     const alreadyRecorded = pruned.some((r) => r.clanTag === clanTag && r.endTime === season.endTime);
     if (!alreadyRecorded) {
       pruned.push({
