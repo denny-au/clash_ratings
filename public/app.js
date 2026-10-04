@@ -303,17 +303,10 @@ async function fetchWarHistory(tag) {
   }
 }
 
-// Last month's data — the only past month the site keeps (the server erases
-// anything older, so on the 1st of a new month this automatically becomes the
-// month that just ended). One request fills two panels: that month's War
-// History table, and its leaderboard at the very bottom of the page.
+// Last month's leaderboard at the very bottom of the page — the only past
+// month the site keeps (the server erases anything older, so on the 1st of a
+// new month this automatically becomes the month that just ended).
 async function fetchPreviousMonth(tag) {
-  const histSection = document.getElementById('prev-history-section');
-  const histTitle = document.getElementById('prev-history-title');
-  const histStatus = document.getElementById('prev-history-status');
-  const histTable = document.getElementById('prev-history-table');
-  const histRows = document.getElementById('prev-history-rows');
-
   const lbSection = document.getElementById('raid-archive-section');
   const lbTitle = document.getElementById('raid-archive-title');
   const lbStatus = document.getElementById('raid-archive-status');
@@ -322,8 +315,6 @@ async function fetchPreviousMonth(tag) {
 
   // Hidden until there's something to show, and cleared on every new search
   // so a previous clan's last-month data never lingers.
-  histSection.hidden = true;
-  histTable.hidden = true;
   lbSection.hidden = true;
   lbTable.hidden = true;
 
@@ -331,14 +322,6 @@ async function fetchPreviousMonth(tag) {
     const res = await fetch(`${BACKEND_URL}/api/previous-month?tag=${encodeURIComponent(tag)}`);
     const data = await res.json();
     if (!res.ok) return;
-
-    if (data.warsRecorded > 0) {
-      histTitle.textContent = `War History — ${data.monthLabel}`;
-      histStatus.textContent = `${data.warsRecorded} war${data.warsRecorded === 1 ? '' : 's'} recorded in ${data.monthLabel}.`;
-      renderHistoryRows(histRows, data.warMembers);
-      histSection.hidden = false;
-      histTable.hidden = false;
-    }
 
     if (data.members.length > 0) {
       lbTitle.textContent = data.monthLabel;

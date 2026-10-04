@@ -629,7 +629,7 @@ app.get('/api/war-history', async (req, res) => {
   });
 });
 
-// Last calendar month's leaderboard + war history, in one response. This is
+// Last calendar month's leaderboard. This is
 // the only past month the site keeps: war and raid history are both pruned
 // to "this month and last month" (see warTracker.js), so on the 1st of a new
 // month this automatically starts describing the month that just ended and
@@ -692,7 +692,6 @@ app.get('/api/previous-month', async (req, res) => {
     warsRecorded: wars.length,
     weekendsRecorded: seasons.length,
     members,
-    warMembers,
   });
 });
 
