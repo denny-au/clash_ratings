@@ -71,9 +71,6 @@
           <div class="clan-name-row">
             <h2 id="clan-name"></h2>
             <a id="open-in-game-btn" class="pill-button" href="#" target="_blank" rel="noopener" hidden>Open in Clash of Clans</a>
-            <select id="old-history-select" hidden>
-              <option value="">Old History</option>
-            </select>
           </div>
           <p id="clan-meta"></p>
         </div>
@@ -139,11 +136,11 @@
         </div>
       </section>
 
-      <section id="old-history-section" hidden>
-        <h2 id="old-history-title">Old History</h2>
-        <p id="old-history-status"></p>
+      <section id="prev-history-section" hidden>
+        <h2 id="prev-history-title">War History</h2>
+        <p id="prev-history-status"></p>
         <div class="table-scroll">
-          <table id="old-history-table" hidden>
+          <table id="prev-history-table" hidden>
             <thead>
               <tr>
                 <th>Name</th>
@@ -155,13 +152,13 @@
                 <th title="Attacked higher (↑), lower (↓), or equal (=) town hall vs. their own">TH Matchup</th>
               </tr>
             </thead>
-            <tbody id="old-history-rows"></tbody>
+            <tbody id="prev-history-rows"></tbody>
           </table>
         </div>
       </section>
 
       <section id="raid-archive-section" hidden>
-        <h2 id="raid-archive-title">Raid Archive</h2>
+        <h2 id="raid-archive-title"></h2>
         <p id="raid-archive-status"></p>
         <div class="table-scroll">
           <table id="raid-archive-table" hidden>
@@ -169,9 +166,9 @@
               <tr>
                 <th>#</th>
                 <th>Name</th>
-                <th title="Not tracked for past months — shown as 0">MR</th>
-                <th title="Not tracked for past months — shown as 0">War Stars</th>
-                <th title="Not tracked for past months — shown as 0">Donated</th>
+                <th title="Member Rating from recorded raid attacks (25 pts each) and war stars (50 pts each, adjusted for town hall difference)">MR</th>
+                <th>War Stars</th>
+                <th title="Donations aren't recorded for past months — shown as 0">Donated</th>
                 <th>Raid Attacks</th>
               </tr>
             </thead>

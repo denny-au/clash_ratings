@@ -126,16 +126,6 @@ button:hover {
   margin: 0;
 }
 
-#old-history-select,
-#raid-history-select {
-  padding: 0.3rem 0.5rem;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  color: var(--text);
-  font-size: 0.8rem;
-}
-
 .pill-button {
   display: inline-block;
   padding: 0.3rem 0.7rem;
@@ -243,14 +233,14 @@ tbody tr.rank-bronze td:nth-child(2) {
 
 #war-section,
 #history-section,
-#old-history-section,
+#prev-history-section,
 #raid-archive-section {
   margin-top: 2rem;
 }
 
 #war-section h2,
 #history-section h2,
-#old-history-section h2,
+#prev-history-section h2,
 #raid-archive-section h2 {
   font-size: 1.15rem;
   margin: 0 0 0.4rem;
@@ -291,7 +281,7 @@ tbody tr.rank-bronze td:nth-child(2) {
 
 #war-section table,
 #history-section table,
-#old-history-section table,
+#prev-history-section table,
 #raid-archive-section table {
   margin-top: 0.5rem;
 }

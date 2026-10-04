@@ -200,13 +200,56 @@ function annotateMembers(warData) {
   }));
 }
 
+// War history only ever covers "this month and last month". Anything that
+// ended before the start of last calendar month is erased for good (not just
+// hidden from the UI) the next time this runs — so on the 1st of a new
+// month, the month before last disappears, last month becomes "previous",
+// and the new month starts fresh. Same rule raid history already follows.
+function historyCutoff(now = new Date()) {
+  return new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+}
+
+function pruneOldWars(history, now = new Date()) {
+  const cutoff = historyCutoff(now);
+  return history.filter((w) => {
+    const ended = parseClashTimestamp(w.endTime);
+    return ended && ended >= cutoff;
+  });
+}
+
+// Loads war history, erases anything older than last calendar month (saving
+// only if something was actually removed, so a normal call never causes a
+// write/commit), and returns what's left.
+async function pruneWarHistory(now = new Date()) {
+  const raw = await loadData(HISTORY_FILE, []);
+  const kept = pruneOldWars(raw, now);
+  if (kept.length !== raw.length) {
+    const cutoff = historyCutoff(now);
+    await saveData(
+      HISTORY_FILE,
+      kept,
+      `Prune war history older than ${monthLabel(cutoff.getFullYear(), cutoff.getMonth() + 1)}`
+    );
+    console.log(`Pruned ${raw.length - kept.length} war record(s) older than ${cutoff.toISOString()}.`);
+  }
+  return kept;
+}
+
 // Records a finished war (from the /currentwar shape) if we haven't
 // already recorded one with the same clan + endTime. Returns true if it
 // was newly recorded, false if it was a duplicate or wasn't recordable.
+// Also prunes expired history on every call, so the 2-month window rolls
+// forward on its own even when no new war has ended.
 async function recordWarIfNew(clanTag, warData) {
+  const history = await pruneWarHistory();
   if (!warData || warData.state !== 'warEnded' || !warData.endTime) return false;
 
-  const history = await loadData(HISTORY_FILE, []);
+  // /currentwar keeps returning the last finished war until a new one starts,
+  // which can be older than our window — don't re-add something that would
+  // just be pruned again on the very next call.
+  const endedAt = parseClashTimestamp(warData.endTime);
+  if (!endedAt || endedAt < historyCutoff()) return false;
+
   const alreadyRecorded = history.some((w) => w.clanTag === clanTag && w.endTime === warData.endTime);
   if (alreadyRecorded) return false;
 
@@ -259,27 +302,13 @@ async function getHistoryForClanInMonth(clanTag, year, month) {
   });
 }
 
-// Distinct past calendar months (excluding the current one) that have at
-// least one recorded war for this clan, most recent first. This is what
-// populates the "Old History" dropdown — no separate archiving step is
-// needed, since a past month's data was always just a date-filtered query
-// away once the current month moves on.
-async function getPastMonthsWithData(clanTag) {
-  const now = new Date();
-  const currentKey = monthKey(now);
-  const seen = new Map();
-  const history = await loadData(HISTORY_FILE, []);
-  for (const w of history) {
-    if (w.clanTag !== clanTag) continue;
-    const ended = parseClashTimestamp(w.endTime);
-    if (!ended) continue;
-    const key = monthKey(ended);
-    if (key === currentKey || seen.has(key)) continue;
-    const year = ended.getFullYear();
-    const month = ended.getMonth() + 1;
-    seen.set(key, { year, month, label: monthLabel(year, month) });
-  }
-  return Array.from(seen.values()).sort((a, b) => b.year - a.year || b.month - a.month);
+// The calendar month before the current one (the only past month that's
+// still kept — see historyCutoff).
+function getPreviousMonth(now = new Date()) {
+  const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const year = d.getFullYear();
+  const month = d.getMonth() + 1;
+  return { year, month, label: monthLabel(year, month) };
 }
 
 // MR (Member Rating) point value of one war star, as a multiplier on the
@@ -366,6 +395,20 @@ function pruneOldRaidSeasons(records, now = new Date()) {
   });
 }
 
+// Same as pruneWarHistory, for raid history: erases anything older than
+// last calendar month, saving only if something was actually removed. Lets
+// the poller roll the window forward even in a stretch where no raid weekend
+// happens to end.
+async function pruneRaidHistory(now = new Date()) {
+  const raw = await loadData(RAID_HISTORY_FILE, []);
+  const kept = pruneOldRaidSeasons(raw, now);
+  if (kept.length !== raw.length) {
+    await saveData(RAID_HISTORY_FILE, kept, 'Prune raid history older than last month');
+    console.log(`Pruned ${raw.length - kept.length} raid record(s) older than last month.`);
+  }
+  return kept;
+}
+
 // Records a finished Capital Raid Weekend (from the capitalraidseasons
 // shape) if we haven't already recorded one with the same clan + endTime.
 // Prunes old records on every call (not just when a new one is found), so
@@ -436,35 +479,14 @@ function summarizeRaidByMember(seasons) {
   return Array.from(byTag.values()).sort((a, b) => b.attacks - a.attacks);
 }
 
-// Distinct past calendar months (excluding the current one) that have at
-// least one recorded raid weekend. In practice this only ever holds last
-// month, since anything older is pruned away as soon as it's touched
-// (see pruneOldRaidSeasons) — same "no separate archiving step" idea as
-// getPastMonthsWithData above.
-async function getPastRaidMonthsWithData(clanTag) {
-  const now = new Date();
-  const currentKey = monthKey(now);
-  const seen = new Map();
-  const history = await loadData(RAID_HISTORY_FILE, []);
-  for (const r of history) {
-    if (r.clanTag !== clanTag) continue;
-    const ended = parseClashTimestamp(r.endTime);
-    if (!ended) continue;
-    const key = monthKey(ended);
-    if (key === currentKey || seen.has(key)) continue;
-    const year = ended.getFullYear();
-    const month = ended.getMonth() + 1;
-    seen.set(key, { year, month, label: monthLabel(year, month) });
-  }
-  return Array.from(seen.values()).sort((a, b) => b.year - a.year || b.month - a.month);
-}
-
 module.exports = {
   getTrackedTag,
   setTrackedTag,
   recordWarIfNew,
   getHistoryForClanInMonth,
-  getPastMonthsWithData,
+  getPreviousMonth,
+  pruneWarHistory,
+  pruneRaidHistory,
   monthLabel,
   summarizeByMember,
   parseClashTimestamp,
@@ -472,5 +494,4 @@ module.exports = {
   recordRaidSeasonIfNew,
   getRaidHistoryForClanInMonth,
   summarizeRaidByMember,
-  getPastRaidMonthsWithData,
 };

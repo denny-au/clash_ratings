@@ -583,8 +583,7 @@ app.get('/api/currentwar', async (req, res) => {
 });
 
 // Aggregated per-member war history for one calendar month. Defaults to
-// the current month; pass ?month=YYYY-MM for a past one (see
-// /api/history-months for which past months actually have data). Only
+// the current month; last month's lives in /api/previous-month. Only
 // covers wars this server has actually recorded (from the moment it
 // started tracking this clan onward) — the Clash of Clans API itself
 // doesn't retain per-member attack detail for wars once they're no longer
@@ -622,60 +621,58 @@ app.get('/api/war-history', async (req, res) => {
   });
 });
 
-// Past calendar months that have at least one recorded war for this clan —
-// what populates the "Old History" dropdown.
-app.get('/api/history-months', async (req, res) => {
-  const tag = normalizeTag(req.query.tag);
-  if (!tag || tag.length < 2) {
-    return res.status(400).json({ error: 'Please provide a clan tag, e.g. #2Y8V0YLQ' });
-  }
-  const months = await warTracker.getPastMonthsWithData(tag);
-  res.json({ months });
-});
-
-// Aggregated per-member raid attacks for one calendar month. Same
-// month-default/?month=YYYY-MM pattern as /api/war-history. Raid history
-// only ever covers the current month plus the previous one — anything
-// older is pruned automatically (see warTracker.js), so a request for an
-// older month will just come back with zero weekends recorded.
-app.get('/api/raid-history', async (req, res) => {
+// Last calendar month's leaderboard + war history, in one response. This is
+// the only past month the site keeps: war and raid history are both pruned
+// to "this month and last month" (see warTracker.js), so on the 1st of a new
+// month this automatically starts describing the month that just ended and
+// the one before it is gone.
+//
+// Donations aren't recorded anywhere historically (Supercell only exposes
+// the live running count), so they're not part of this — Donated is shown
+// as 0 by the frontend. MR here is built from what IS recorded: 25 per raid
+// attack plus the town-hall-adjusted MR of every recorded war star (regular
+// wars and CWL), same formulas as the live leaderboard.
+app.get('/api/previous-month', async (req, res) => {
   const tag = normalizeTag(req.query.tag);
   if (!tag || tag.length < 2) {
     return res.status(400).json({ error: 'Please provide a clan tag, e.g. #2Y8V0YLQ' });
   }
 
-  const now = new Date();
-  let year = now.getFullYear();
-  let month = now.getMonth() + 1;
-  const requested = /^(\d{4})-(\d{1,2})$/.exec(req.query.month || '');
-  if (requested) {
-    year = Number(requested[1]);
-    month = Number(requested[2]);
+  const prev = warTracker.getPreviousMonth();
+  const wars = await warTracker.getHistoryForClanInMonth(tag, prev.year, prev.month);
+  const warMembers = warTracker.summarizeByMember(wars);
+  const seasons = await warTracker.getRaidHistoryForClanInMonth(tag, prev.year, prev.month);
+  const raidMembers = warTracker.summarizeRaidByMember(seasons);
+
+  const byTag = new Map();
+  for (const r of raidMembers) {
+    byTag.set(r.tag, { tag: r.tag, name: r.name, warStars: 0, warStarMR: 0, raidAttacks: r.attacks });
+  }
+  for (const w of warMembers) {
+    const entry = byTag.get(w.tag) || { tag: w.tag, name: w.name, warStars: 0, warStarMR: 0, raidAttacks: 0 };
+    entry.warStars = w.stars;
+    entry.warStarMR = w.warStarMR;
+    byTag.set(w.tag, entry);
   }
 
-  const seasons = await warTracker.getRaidHistoryForClanInMonth(tag, year, month);
-  const members = warTracker.summarizeRaidByMember(seasons);
+  const members = Array.from(byTag.values()).map((m) => ({
+    tag: m.tag,
+    name: m.name,
+    warStars: m.warStars,
+    raidAttacks: m.raidAttacks,
+    mr: Math.round(m.raidAttacks * 25 + m.warStarMR),
+  }));
+  members.sort((a, b) => b.mr - a.mr);
 
   res.json({
-    year,
-    month,
-    monthLabel: warTracker.monthLabel(year, month),
-    isCurrentMonth: year === now.getFullYear() && month === now.getMonth() + 1,
+    year: prev.year,
+    month: prev.month,
+    monthLabel: prev.label,
+    warsRecorded: wars.length,
     weekendsRecorded: seasons.length,
     members,
+    warMembers,
   });
-});
-
-// Past calendar months that have at least one recorded raid weekend for
-// this clan — what populates the "Raid Archive" dropdown. In practice
-// this will only ever list last month, since older raid data is erased.
-app.get('/api/raid-history-months', async (req, res) => {
-  const tag = normalizeTag(req.query.tag);
-  if (!tag || tag.length < 2) {
-    return res.status(400).json({ error: 'Please provide a clan tag, e.g. #2Y8V0YLQ' });
-  }
-  const months = await warTracker.getPastRaidMonthsWithData(tag);
-  res.json({ months });
 });
 
 // Checks the tracked clan's current war and, if it just ended, records it.
@@ -685,6 +682,10 @@ async function pollTrackedClanForWarEnd() {
   if (!API_KEY) return;
   const tag = await warTracker.getTrackedTag();
   if (!tag) return;
+
+  // Roll the 2-month window forward even if the war fetch below gets skipped
+  // (private war log, rate limit): drops anything older than last month.
+  await warTracker.pruneWarHistory();
 
   try {
     const encodedTag = encodeURIComponent(tag);
@@ -709,6 +710,9 @@ async function pollTrackedClanForRaidEnd() {
   if (!API_KEY) return;
   const tag = await warTracker.getTrackedTag();
   if (!tag) return;
+
+  // Same 2-month window roll-forward as the war poller above.
+  await warTracker.pruneRaidHistory();
 
   try {
     const encodedTag = encodeURIComponent(tag);

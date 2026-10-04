@@ -9,7 +9,6 @@ const table = document.getElementById('member-table');
 const rowsEl = document.getElementById('member-rows');
 const monthTitle = document.getElementById('month-title');
 const openInGameBtn = document.getElementById('open-in-game-btn');
-const oldHistorySelect = document.getElementById('old-history-select');
 const menuToggle = document.getElementById('menu-toggle');
 const sideDrawer = document.getElementById('side-drawer');
 const drawerOverlay = document.getElementById('drawer-overlay');
@@ -100,24 +99,13 @@ async function searchClan(tag) {
     setStatus(`Found ${data.memberCount} members.`, false);
     fetchCurrentWar(data.tag);
     fetchWarHistory(data.tag);
-    fetchHistoryMonths(data.tag);
-    fetchRaidHistoryMonths(data.tag);
+    fetchPreviousMonth(data.tag);
   } catch (err) {
     setStatus('Could not reach the server. Is it running?', true);
   }
 }
 
 searchClan(DEFAULT_CLAN_TAG);
-
-oldHistorySelect.addEventListener('change', () => {
-  const value = oldHistorySelect.value;
-  const section = document.getElementById('old-history-section');
-  if (!value || !currentClanTag) {
-    section.hidden = true;
-    return;
-  }
-  fetchOldHistory(currentClanTag, value);
-});
 
 function setStatus(message, isError) {
   statusEl.textContent = message;
@@ -253,8 +241,8 @@ async function fetchCurrentWar(tag) {
   }
 }
 
-// Shared by the current-month panel and the old-history (past month) panel
-// — same columns, same meaning, just a different date range behind them.
+// Shared by the current-month and previous-month War History panels —
+// same columns, same meaning, just a different month behind them.
 function renderHistoryRows(tbody, members) {
   tbody.innerHTML = '';
   for (const m of members) {
@@ -315,154 +303,72 @@ async function fetchWarHistory(tag) {
   }
 }
 
-async function fetchHistoryMonths(tag) {
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/history-months?tag=${encodeURIComponent(tag)}`);
-    const data = await res.json();
+// Last month's data — the only past month the site keeps (the server erases
+// anything older, so on the 1st of a new month this automatically becomes the
+// month that just ended). One request fills two panels: that month's War
+// History table, and its leaderboard at the very bottom of the page.
+async function fetchPreviousMonth(tag) {
+  const histSection = document.getElementById('prev-history-section');
+  const histTitle = document.getElementById('prev-history-title');
+  const histStatus = document.getElementById('prev-history-status');
+  const histTable = document.getElementById('prev-history-table');
+  const histRows = document.getElementById('prev-history-rows');
 
-    // Reset to just the placeholder option, then add one per past month.
-    oldHistorySelect.innerHTML = '<option value="">Old History</option>';
-    document.getElementById('old-history-section').hidden = true;
+  const lbSection = document.getElementById('raid-archive-section');
+  const lbTitle = document.getElementById('raid-archive-title');
+  const lbStatus = document.getElementById('raid-archive-status');
+  const lbTable = document.getElementById('raid-archive-table');
+  const lbRows = document.getElementById('raid-archive-rows');
 
-    if (!res.ok || !data.months || data.months.length === 0) {
-      oldHistorySelect.hidden = true;
-      return;
-    }
-
-    for (const m of data.months) {
-      const opt = document.createElement('option');
-      opt.value = `${m.year}-${m.month}`;
-      opt.textContent = `${m.label}'s Stats`;
-      oldHistorySelect.appendChild(opt);
-    }
-    oldHistorySelect.hidden = false;
-  } catch (err) {
-    oldHistorySelect.hidden = true;
-  }
-}
-
-async function fetchOldHistory(tag, monthValue) {
-  const section = document.getElementById('old-history-section');
-  const title = document.getElementById('old-history-title');
-  const oldStatus = document.getElementById('old-history-status');
-  const oldTable = document.getElementById('old-history-table');
-  const oldRows = document.getElementById('old-history-rows');
-
-  section.hidden = false;
-  title.textContent = 'Old History';
-  oldStatus.textContent = 'Loading...';
-  oldStatus.classList.remove('error');
-  oldTable.hidden = true;
+  // Hidden until there's something to show, and cleared on every new search
+  // so a previous clan's last-month data never lingers.
+  histSection.hidden = true;
+  histTable.hidden = true;
+  lbSection.hidden = true;
+  lbTable.hidden = true;
 
   try {
-    const res = await fetch(`${BACKEND_URL}/api/war-history?tag=${encodeURIComponent(tag)}&month=${monthValue}`);
+    const res = await fetch(`${BACKEND_URL}/api/previous-month?tag=${encodeURIComponent(tag)}`);
     const data = await res.json();
+    if (!res.ok) return;
 
-    if (!res.ok) {
-      oldStatus.textContent = data.error || 'Could not load that month.';
-      oldStatus.classList.add('error');
-      return;
+    if (data.warsRecorded > 0) {
+      histTitle.textContent = `War History — ${data.monthLabel}`;
+      histStatus.textContent = `${data.warsRecorded} war${data.warsRecorded === 1 ? '' : 's'} recorded in ${data.monthLabel}.`;
+      renderHistoryRows(histRows, data.warMembers);
+      histSection.hidden = false;
+      histTable.hidden = false;
     }
 
-    title.textContent = `${data.monthLabel}'s Stats`;
+    if (data.members.length > 0) {
+      lbTitle.textContent = data.monthLabel;
+      lbStatus.textContent = ''; // no caption — the title alone is enough, same as the main leaderboard
 
-    if (data.warsRecorded === 0) {
-      oldStatus.textContent = 'No wars recorded for this month.';
-      return;
+      // Same look as the main leaderboard (#, Name, MR, War Stars, Donated,
+      // Raid Attacks + gold/silver/bronze podium rows). Donated isn't
+      // recorded for past months, so it shows 0; everything else is real.
+      lbRows.innerHTML = '';
+      data.members.forEach((m, i) => {
+        const rank = i + 1;
+        const tr = document.createElement('tr');
+        if (rank === 1) tr.classList.add('rank-gold');
+        else if (rank === 2) tr.classList.add('rank-silver');
+        else if (rank === 3) tr.classList.add('rank-bronze');
+        tr.innerHTML = `
+          <td>${rank}</td>
+          <td>${escapeHtml(m.name)}</td>
+          <td><strong>${m.mr.toLocaleString()}</strong></td>
+          <td>${m.warStars.toLocaleString()}</td>
+          <td>0</td>
+          <td>${m.raidAttacks.toLocaleString()}</td>
+        `;
+        lbRows.appendChild(tr);
+      });
+      lbSection.hidden = false;
+      lbTable.hidden = false;
     }
-
-    oldStatus.textContent = `${data.warsRecorded} war${data.warsRecorded === 1 ? '' : 's'} recorded.`;
-    renderHistoryRows(oldRows, data.members);
-    oldTable.hidden = false;
   } catch (err) {
-    oldStatus.textContent = 'Could not reach the server.';
-    oldStatus.classList.add('error');
-  }
-}
-
-// No dropdown — this just finds the most recent past raid month (if any)
-// and shows its leaderboard directly, titled with the month itself (e.g.
-// "August 2026") rather than a generic "Raid Archive" label.
-async function fetchRaidHistoryMonths(tag) {
-  const section = document.getElementById('raid-archive-section');
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/raid-history-months?tag=${encodeURIComponent(tag)}`);
-    const data = await res.json();
-
-    if (!res.ok || !data.months || data.months.length === 0) {
-      section.hidden = true;
-      return;
-    }
-
-    // Months come back most-recent-first — only the latest past month is shown.
-    const latest = data.months[0];
-    fetchRaidArchive(tag, `${latest.year}-${latest.month}`);
-  } catch (err) {
-    section.hidden = true;
-  }
-}
-
-async function fetchRaidArchive(tag, monthValue) {
-  const section = document.getElementById('raid-archive-section');
-  const title = document.getElementById('raid-archive-title');
-  const archiveStatus = document.getElementById('raid-archive-status');
-  const archiveTable = document.getElementById('raid-archive-table');
-  const archiveRows = document.getElementById('raid-archive-rows');
-
-  section.hidden = false;
-  archiveStatus.textContent = 'Loading...';
-  archiveStatus.classList.remove('error');
-  archiveTable.hidden = true;
-
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/raid-history?tag=${encodeURIComponent(tag)}&month=${monthValue}`);
-    const data = await res.json();
-
-    if (!res.ok) {
-      archiveStatus.textContent = data.error || 'Could not load that month.';
-      archiveStatus.classList.add('error');
-      return;
-    }
-
-    title.textContent = data.monthLabel;
-
-    if (data.weekendsRecorded === 0) {
-      archiveStatus.textContent = 'No raid weekends recorded for this month.';
-      return;
-    }
-
-    // No caption here, same as the main leaderboard — the title alone is enough.
-    archiveStatus.textContent = '';
-
-    // Same look as the main leaderboard (#, Name, MR, War Stars, Donated,
-    // Raid Attacks + gold/silver/bronze podium rows). War Stars and Donated
-    // aren't tracked for past months, so those show 0 — but MR is still
-    // computed from what IS known (25 pts per raid attack, same formula as
-    // the live leaderboard), not just zeroed out. Since donations/war stars
-    // contribute 0 for everyone here, ranking by attacks (what the backend
-    // already sorts by) and ranking by MR come out identical.
-    archiveRows.innerHTML = '';
-    data.members.forEach((m, i) => {
-      const rank = i + 1;
-      const mr = m.attacks * 25;
-      const tr = document.createElement('tr');
-      if (rank === 1) tr.classList.add('rank-gold');
-      else if (rank === 2) tr.classList.add('rank-silver');
-      else if (rank === 3) tr.classList.add('rank-bronze');
-      tr.innerHTML = `
-        <td>${rank}</td>
-        <td>${escapeHtml(m.name)}</td>
-        <td><strong>${mr.toLocaleString()}</strong></td>
-        <td>0</td>
-        <td>0</td>
-        <td>${m.attacks.toLocaleString()}</td>
-      `;
-      archiveRows.appendChild(tr);
-    });
-    archiveTable.hidden = false;
-  } catch (err) {
-    archiveStatus.textContent = 'Could not reach the server.';
-    archiveStatus.classList.add('error');
+    // Last month's panels are a bonus — if this fails, just leave them hidden.
   }
 }
 
