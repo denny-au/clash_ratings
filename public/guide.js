@@ -38,7 +38,7 @@
   function thArt(th, cls) {
     var src = safeImg(th.image);
     var fallback = '<span class="th-fallback" aria-hidden="true"><b>' + esc(th.level) + '</b></span>';
-    return '<span class="th-art ' + (cls || '') + '">' + (src ? '<img src="' + esc(src) + '" alt="" decoding="async" />' : fallback) + '</span>';
+    return '<span class="th-art ' + (cls || '') + '">' + (src ? '<img src="' + esc(src) + '" alt="" decoding="async" draggable="false" />' : fallback) + '</span>';
   }
 
   function carouselHtml() {
@@ -50,7 +50,6 @@
           (t ? ' style="--t:' + t.join(',') + '"' : '') + ' aria-label="Town Hall ' + esc(th.level) + (th.soon ? ' (coming soon)' : '') + '">' +
           thArt(th) +
           '<span class="th-name"><span class="th-name-long">Town Hall </span><span class="th-name-short">TH</span>' + esc(th.level) + '</span>' +
-          '<span class="th-sub">' + (th.soon ? 'Coming soon' : 'Bases · armies · tips') + '</span>' +
           '</button>'
         );
       })
@@ -255,11 +254,48 @@
     firstLayout = false;
   }
 
+  // The guide underneath slides out the way you're heading and the next one slides in,
+  // so it moves together with the carousel.
+  var swapToken = 0;
+  function swapDetail(th, prevLevel, animate) {
+    var token = ++swapToken;
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var running = detailEl.getAnimations ? detailEl.getAnimations() : [];
+    for (var i = 0; i < running.length; i++) running[i].cancel();
+    var render = function () {
+      detailEl.innerHTML = detailHtml(th);
+      wireArt(detailEl);
+    };
+    if (!animate || reduce || !detailEl.animate || !detailEl.innerHTML || prevLevel == null) {
+      render();
+      detailEl.classList.remove('enter');
+      void detailEl.offsetWidth; // replay the entrance
+      detailEl.classList.add('enter');
+      return;
+    }
+    detailEl.classList.remove('enter');
+    var dir = th.level > prevLevel ? 1 : -1;
+    var out = detailEl.animate(
+      [{ opacity: 1, transform: 'translateX(0)' }, { opacity: 0, transform: 'translateX(' + -dir * 40 + 'px)' }],
+      { duration: 170, easing: 'ease-in', fill: 'forwards' }
+    );
+    out.onfinish = function () {
+      if (token !== swapToken) return;
+      render();
+      out.cancel();
+      detailEl.animate(
+        [{ opacity: 0, transform: 'translateX(' + dir * 40 + 'px)' }, { opacity: 1, transform: 'translateX(0)' }],
+        { duration: 360, easing: 'cubic-bezier(0.2, 0.9, 0.25, 1)' }
+      );
+    };
+  }
+
   function select(level, opts) {
     opts = opts || {};
     var th = find(level);
     if (!th) return;
     var changed = selected !== level;
+    var prevLevel = selected;
     selected = level;
     for (var i = 0; i < itemEls.length; i++) {
       var on = +itemEls[i].getAttribute('data-th') === selected;
@@ -270,13 +306,7 @@
     var t = themeOf(th);
     if (t) carouselEl.style.setProperty('--t', t.join(','));
     layout(opts.animate !== false);
-    if (changed || !detailEl.innerHTML) {
-      detailEl.innerHTML = detailHtml(th);
-      wireArt(detailEl);
-      detailEl.classList.remove('enter');
-      void detailEl.offsetWidth; // replay the entrance
-      detailEl.classList.add('enter');
-    }
+    if (changed || !detailEl.innerHTML) swapDetail(th, prevLevel, opts.animate !== false);
     pushTheme();
     if (opts.updateHash !== false) updateHash();
   }
