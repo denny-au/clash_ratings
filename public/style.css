@@ -2,14 +2,14 @@
   color-scheme: dark;
 
   /* ---- Palette (default: Navy & Gold). Swap by overriding these on :root. ---- */
-  --bg: #070b17;
-  --panel: #0d1426;
-  --panel-2: #131c36;
-  --border: #212d50;
-  --border-soft: #182140;
+  --bg: #06070c;
+  --panel: #0e1017;
+  --panel-2: #151722;
+  --border: #272a38;
+  --border-soft: #1c1e29;
   --text: #f4f1ea;
-  --muted: #8f9bb9;
-  --role: #9fb1e0; /* lighter, softer tone for the role next to a name */
+  --muted: #9298ad;
+  --role: #a3adcf; /* lighter, softer tone for the role next to a name */
 
   /* UI accent (title, buttons, bars, highlights) */
   --accent: #f2c14e;
@@ -27,6 +27,10 @@
   --second-rgb: 70, 120, 230;
   --second-line-rgb: 120, 165, 255;
   --glow-rgb: 52, 104, 214;
+  /* Aurora behind the header: cool blue -> teal -> violet */
+  --aurora-1: 56, 128, 255;
+  --aurora-2: 150, 84, 255;
+  --aurora-3: 38, 200, 220;
 
   /* Podium metals: fixed, never change with the palette */
   --gold: #f2c14e;
@@ -54,22 +58,44 @@ html {
 }
 
 body {
+  position: relative;
   margin: 0;
   font-family: var(--font-body);
   color: var(--text);
-  /* A soft glow behind the title, drawn in pure CSS (no game artwork is
-     altered or reused here). */
-  background:
-    radial-gradient(900px 380px at 50% -70px, rgba(var(--glow-rgb), 0.30), transparent 70%),
-    radial-gradient(520px 260px at 50% -30px, rgba(var(--accent-rgb), 0.10), transparent 72%),
-    var(--bg);
-  background-repeat: no-repeat;
+  background: transparent; /* html paints --bg; the aurora sits between the two */
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Aurora: a single glow that lives behind the title only. Bright blue at the
+   top centre, turning violet as it fades, gone before it reaches the search
+   box. Pure CSS; drifts very slowly. */
+body::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: 50%;
+  width: min(820px, 100vw);
+  height: 320px;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(ellipse 34% 38% at 50% 0%, rgba(var(--aurora-1), 0.34), rgba(var(--aurora-1), 0) 100%),
+    radial-gradient(ellipse 50% 78% at 50% 0%, rgba(var(--aurora-2), 0.22), rgba(var(--aurora-2), 0) 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 35%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 35%, transparent 100%);
+  pointer-events: none;
+  animation: aurora-breathe 12s ease-in-out infinite alternate;
+}
+
+@keyframes aurora-breathe {
+  from { opacity: 0.8; transform: translateX(-50%) scale(1); }
+  to { opacity: 1; transform: translateX(-50%) scale(1.05); }
 }
 
 /* ---------- Page layout ---------- */
 .page-content {
-  padding: 3.25rem 1.25rem 2.5rem;
+  padding: 1.5rem 1.25rem 2.5rem;
 }
 
 .hero {
@@ -79,8 +105,7 @@ body {
 }
 
 /* Liquid-glass title: a translucent gradient fill, a bright rim, and a specular
-   highlight across the top half. The glow blobs behind it (.hero::before) are
-   what the "glass" refracts. */
+   highlight across the top half; warm gold so it pops off the dark page. */
 h1 {
   position: relative;
   margin: 0 0 0.5rem;
@@ -89,21 +114,21 @@ h1 {
   padding: 0.04em 0.05em 0.16em;
   font-family: var(--font-title);
   font-weight: 400;
-  font-size: clamp(2.6rem, 10.5vw, 4.75rem);
+  font-size: var(--title-fs, clamp(2.6rem, 10.5vw, 4.75rem));
   letter-spacing: -0.01em;
   word-spacing: -0.04em;
   line-height: 1.15;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.9) 0%,
-    rgba(255, 246, 215, 0.62) 42%,
-    rgba(var(--accent-rgb), 0.66) 100%
+    rgba(255, 244, 196, 0.92) 0%,
+    rgba(255, 207, 74, 0.86) 45%,
+    rgba(255, 150, 28, 0.9) 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.8);
-  filter: drop-shadow(0 0 18px rgba(var(--accent-rgb), 0.42)) drop-shadow(0 6px 14px rgba(var(--accent-rgb), 0.22));
+  -webkit-text-stroke: 1.5px rgba(255, 238, 178, 0.75);
+  filter: drop-shadow(0 0 14px rgba(255, 150, 28, 0.42)) drop-shadow(0 4px 0 rgba(120, 55, 0, 0.55));
 }
 
 h1::after {
@@ -112,7 +137,7 @@ h1::after {
   position: absolute;
   inset: 0;
   padding: inherit;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 48%);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 46%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -122,23 +147,34 @@ h1::after {
 
 .hero {
   position: relative;
+  --title-fs: clamp(2.6rem, 10.5vw, 4.75rem);
+  --shield-h: clamp(80px, 23vw, 120px);
+  /* room for the bit of shield (arrows) that pokes above the title */
+  padding-top: calc(var(--shield-h) * 0.38);
 }
 
-.hero::before {
-  content: "";
+/* The shield sits behind the title, unmodified (no tint, fade or blur). */
+.hero-shield {
   position: absolute;
-  z-index: -1;
-  top: -10px;
+  z-index: 0;
+  /* centred on the title's middle */
+  top: calc(var(--shield-h) * 0.38 + var(--title-fs) * 0.5 - var(--shield-h) * 0.5);
   left: 50%;
-  width: min(560px, 90vw);
-  height: 150px;
-  transform: translateX(-50%);
-  background:
-    radial-gradient(closest-side at 28% 55%, rgba(var(--glow-rgb), 0.75), transparent),
-    radial-gradient(closest-side at 72% 45%, rgba(var(--accent-rgb), 0.55), transparent);
-  filter: blur(26px);
-  opacity: 0.85;
+  height: var(--shield-h);
+  width: auto;
+  /* nudged left so the shield's body sits in the gap between the two words */
+  transform: translateX(calc(-50% - var(--title-fs) * 0.6 - var(--shield-h) * 0.15));
   pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.45));
+}
+
+.hero h1,
+.hero .subtitle,
+.hero #search-form,
+.hero #status {
+  position: relative;
+  z-index: 1;
 }
 
 .subtitle {
@@ -582,7 +618,7 @@ tbody tr:hover {
   display: block;
   height: 100%;
   border-radius: 3px;
-  background: linear-gradient(90deg, var(--accent-deep), var(--accent-hi));
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.95));
 }
 
 /* Top three: each place gets its own metal (edge, row wash, name, bar, crown).
