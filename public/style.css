@@ -3058,7 +3058,7 @@ a.g-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
 .army-ground .army-tag { color: #ffbd7a; background: rgba(217, 147, 90, 0.16); border: 1px solid rgba(217, 147, 90, 0.5); }
 .army-air .army-tag { color: #8fdcf2; background: rgba(111, 216, 238, 0.12); border: 1px solid rgba(111, 216, 238, 0.45); }
 .army-recommended { border-color: rgba(var(--accent-rgb), 0.6); background: linear-gradient(160deg, rgba(var(--accent-rgb), 0.14), rgba(var(--accent-rgb), 0.025)); box-shadow: 0 0 24px rgba(var(--accent-rgb), 0.1); }
-.army-recommended .army-tag { color: var(--accent-ink); background: linear-gradient(180deg, var(--accent-btn-hi), var(--accent-btn-lo)); border: none; }
+.army-recommended .army-tag:not(.army-type) { color: var(--accent-ink); background: linear-gradient(180deg, var(--accent-btn-hi), var(--accent-btn-lo)); border: none; }
 .army-troops { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.1rem; font-size: 0.86rem; color: var(--muted); }
 .army-troops b { color: var(--text); font-family: var(--font-display); font-weight: 400; }
 
@@ -3079,3 +3079,14 @@ a.g-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
 @media (prefers-reduced-motion: reduce) {
   .th-card, .g-detail.enter > * { animation: none !important; }
 }
+
+/* guide: credits, secondary buttons, army type tag, town-hall tip chip */
+.g-by { color: var(--role); font-size: 0.8rem; }
+.g-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.2rem; }
+.g-actions .g-btn { margin-top: 0; }
+.g-btn-ghost { color: var(--text); background: transparent; border: 1px solid rgba(var(--accent-rgb), 0.45); }
+a.g-btn-ghost:hover { background: rgba(var(--accent-rgb), 0.1); filter: none; }
+.army-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.army-type-air { color: #8fdcf2; background: rgba(60, 150, 255, 0.2); border: 1px solid rgba(90, 170, 255, 0.7); }
+.army-type-ground { color: #ffbd7a; background: rgba(217, 147, 90, 0.16); border: 1px solid rgba(217, 147, 90, 0.5); }
+.tip-chip { margin-left: 0.5rem; padding: 0.05rem 0.45rem; font-style: normal; font-family: var(--font-body); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.1em; color: var(--accent-hi); background: rgba(var(--accent-rgb), 0.12); border: 1px solid rgba(var(--accent-rgb), 0.4); border-radius: 999px; vertical-align: 2px; }

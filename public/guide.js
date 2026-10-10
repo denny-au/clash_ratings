@@ -18,6 +18,9 @@
   function safeLink(u) {
     return typeof u === 'string' && /^https:\/\/link\.clashofclans\.com\//.test(u) ? u : null;
   }
+  function safeVideo(u) {
+    return typeof u === 'string' && /^https:\/\/(www\.youtube\.com\/watch\?[\w=&\-%.]+|youtu\.be\/[\w\-]+(\?[\w=&\-%.]+)?)$/.test(u) ? u : null;
+  }
   function safeImg(u) {
     return typeof u === 'string' && /^[\w\-./]+\.(png|webp|jpe?g)$/i.test(u) ? u : null;
   }
@@ -45,8 +48,9 @@
   }
 
   var ICONS = {
-    base: '<path d="M4 20V9l4-3 4 3 4-3 4 3v11H4Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M10 20v-5h4v5" fill="none" stroke="currentColor" stroke-width="1.8"/>',
-    army: '<path d="M5 20 19 6M14 5h5v5M5 6l14 14M5 10V5h5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>',
+    // sword (armies) and shield (bases)
+    army: '<path d="M7.9 13.9 17.25 4.5 20.5 3.5l-1 3.25-9.4 9.4Z" fill="currentColor"/><path d="M6 12l6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M8.6 15.4 5.6 18.4" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><circle cx="4.7" cy="19.3" r="1.5" fill="currentColor"/>',
+    base: '<path d="M12 3 20 6v5.4c0 4.5-3.2 7.7-8 9.6-4.8-1.9-8-5.1-8-9.6V6l8-3Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M12 7 16.2 8.5v3c0 2.5-1.7 4.2-4.2 5.3-2.5-1.1-4.2-2.8-4.2-5.3v-3L12 7Z" fill="currentColor" opacity=".5"/>',
     tips: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
   };
   function cardHead(icon, title, sub) {
@@ -60,6 +64,14 @@
       : '<span class="g-btn g-btn-off">' + esc(soon) + '</span>';
   }
 
+  function videoHtml(url) {
+    var v = safeVideo(url);
+    return v ? '<a class="g-btn g-btn-ghost" href="' + esc(v) + '" target="_blank" rel="noopener noreferrer">Watch video</a>' : '';
+  }
+  function byHtml(by) {
+    return by ? '<span class="g-by">by ' + esc(by) + '</span>' : '';
+  }
+
   function basesHtml(th) {
     var items = (th.bases || [])
       .map(function (b, i) {
@@ -67,9 +79,9 @@
         return (
           '<div class="g-item base" style="--i:' + i + '">' +
           '<span class="base-shot">' + (img ? '<img src="' + esc(img) + '" alt="" loading="lazy" />' : '<span>Base picture<br>coming soon</span>') + '</span>' +
-          '<span class="g-item-name">' + esc(b.name) + '</span>' +
+          '<span class="g-item-name">' + esc(b.name) + '</span>' + byHtml(b.by) +
           (b.note ? '<span class="g-item-note">' + esc(b.note) + '</span>' : '') +
-          actionHtml(b.link, 'Copy base', 'Link coming soon') +
+          '<span class="g-actions">' + actionHtml(b.link, 'Copy base', 'Link coming soon') + '</span>' +
           '</div>'
         );
       })
@@ -86,15 +98,15 @@
         var troops = (a.troops || [])
           .map(function (t) { return '<li><b>' + esc(t.count) + '×</b> ' + esc(t.name) + '</li>'; })
           .join('');
-        var variant = a.kind === 'recommended' && a.variantOf ? '<span class="g-item-note">A small variation on the ' + esc(a.variantOf) + ' army.</span>' : '';
+        var typeTag = a.kind === 'recommended' && (a.type === 'air' || a.type === 'ground') ? '<span class="army-tag army-type army-type-' + a.type + '">' + (a.type === 'air' ? 'Air' : 'Ground') + '</span>' : '';
+        var hasContent = troops || safeLink(a.link);
         return (
           '<div class="g-item army army-' + esc(a.kind) + '" style="--i:' + i + '">' +
-          '<span class="army-tag">' + esc(KIND[a.kind] || a.kind) + '</span>' +
-          '<span class="g-item-name">' + esc(a.name) + '</span>' +
-          variant +
+          '<span class="army-tags"><span class="army-tag">' + esc(KIND[a.kind] || a.kind) + '</span>' + typeTag + '</span>' +
+          '<span class="g-item-name">' + esc(a.name) + '</span>' + byHtml(a.by) +
           (a.summary ? '<span class="g-item-note">' + esc(a.summary) + '</span>' : '') +
-          (troops ? '<ul class="army-troops">' + troops + '</ul>' : '<span class="g-item-note army-todo">Army details coming soon.</span>') +
-          actionHtml(a.link, 'Copy army', 'Link coming soon') +
+          (troops ? '<ul class="army-troops">' + troops + '</ul>' : hasContent ? '' : '<span class="g-item-note army-todo">Army details coming soon.</span>') +
+          '<span class="g-actions">' + actionHtml(a.link, 'Copy army', 'Link coming soon') + videoHtml(a.video) + '</span>' +
           '</div>'
         );
       })
@@ -103,13 +115,15 @@
   }
 
   function tipsHtml(th) {
-    var tips = (data.generalTips || []).concat(th.tips || []);
+    var general = data.generalTips || [];
+    var tips = general.concat(th.tips || []);
     var items = tips
       .map(function (t, i) {
-        return '<li class="tip" style="--i:' + i + '"><span class="tip-n">' + (i + 1) + '</span><span class="tip-body"><b>' + esc(t.title) + '</b><span>' + esc(t.text) + '</span></span></li>';
+        var chip = i >= general.length ? '<em class="tip-chip">TH' + esc(th.level) + '</em>' : '';
+        return '<li class="tip" style="--i:' + i + '"><span class="tip-n">' + (i + 1) + '</span><span class="tip-body"><b>' + esc(t.title) + chip + '</b><span>' + esc(t.text) + '</span></span></li>';
       })
       .join('');
-    return '<section class="g-card">' + cardHead('tips', 'General tips', 'Good habits at any town hall') + '<ol class="tips">' + (items || '<li class="g-empty">Nothing here yet.</li>') + '</ol></section>';
+    return '<section class="g-card">' + cardHead('tips', 'Tips', 'General habits, plus ones for this town hall') + '<ol class="tips">' + (items || '<li class="g-empty">Nothing here yet.</li>') + '</ol></section>';
   }
 
   function detailHtml(th) {

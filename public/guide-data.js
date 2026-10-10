@@ -7,8 +7,9 @@
 //    starts with https://link.clashofclans.com/) and, optionally, an `image`
 //    (path like "assets/bases/th14-1.png"). With no link it shows "link coming soon".
 //  * Armies: at most 3 per town hall: one `ground`, one `air`, one `recommended`.
-//    `variantOf` on the recommended army says which of the other two it is a
-//    small variation of ("ground" or "air"); leave it null if it stands alone.
+//    `type` on the recommended army is "air" or "ground" (shows a blue AIR or
+//    orange GROUND tag next to RECOMMENDED); leave it null for no tag.
+//    `by` is the creator's name, `video` a YouTube link, and
 //    `link` is the game's "copy army" link. `troops` is a list like
 //    [{ name: "Electro Dragon", count: 8 }, ...] (leave [] until you know it).
 //  * Tips: `generalTips` show on every town hall; a town hall's own `tips` are
@@ -35,29 +36,38 @@ window.GUIDE_DATA = {
       level: 14,
       image: 'assets/th/th14.png',
       bases: [
-        { name: 'Base 1', note: '', image: null, link: null },
-        { name: 'Base 2', note: '', image: null, link: null },
-        { name: 'Base 3', note: '', image: null, link: null },
+        { name: 'Village base', note: '', by: 'COC Layouts', image: null, link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH14%3AHV%3AAAAAQAAAAAJaylAU8C9KEr_3IIxmptIW' },
+        { name: 'War base', note: '', by: '-CRIMSON-', image: null, link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH14%3AWB%3AAAAAQAAAAAJeLOaSHi2NcHAiHclV7cCQ' },
+        { name: 'Progress base', note: '', by: 'COC Bases', image: null, link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH14%3AHV%3AAAAAHwAAAAKiS60K7p0yxeED25PQ6NEA' },
       ],
       armies: [
-        { kind: 'recommended', name: 'Recommended army', variantOf: null, summary: '', troops: [], link: null },
-        { kind: 'ground', name: 'Ground army', summary: '', troops: [], link: null },
-        { kind: 'air', name: 'Air army', summary: '', troops: [], link: null },
+        { kind: 'recommended', type: 'air', name: 'RC Charge Dragons', by: 'Sturge', summary: 'Guarantees you consistent 3 stars.', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p1e20_17-6p0e42_43-2m1p2e4_34-4p3e6_40i9x5-1x62d1x2-1x5u9x8-3x65-7x5-1x23-3x62s8x35-1x10-1x53', video: 'https://www.youtube.com/watch?v=MqEyKk7kI9M' },
+        { kind: 'ground', name: 'Icy Witch Bat', by: 'Sturge', summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p3e20_48-2p2e34_4-0p1e14_8-4p0e13_40i1x53-1x110-1x26-1x87-2x1d2x5-1x120u8x58-10x15-6x6-2x28-1x97-1x87-1x75-1x91s1x2-3x5-1x9-5x28', video: 'https://www.youtube.com/watch?v=MqEyKk7kI9M&t=165s' },
+        { kind: 'air', name: 'Clone Dragons', by: 'HookedToClash', summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p3e17_20-6e42_43-2m1p2e4_34-4p0e6_13i1x147-1x52d1x16u4x5-13x8-1x82-1x23-2x10-1x52s1x2-3x16', video: 'https://www.youtube.com/watch?v=6PZlG-Zx1qo' },
       ],
-      tips: [],
+      tips: [
+        {
+          title: 'TH14 is an easy town hall',
+          text: 'Feel free to catch up on upgrades here, or rush to TH15.',
+        },
+        {
+          title: 'Do not sleep on these equipment',
+          text: "The Archer Queen's Giant Arrow and the Royal Champion's Royal Gem and Seeking Shield are the best common equipment of all the hero equipment. Prioritise them when upgrading equipment at TH14.",
+        },
+      ],
     },
     {
       level: 15,
       image: 'assets/th/th15.png',
       bases: [
-        { name: 'Base 1', note: '', image: null, link: null },
-        { name: 'Base 2', note: '', image: null, link: null },
-        { name: 'Base 3', note: '', image: null, link: null },
+        { name: 'Village base', note: '', by: '', image: null, link: null },
+        { name: 'War base', note: '', by: '', image: null, link: null },
+        { name: 'Progress base', note: '', by: '', image: null, link: null },
       ],
       armies: [
-        { kind: 'recommended', name: 'Recommended army', variantOf: null, summary: '', troops: [], link: null },
-        { kind: 'ground', name: 'Ground army', summary: '', troops: [], link: null },
-        { kind: 'air', name: 'Air army', summary: '', troops: [], link: null },
+        { kind: 'recommended', type: null, name: 'Recommended army', by: '', summary: 'Guarantees you consistent 3 stars.', troops: [], link: null, video: null },
+        { kind: 'ground', name: 'Ground army', by: '', summary: '', troops: [], link: null, video: null },
+        { kind: 'air', name: 'Air army', by: '', summary: '', troops: [], link: null, video: null },
       ],
       tips: [],
     },
