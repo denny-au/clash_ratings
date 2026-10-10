@@ -116,6 +116,10 @@ window.GUIDE_DATA = {
           title: 'Similar to TH14 attacks',
           text: "Most attacks at TH15 are pretty similar to TH14. If you don't like to deviate much, you don't have to.",
         },
+        {
+          title: 'Building your own base?',
+          text: 'Consider multi-target Infernos, because they pair up well with the new Monoliths and Spell Towers.',
+        },
       ],
     },
     { level: 16, image: 'assets/th/th16.webp', soon: true, theme: [235, 72, 84] },
