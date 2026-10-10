@@ -408,6 +408,8 @@ async function buildRatings(data, tag, now = new Date()) {
         ...existing,
         stars: existing.stars + cwlStats.stars,
         warStarMR: existing.warStarMR + cwlStats.warStarMR,
+        attacks: (existing.attacks || 0) + (cwlStats.attacks || 0),
+        attackedHigher: (existing.attackedHigher || 0) + (cwlStats.attackedHigher || 0),
       });
     } else {
       liveStatsByTag.set(cwlTag, cwlStats);
@@ -448,6 +450,7 @@ async function buildRatings(data, tag, now = new Date()) {
     const liveWarStarMR = liveStats ? liveStats.warStarMR : 0;
     m.monthWarStars = recordedStars + liveStars;
     m.warAttacks = (monthStats ? monthStats.attacks : 0) + (liveStats ? liveStats.attacks || 0 : 0);
+    m.higherAttacks = (monthStats ? monthStats.attackedHigher : 0) + (liveStats ? liveStats.attackedHigher || 0 : 0);
     const warStarMR = recordedWarStarMR + liveWarStarMR;
 
     const recordedRaidAttacks = monthRaidByTag.get(m.tag) || 0;
@@ -543,6 +546,7 @@ app.get('/api/clan', async (req, res) => {
         donated: m.donations,
         warStars: m.monthWarStars,
         warAttacks: m.warAttacks,
+        higherAttacks: m.higherAttacks,
         raidAttacks: m.raidAttacks,
       }))
     );
@@ -662,13 +666,29 @@ app.get('/api/currentwar', async (req, res) => {
         attacks: m.attacks,
       }));
 
+    // Scoreboard numbers for both sides (the page falls back gracefully if
+    // any of this is missing).
+    const side = (c) =>
+      c
+        ? {
+            name: c.name || null,
+            badgeUrl: (c.badgeUrls && (c.badgeUrls.medium || c.badgeUrls.small)) || null,
+            stars: c.stars ?? null,
+            destruction: c.destructionPercentage ?? null,
+            attacks: c.attacks ?? null,
+          }
+        : null;
+
     res.json({
       state: warData.state,
       teamSize: warData.teamSize,
       attacksPerMember: warData.attacksPerMember || (isCwl ? 1 : 2),
       opponentName: warData.opponent ? warData.opponent.name : null,
+      startTime: warData.startTime || null,
       endTime: warData.endTime || null,
       isCwl,
+      clan: side(warData.clan),
+      opponent: side(warData.opponent),
       members,
     });
   } catch (err) {
@@ -711,7 +731,14 @@ app.get('/api/war-history', async (req, res) => {
     wars: wars
       .slice()
       .sort((a, b) => new Date(b.endTime) - new Date(a.endTime))
-      .map((w) => ({ opponentName: w.opponentName, result: w.result, endTime: w.endTime })),
+      .map((w) => ({
+        opponentName: w.opponentName,
+        result: w.result,
+        endTime: w.endTime,
+        teamSize: w.teamSize || null,
+        clanStars: w.clanStars ?? null,
+        opponentStars: w.opponentStars ?? null,
+      })),
     members,
   });
 });
@@ -740,7 +767,7 @@ async function buildPreviousMonth(tag) {
   const donationMembers = await warTracker.getDonationSnapshot(tag, prev.year, prev.month);
 
   const byTag = new Map();
-  const blank = (m) => ({ tag: m.tag, name: m.name, warStars: 0, warAttacks: 0, warStarMR: 0, raidAttacks: 0, donated: 0 });
+  const blank = (m) => ({ tag: m.tag, name: m.name, warStars: 0, warAttacks: 0, warStarMR: 0, raidAttacks: 0, donated: 0, higherAttacks: 0 });
   for (const r of raidMembers) {
     const entry = byTag.get(r.tag) || blank(r);
     entry.raidAttacks = r.attacks;
@@ -750,6 +777,7 @@ async function buildPreviousMonth(tag) {
     const entry = byTag.get(w.tag) || blank(w);
     entry.warStars = w.stars;
     entry.warAttacks = w.attacks;
+    entry.higherAttacks = w.attackedHigher;
     entry.warStarMR = w.warStarMR;
     byTag.set(w.tag, entry);
   }
@@ -765,6 +793,7 @@ async function buildPreviousMonth(tag) {
     name: m.name,
     warStars: m.warStars,
     warAttacks: m.warAttacks,
+    higherAttacks: m.higherAttacks,
     raidAttacks: m.raidAttacks,
     donated: m.donated,
     mr: Math.round(m.donated + m.raidAttacks * 25 + m.warStarMR),

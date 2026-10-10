@@ -371,7 +371,7 @@ const SPARK_SLOTS = [
   [12, 0, 3.4], [27, 1.3, 4.1], [41, 0.6, 3.7], [56, 2.1, 4.4], [70, 0.9, 3.5], [84, 1.8, 4.0], [93, 2.6, 3.8],
 ];
 function sparksHtml(rank) {
-  const slots = rank === 1 ? SPARK_SLOTS : SPARK_SLOTS.filter((_, i) => i % 2 === 0);
+  const slots = rank === 1 ? SPARK_SLOTS.filter((_, i) => i % 2 === 0 || i === 3) : SPARK_SLOTS.filter((_, i) => i === 1 || i === 4);
   return slots.map(([x, d, t]) => `<i style="--x:${x}%;--d:${d}s;--t:${t}s"></i>`).join('');
 }
 
@@ -476,6 +476,7 @@ function createLeaderboard(prefix, opts = {}) {
     const attrs = opts.details ? ` type="button" data-tag="${escapeHtml(r.tag)}" aria-expanded="${isOpen}"` : '';
     return `<${el} class="pod pod-${r.rank}${isOpen ? ' is-open' : ''}"${attrs}>
       <span class="pod-glow" aria-hidden="true"></span>
+      ${r.rank === 1 ? '<span class="pod-ring" aria-hidden="true"><i></i></span>' : ''}
       <span class="pod-crown">${crownHtml(r.rank)}</span>
       <span class="pod-who">${icon}<span class="pod-name">${escapeHtml(r.name)}</span>${r.champLabel ? champHtml(r.champLabel) : ''}</span>
       <span class="pod-role">${escapeHtml(label)}</span>
@@ -773,19 +774,35 @@ const AWARD_ICONS = {
   donor: '<path d="M12 20.5s-7.5-4.6-7.5-10A4.2 4.2 0 0 1 12 8a4.2 4.2 0 0 1 7.5 2.5c0 5.4-7.5 10-7.5 10Z"/>',
   stars: '<path d="m12 2.8 2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 16.6 6.6 19.6l1.1-6.1L3.2 9.2l6.1-.8L12 2.8Z"/>',
   raider: '<path d="M4 21V4h2v2h12l-2.5 4L18 14H6v7H4Z"/>',
+  challenger: '<path d="M4 4l11 11M20 4 9 15" stroke-width="2.2" stroke-linecap="round" fill="none"/><path d="M13 17l4-4M7 13l4 4" stroke-width="2.2" stroke-linecap="round" fill="none"/><path d="M16 16l3 3M8 16l-3 3" stroke-width="2.2" stroke-linecap="round" fill="none"/><circle cx="20" cy="20" r="1.4"/><circle cx="4" cy="20" r="1.4"/>',
   sharpshooter: '<circle cx="12" cy="12" r="8.5" fill="none" stroke-width="1.8"/><circle cx="12" cy="12" r="4.6" fill="none" stroke-width="1.8"/><circle cx="12" cy="12" r="1.6"/>',
+};
+
+// Tint (r,g,b) for each award card.
+const AWARD_TINTS = {
+  champion: '242,193,78',
+  donor: '255,138,168',
+  stars: '255,150,48',
+  raider: '176,140,255',
+  sharpshooter: '111,216,238',
+  challenger: '255,82,110',
 };
 
 function awardsHtml(awards) {
   return (awards || [])
-    .map(
-      (a) => `<div class="award award-${escapeHtml(a.key)}">
-        <svg viewBox="0 0 24 24" aria-hidden="true">${AWARD_ICONS[a.key] || ''}</svg>
-        <span class="award-title">${escapeHtml(a.title)}</span>
-        <span class="award-name">${escapeHtml(a.name)}</span>
-        <span class="award-value"><b>${fmt(a.value)}</b> ${escapeHtml(a.unit)}</span>
-      </div>`
-    )
+    .map((a, i) => {
+      const rare = a.rare ? ' award-rare' : '';
+      const sub = a.rare && a.of ? `<span class="award-sub">That's ${fmt(a.value)} of their ${fmt(a.of)} war attacks</span>` : '';
+      return `<div class="award award-${escapeHtml(a.key)}${rare}" style="--ac:${AWARD_TINTS[a.key] || '242,193,78'};--i:${i}">
+        <span class="award-medal"><svg viewBox="0 0 24 24" aria-hidden="true">${AWARD_ICONS[a.key] || ''}</svg></span>
+        <span class="award-body">
+          <span class="award-title">${escapeHtml(a.title)}${a.rare ? '<em class="rare-tag">Rare</em>' : ''}</span>
+          <span class="award-name">${escapeHtml(a.name)}</span>
+          <span class="award-value"><b>${fmt(a.value)}</b> ${escapeHtml(a.unit)}</span>
+          ${sub}
+        </span>
+      </div>`;
+    })
     .join('');
 }
 
@@ -1278,33 +1295,159 @@ $('share-last').addEventListener('click', (e) => shareBoard(shareData.last, e.cu
 // ---------- War tab: compact current-war card ----------
 const warToggle = $('war-toggle');
 const warDetail = $('war-detail');
+const warCard = $('war-card');
+let warTimerId = null;
 
-warToggle.addEventListener('click', () => {
-  const open = warToggle.getAttribute('aria-expanded') !== 'true';
+function setWarOpen(open) {
   warToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  $('war-toggle-label').textContent = open ? 'Hide attacks' : 'Show attacks';
   warDetail.hidden = !open;
-});
+}
 
-function setWarCard({ headline, badge = false, expandable = false }) {
+warToggle.addEventListener('click', () => setWarOpen(warToggle.getAttribute('aria-expanded') !== 'true'));
+
+// The card with no scoreboard: loading, no war, or an error.
+function setWarEmpty(headline, subline = '', state = 'none') {
+  warCard.dataset.state = state;
+  $('war-board').hidden = true;
+  $('war-meter').hidden = true;
+  $('war-empty').hidden = false;
   $('war-headline').textContent = headline;
-  $('war-badge').hidden = !badge;
-  warToggle.disabled = !expandable;
-  if (!expandable) {
-    warToggle.setAttribute('aria-expanded', 'false');
-    warDetail.hidden = true;
+  $('war-subline').textContent = subline;
+  warToggle.hidden = true;
+  setWarOpen(false);
+  clearInterval(warTimerId);
+}
+
+function setTeam(prefix, name, badgeUrl) {
+  $(`war-${prefix}-name`).textContent = name || '';
+  const img = $(`war-${prefix}-badge`);
+  const url = safeIconUrl(badgeUrl);
+  if (url) {
+    img.src = url;
+    img.hidden = false;
+  } else {
+    img.removeAttribute('src');
+    img.hidden = true;
   }
+}
+
+function warTimerText(data) {
+  const now = Date.now();
+  if (data.state === 'inWar') {
+    const end = parseCocTime(data.endTime);
+    const left = end ? durationLabel(end.getTime() - now) : null;
+    return left ? `ends in ${left}` : '';
+  }
+  if (data.state === 'preparation') {
+    const start = parseCocTime(data.startTime);
+    const left = start ? durationLabel(start.getTime() - now) : null;
+    return left ? `battle starts in ${left}` : 'attacks open soon';
+  }
+  const end = parseCocTime(data.endTime);
+  return end ? `ended ${end.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}` : '';
+}
+
+function attackChipHtml(a) {
+  const d = a.thDelta;
+  const target = a.defenderMapPosition != null ? `#${a.defenderMapPosition}${a.sameMapPosition ? ' mirror' : ''}` : '';
+  const th =
+    a.defenderTownhall != null
+      ? `<u class="thc ${d > 0 ? 'up' : d < 0 ? 'dn' : 'eq'}" title="${d > 0 ? 'Hit a higher' : d < 0 ? 'Hit a lower' : 'Hit the same'} town hall">TH${a.defenderTownhall}${d ? ` ${d > 0 ? '+' : ''}${d}` : ''}</u>`
+      : '';
+  return `<span class="atk s${a.stars}"><span class="atk-stars">${starsHtml(a.stars)}</span><b>${Math.round(a.destructionPercentage || 0)}%</b>${target ? `<em>${escapeHtml(target)}</em>` : ''}${th}</span>`;
+}
+
+function warListHtml(data) {
+  const per = data.attacksPerMember || 1;
+  return data.members
+    .map((m) => {
+      const used = m.attacks.length;
+      const chips = m.attacks.map(attackChipHtml).join('');
+      const left = per - used;
+      let tail = '';
+      if (used === 0) {
+        tail = `<span class="wl-wait">${data.state === 'preparation' ? 'Preparing' : `No attack yet · 0/${per}`}</span>`;
+      } else if (left > 0 && data.state === 'inWar') {
+        tail = `<span class="atk atk-open">${left} left</span>`;
+      }
+      return `<div class="wl-row${used === 0 ? ' wl-idle' : ''}"><span class="wl-pos">${m.mapPosition}</span><span class="wl-name">${escapeHtml(m.name)}</span><span class="wl-atks">${chips}${tail}</span></div>`;
+    })
+    .join('');
+}
+
+function renderWar(data) {
+  const live = data.state === 'inWar' || data.state === 'preparation';
+  const members = data.members || [];
+  const per = data.attacksPerMember || 1;
+  const teamSize = data.teamSize || members.length;
+  const totalAttacks = teamSize * per;
+  const allAttacks = members.flatMap((m) => m.attacks || []);
+  const usedAttacks = data.clan && data.clan.attacks != null ? data.clan.attacks : allAttacks.length;
+  const ourStars = data.clan && data.clan.stars != null ? data.clan.stars : members.reduce((n, m) => n + (m.starsEarned || 0), 0);
+  const theirStars = data.opponent && data.opponent.stars != null ? data.opponent.stars : null;
+
+  warCard.dataset.state = data.state;
+  $('war-empty').hidden = true;
+  $('war-board').hidden = false;
+  setTeam('us', (data.clan && data.clan.name) || clanName.textContent, data.clan && data.clan.badgeUrl);
+  setTeam('them', (data.opponent && data.opponent.name) || data.opponentName || 'Opponent', data.opponent && data.opponent.badgeUrl);
+
+  const showScore = data.state !== 'preparation';
+  $('war-us-stars').textContent = showScore ? fmt(ourStars) : '–';
+  $('war-them-stars').textContent = showScore && theirStars != null ? fmt(theirStars) : '–';
+  warCard.classList.toggle('has-score', showScore && theirStars != null);
+  let lead = '';
+  if (showScore && theirStars != null) {
+    if (ourStars > theirStars) lead = 'us';
+    else if (ourStars < theirStars) lead = 'them';
+    else if (data.clan && data.opponent && typeof data.clan.destruction === 'number' && typeof data.opponent.destruction === 'number' && data.clan.destruction !== data.opponent.destruction) {
+      lead = data.clan.destruction > data.opponent.destruction ? 'us' : 'them';
+    }
+  }
+  $('war-score-nums').dataset.lead = lead;
+
+  const pill = $('war-state-pill');
+  pill.className = `state-pill state-${data.state}`;
+  pill.innerHTML = `${live ? '<i class="live-dot"></i>' : ''}${{ preparation: 'Prep day', inWar: 'War live', warEnded: 'War ended' }[data.state] || escapeHtml(data.state)}`;
+  $('war-badge').hidden = !data.isCwl;
+  const timer = $('war-timer');
+  timer.textContent = warTimerText(data);
+  clearInterval(warTimerId);
+  if (live) {
+    warTimerId = setInterval(() => (timer.textContent = warTimerText(data)), 30000);
+  }
+
+  // Attack meter + a few chips
+  const meter = $('war-meter');
+  if (data.state === 'preparation') {
+    meter.hidden = true;
+  } else {
+    meter.hidden = false;
+    $('war-meter-fill').style.width = `${totalAttacks ? Math.min(100, Math.round((usedAttacks / totalAttacks) * 100)) : 0}%`;
+    const threes = allAttacks.filter((a) => a.stars === 3).length;
+    const avgDestr = allAttacks.length ? Math.round(allAttacks.reduce((n, a) => n + (a.destructionPercentage || 0), 0) / allAttacks.length) : null;
+    const chips = [`<span class="wchip"><b>${usedAttacks}</b>/${totalAttacks} attacks</span>`, `<span class="wchip"><b>${threes}</b> three-star${threes === 1 ? '' : 's'}</span>`];
+    if (data.clan && typeof data.clan.destruction === 'number' && data.opponent && typeof data.opponent.destruction === 'number') {
+      chips.push(`<span class="wchip"><b>${data.clan.destruction.toFixed(1)}%</b> vs ${data.opponent.destruction.toFixed(1)}% destroyed</span>`);
+    } else if (avgDestr != null) {
+      chips.push(`<span class="wchip"><b>${avgDestr}%</b> avg destruction</span>`);
+    }
+    $('war-chips').innerHTML = chips.join('');
+  }
+
+  $('war-list').innerHTML = warListHtml({ ...data, attacksPerMember: per });
+  warToggle.hidden = false;
+  setWarOpen(false);
 }
 
 async function fetchCurrentWar(tag) {
   const warStatus = $('war-status');
-  const warTable = $('war-table');
-  const warRows = $('war-rows');
   const liveDot = $('war-live-dot');
 
-  setWarCard({ headline: 'Checking current war...' });
+  setWarEmpty('Checking current war...', '', 'loading');
   warStatus.textContent = '';
   warStatus.classList.remove('error');
-  warTable.hidden = true;
   liveDot.hidden = true;
 
   try {
@@ -1312,100 +1455,84 @@ async function fetchCurrentWar(tag) {
     const data = await res.json();
 
     if (!res.ok) {
-      setWarCard({ headline: 'War info unavailable' });
+      setWarEmpty('War info unavailable', '', 'error');
       warStatus.textContent = data.error || 'Could not load war data.';
       warStatus.classList.add('error');
       return;
     }
 
-    // The pulsing dot means "a war is actively happening right now" —
-    // preparation day or the war itself, not once it's ended.
+    // The pulsing dot on the tab means "a war is actively happening right
+    // now": preparation day or the war itself, not once it's ended.
     liveDot.hidden = !(data.state === 'inWar' || data.state === 'preparation');
 
     if (data.state === 'notInWar') {
-      setWarCard({ headline: 'Not in a war right now' });
+      setWarEmpty('No war right now', "Wars and Clan War League rounds show up here while they're running.");
       return;
     }
 
-    const stateLabel = { preparation: 'Prep day', inWar: 'War live', warEnded: 'War ended' }[data.state] || data.state;
-    const parts = [stateLabel];
-    if (data.opponentName) parts.push(`vs ${data.opponentName}`);
-
-    const totalAttacks = (data.teamSize || data.members.length) * (data.attacksPerMember || 1);
-    if (data.state !== 'preparation') {
-      const used = data.members.reduce((sum, m) => sum + (m.attacksUsed || 0), 0);
-      parts.push(`${used} of ${totalAttacks} attacks used`);
-    }
-    if (data.state === 'inWar') {
-      const end = parseCocTime(data.endTime);
-      const left = end ? durationLabel(end.getTime() - Date.now()) : null;
-      if (left) parts.push(`ends in ${left}`);
-    }
-
-    setWarCard({ headline: parts.join(' · '), badge: !!data.isCwl, expandable: true });
-
-    warRows.innerHTML = '';
-    for (const m of data.members) {
-      if (m.attacks.length === 0) {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${m.mapPosition}</td>
-          <td>${escapeHtml(m.name)}</td>
-          <td colspan="5"><em>No attack yet (0/${data.attacksPerMember})</em></td>
-        `;
-        warRows.appendChild(tr);
-        continue;
-      }
-
-      m.attacks.forEach((a, i) => {
-        const tr = document.createElement('tr');
-        const targetCell =
-          a.defenderMapPosition != null
-            ? `#${a.defenderMapPosition}${a.sameMapPosition ? ' (mirror)' : ''}`
-            : '—';
-        const thCell =
-          a.defenderTownhall != null
-            ? `${a.defenderTownhall} (${a.thDelta > 0 ? '+' : ''}${a.thDelta})`
-            : '—';
-        tr.innerHTML = `
-          <td>${i === 0 ? m.mapPosition : ''}</td>
-          <td>${i === 0 ? escapeHtml(m.name) : ''}</td>
-          <td>${a.order != null ? a.order : i + 1}/${data.attacksPerMember}</td>
-          <td>${targetCell}</td>
-          <td>${thCell}</td>
-          <td>${a.stars}</td>
-          <td>${a.destructionPercentage}%</td>
-        `;
-        warRows.appendChild(tr);
-      });
-    }
-    warTable.hidden = false;
+    renderWar(data);
   } catch (err) {
-    setWarCard({ headline: 'War info unavailable' });
+    setWarEmpty('War info unavailable', '', 'error');
     warStatus.textContent = 'Could not reach the server for war data.';
     warStatus.classList.add('error');
   }
 }
 
-// ---------- War tab: War History (collapsed by default) ----------
+// ---------- War tab: War History board ----------
+const RESULT_LABEL = { win: 'W', lose: 'L', tie: 'T' };
+
+function warChipHtml(w) {
+  const res = RESULT_LABEL[w.result] || '?';
+  const when = parseCocTime(w.endTime);
+  const date = when ? when.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+  const score = w.clanStars != null && w.opponentStars != null ? ` · ${w.clanStars}★–${w.opponentStars}★` : '';
+  return `<div class="ww ww-${w.result || 'unknown'}"><span class="ww-res">${res}</span><span class="ww-text"><b>vs ${escapeHtml(w.opponentName || 'Unknown')}</b><em>${escapeHtml(date)}${score}</em></span></div>`;
+}
+
 function renderHistoryRows(tbody, members) {
-  tbody.innerHTML = '';
-  for (const m of members) {
-    const avg = m.attacks ? (m.stars / m.attacks).toFixed(1) : '0.0';
-    const mirrorCell = `${m.attackedMirror} / ${m.attackedOffMirror}`;
-    const thCell = `${m.attackedHigher}↑ ${m.attackedLower}↓ ${m.attackedSame}=`;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${escapeHtml(m.name)}</td>
-      <td>${m.wars}</td>
-      <td>${m.attacks}</td>
-      <td>${m.stars}</td>
-      <td>${avg}</td>
-      <td>${mirrorCell}</td>
-      <td>${thCell}</td>
-    `;
-    tbody.appendChild(tr);
-  }
+  const topAvg = 3;
+  tbody.innerHTML = members
+    .map((m, i) => {
+      const rank = i + 1;
+      const avg = m.attacks ? m.stars / m.attacks : 0;
+      const higher = m.attackedHigher || 0;
+      const lower = m.attackedLower || 0;
+      const same = m.attackedSame || 0;
+      const total = higher + lower + same;
+      const bar = total
+        ? `<span class="mu" title="${higher} higher · ${same} same · ${lower} lower"><i class="up" style="flex:${higher}"></i><i class="eq" style="flex:${same}"></i><i class="dn" style="flex:${lower}"></i></span>`
+        : '<span class="mu mu-empty"></span>';
+      const rankCell = rank <= 3 ? crownHtml(rank) : `<span class="rank-num">${rank}</span>`;
+      const meta = `${m.wars} war${m.wars === 1 ? '' : 's'} · ${m.attacks} attack${m.attacks === 1 ? '' : 's'}`;
+      return `<tr class="${rank <= 3 ? `rank-${rank}` : ''}" style="--i:${i}">
+        <td class="wh-rank">${rankCell}</td>
+        <td class="wh-name"><span class="name">${escapeHtml(m.name)}</span><span class="wh-meta">${meta}</span></td>
+        <td class="num wh-stars"><span class="wh-big">${fmt(m.stars)}</span></td>
+        <td class="wh-avg"><span class="wh-avgnum">${avg.toFixed(1)}</span><span class="avg-bar"><i style="width:${Math.min(100, (avg / topAvg) * 100)}%"></i></span></td>
+        <td class="wh-mu">${bar}<span class="mu-txt">${higher}↑ ${same}= ${lower}↓</span></td>
+      </tr>`;
+    })
+    .join('');
+}
+
+function renderHistorySummary(data) {
+  const el = $('history-summary');
+  const stars = data.members.reduce((n, m) => n + m.stars, 0);
+  const attacks = data.members.reduce((n, m) => n + m.attacks, 0);
+  const avg = attacks ? (stars / attacks).toFixed(2) : '0.00';
+  const results = (data.wars || []).filter((w) => w.result);
+  const won = results.filter((w) => w.result === 'win').length;
+  const lost = results.filter((w) => w.result === 'lose').length;
+  const tied = results.filter((w) => w.result === 'tie').length;
+  const record = results.length ? `${won}–${lost}${tied ? `–${tied}` : ''}` : String(data.warsRecorded);
+  const tiles = [
+    [results.length ? 'Wars W–L' : 'Wars', record, results.length ? (won > lost ? 'good' : won < lost ? 'bad' : '') : ''],
+    ['Stars', fmt(stars), ''],
+    ['Attacks', fmt(attacks), ''],
+    ['Avg ★ / attack', avg, ''],
+  ];
+  el.innerHTML = tiles.map(([label, value, tone], i) => `<div class="stat ${tone}" style="--i:${i}"><b>${escapeHtml(value)}</b><span>${escapeHtml(label)}</span></div>`).join('');
+  el.hidden = false;
 }
 
 async function fetchWarHistory(tag) {
@@ -1415,11 +1542,17 @@ async function fetchWarHistory(tag) {
   const historyStatus = $('history-status');
   const historyTable = $('history-table');
   const historyRows = $('history-rows');
+  const summary = $('history-summary');
+  const warsEl = $('history-wars');
+  const board = $('history-board');
 
   historyStatus.textContent = '';
   historyStatus.classList.remove('error');
   historyTable.hidden = true;
-  card.open = false;
+  board.hidden = true;
+  summary.hidden = true;
+  warsEl.hidden = true;
+  card.open = true;
 
   try {
     const res = await fetch(`${BACKEND_URL}/api/war-history?tag=${encodeURIComponent(tag)}`);
@@ -1439,14 +1572,19 @@ async function fetchWarHistory(tag) {
 
     if (data.warsRecorded === 0) {
       count.textContent = 'none yet';
-      historyStatus.textContent =
-        'No wars recorded yet this month. Wars show up here once they finish.';
+      historyStatus.textContent = 'No wars recorded yet this month. Wars show up here once they finish.';
       return;
     }
 
     count.textContent = `${data.warsRecorded} war${data.warsRecorded === 1 ? '' : 's'}`;
+    renderHistorySummary(data);
+    if (data.wars && data.wars.length) {
+      warsEl.innerHTML = data.wars.slice(0, 8).map(warChipHtml).join('');
+      warsEl.hidden = false;
+    }
     renderHistoryRows(historyRows, data.members);
     historyTable.hidden = false;
+    board.hidden = false;
   } catch (err) {
     title.textContent = 'War History';
     count.textContent = '';

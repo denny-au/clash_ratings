@@ -262,12 +262,20 @@ async function recordWarIfNew(clanTag, warData) {
   let result = null;
   if (clanStars != null && opponentStars != null) {
     result = clanStars > opponentStars ? 'win' : clanStars < opponentStars ? 'lose' : 'tie';
+    if (result === 'tie') {
+      // Equal stars: the game decides on total destruction.
+      const cd = warData.clan.destructionPercentage;
+      const od = warData.opponent.destructionPercentage;
+      if (typeof cd === 'number' && typeof od === 'number' && cd !== od) result = cd > od ? 'win' : 'lose';
+    }
   }
 
   history.push({
     clanTag,
     opponentName: warData.opponent ? warData.opponent.name : null,
     result,
+    clanStars,
+    opponentStars,
     teamSize: warData.teamSize,
     attacksPerMember: warData.attacksPerMember || 2,
     endTime: warData.endTime,
@@ -533,6 +541,12 @@ async function applyMrTrends(clanTag, members, now = new Date()) {
 // doesn't win it.
 const SHARPSHOOTER_MIN_ATTACKS = 2;
 
+// "Challenger" is the rare one: it only exists in a month where somebody
+// repeatedly attacked town halls ABOVE their own, and did it for most of
+// their attacks (not just because they made a lot of them).
+const CHALLENGER_MIN_HIGHER = 3; // attacks on a higher town hall
+const CHALLENGER_MIN_SHARE = 0.5; // ...and at least this share of their attacks
+
 function computeAwards(rows) {
   const ranked = [...rows].sort((a, b) => (b.mr || 0) - (a.mr || 0));
   const best = (valueOf, eligible = () => true) => {
@@ -563,6 +577,16 @@ function computeAwards(rows) {
         (r) => (r.warAttacks || 0) >= SHARPSHOOTER_MIN_ATTACKS
       ),
     },
+    {
+      key: 'challenger',
+      title: 'Challenger',
+      unit: 'attacks on higher town halls',
+      rare: true,
+      pick: best(
+        (r) => r.higherAttacks || 0,
+        (r) => (r.higherAttacks || 0) >= CHALLENGER_MIN_HIGHER && (r.warAttacks || 0) > 0 && r.higherAttacks / r.warAttacks >= CHALLENGER_MIN_SHARE
+      ),
+    },
   ];
 
   return defs
@@ -573,6 +597,7 @@ function computeAwards(rows) {
       unit: d.unit,
       tag: d.pick.row.tag,
       name: d.pick.row.name,
+      ...(d.rare ? { rare: true, of: d.pick.row.warAttacks || 0 } : {}),
       value: d.key === 'sharpshooter' ? Math.round(d.pick.value * 100) / 100 : Math.round(d.pick.value),
     }));
 }

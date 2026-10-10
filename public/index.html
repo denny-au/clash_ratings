@@ -147,7 +147,7 @@
       <section id="panel-month" class="panel" role="tabpanel" aria-labelledby="tab-month" hidden>
         <div class="panel-head">
           <h3 id="month-title" class="panel-title"></h3>
-          <button type="button" id="share-month" class="tool-btn" title="Make a picture of the top 5 to share"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-label">Share</span></button>
+          <button type="button" id="share-month" class="tool-btn" title="Make a picture of the top 5 to share"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-ring" aria-hidden="true"><i></i></span><span class="tb-label">Share</span></button>
         </div>
         <div id="member-podium" class="podium-wrap" hidden></div>
         <div class="board" id="member-board">
@@ -183,7 +183,7 @@
       <section id="panel-last" class="panel" role="tabpanel" aria-labelledby="tab-last" hidden>
         <div class="panel-head">
           <h3 id="last-title" class="panel-title"></h3>
-          <button type="button" id="share-last" class="tool-btn" title="Make a picture of the top 5 to share" hidden><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-label">Share</span></button>
+          <button type="button" id="share-last" class="tool-btn" title="Make a picture of the top 5 to share" hidden><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-ring" aria-hidden="true"><i></i></span><span class="tb-label">Share</span></button>
         </div>
         <p id="last-status" class="panel-note"></p>
         <div id="last-awards-wrap" class="hof" hidden>
@@ -213,58 +213,73 @@
 
       <!-- ===== War ===== -->
       <section id="panel-war" class="panel" role="tabpanel" aria-labelledby="tab-war" hidden>
-        <div id="war-card" class="war-card">
-          <button type="button" id="war-toggle" class="war-head" aria-expanded="false" aria-controls="war-detail" disabled>
-            <span class="war-main">
-              <span id="war-badge" class="badge" hidden>CWL</span>
-              <span id="war-headline">Checking current war...</span>
-            </span>
-            <span class="chev" aria-hidden="true"></span>
+        <div id="war-card" class="war-card" data-state="loading">
+          <div id="war-board" class="war-board" hidden>
+            <div class="war-side war-us">
+              <img id="war-us-badge" class="war-team-badge" alt="" width="56" height="56" hidden />
+              <span id="war-us-name" class="war-team"></span>
+            </div>
+            <div class="war-score">
+              <div id="war-score-nums" class="war-score-nums" aria-live="polite">
+                <b id="war-us-stars">0</b><span class="vs">vs</span><b id="war-them-stars">0</b>
+              </div>
+              <div class="war-state">
+                <span id="war-state-pill" class="state-pill"></span>
+                <span id="war-badge" class="badge" hidden>CWL</span>
+              </div>
+              <span id="war-timer" class="war-timer"></span>
+            </div>
+            <div class="war-side war-them">
+              <img id="war-them-badge" class="war-team-badge" alt="" width="56" height="56" hidden />
+              <span id="war-them-name" class="war-team"></span>
+            </div>
+          </div>
+
+          <div id="war-meter" class="war-meter" hidden>
+            <div class="war-meter-bar"><i id="war-meter-fill"></i></div>
+            <div id="war-chips" class="war-chips"></div>
+          </div>
+
+          <div id="war-empty" class="war-empty">
+            <svg class="war-empty-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l11 11M20 4 9 15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M13 17l4-4M7 13l4 4M16 16l3 3M8 16l-3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span id="war-headline" class="war-headline">Checking current war...</span>
+            <span id="war-subline" class="war-subline"></span>
+          </div>
+
+          <button type="button" id="war-toggle" class="war-more" aria-expanded="false" aria-controls="war-detail" hidden>
+            <span id="war-toggle-label">Show attacks</span><span class="chev" aria-hidden="true"></span>
           </button>
           <div id="war-detail" class="war-detail" hidden>
-            <div class="table-scroll flat">
-              <table id="war-table" hidden>
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Name</th>
-                    <th>Attack</th>
-                    <th title="Who they hit: their opponent's map number, and 'mirror' if it's the opponent assigned to the same number as them">Target</th>
-                    <th title="Defender's town hall, and the difference vs. the attacker's own (+ = attacked higher, - = attacked lower)">TH</th>
-                    <th>Stars</th>
-                    <th>Destruction</th>
-                  </tr>
-                </thead>
-                <tbody id="war-rows"></tbody>
-              </table>
-            </div>
+            <div id="war-list" class="war-list"></div>
           </div>
         </div>
         <p id="war-status" class="panel-note"></p>
 
-        <details id="history-card" class="fold" hidden>
+        <details id="history-card" class="fold wh" open hidden>
           <summary>
             <span id="history-title">War History</span>
             <span id="history-count" class="fold-meta"></span>
             <span class="chev" aria-hidden="true"></span>
           </summary>
-          <div class="fold-body">
+          <div class="wh-body">
             <p id="history-status" class="panel-note"></p>
-            <div class="table-scroll flat">
-              <table id="history-table" hidden>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Wars</th>
-                    <th>Attacks</th>
-                    <th>Total Stars</th>
-                    <th>Avg / Attack</th>
-                    <th title="How many attacks landed on the opponent sitting at the same map number vs. a different one">Same # / Diff #</th>
-                    <th title="Attacked higher (↑), lower (↓), or equal (=) town hall vs. their own">TH Matchup</th>
-                  </tr>
-                </thead>
-                <tbody id="history-rows"></tbody>
-              </table>
+            <div id="history-summary" class="wh-summary" hidden></div>
+            <div id="history-wars" class="wh-wars" hidden></div>
+            <div id="history-board" class="wh-board" hidden>
+              <div class="table-scroll flat">
+                <table id="history-table" class="wh-table" hidden>
+                  <thead>
+                    <tr>
+                      <th class="wh-rank">#</th>
+                      <th>Attacker</th>
+                      <th class="num wh-stars" title="Stars earned in the wars recorded this month">Stars</th>
+                      <th class="wh-avg" title="Average stars per attack (3 is perfect)"><span class="long">Avg / attack</span><span class="short">Avg</span></th>
+                      <th class="wh-mu" title="Who they attacked: a higher town hall (&uarr;), the same (=) or a lower one (&darr;)"><span class="long">Matchups</span><span class="short">Hits</span></th>
+                    </tr>
+                  </thead>
+                  <tbody id="history-rows"></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </details>
