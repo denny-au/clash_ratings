@@ -91,6 +91,14 @@
   }
   // If a picture file is missing, drop it quietly (and fall back to the placeholder if none are left).
   function wireArt(scope) {
+    // a base picture that fails to load falls back to the placeholder box
+    var shots = scope.querySelectorAll('.base-shot img');
+    for (var s = 0; s < shots.length; s++) {
+      shots[s].addEventListener('error', function (e) {
+        var box = e.target.parentNode;
+        box.innerHTML = '<span>Base picture<br>coming soon</span>';
+      });
+    }
     var imgs = scope.querySelectorAll('.army-art img');
     for (var i = 0; i < imgs.length; i++) {
       imgs[i].addEventListener('error', function (e) {
