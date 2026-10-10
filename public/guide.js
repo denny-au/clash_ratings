@@ -190,10 +190,7 @@
   }
 
   function detailHtml(th) {
-    return (
-      '<div class="g-detail-head">' + thArt(th, 'th-art-sm') + '<h4>Town Hall ' + esc(th.level) + ' guide</h4></div>' +
-      (th.soon ? soonHtml(th) : armiesHtml(th) + basesHtml(th) + tipsHtml(th))
-    );
+    return th.soon ? soonHtml(th) : armiesHtml(th) + basesHtml(th) + tipsHtml(th);
   }
 
   // ---- render ----
@@ -225,7 +222,21 @@
   function panelActive() {
     return !!panelEl && !panelEl.hidden;
   }
+  // Boxes, buttons and headings take the colour of the town hall in view (lighter tints for text).
+  function paintPanel() {
+    var t = themeRgb();
+    if (!panelEl) return;
+    if (!t) {
+      ['--g-rgb', '--g-hi', '--g-pale'].forEach(function (k) { panelEl.style.removeProperty(k); });
+      return;
+    }
+    var mix = function (k) { return t.map(function (v) { return Math.round(v + (255 - v) * k); }).join(','); };
+    panelEl.style.setProperty('--g-rgb', t.join(','));
+    panelEl.style.setProperty('--g-hi', 'rgb(' + mix(0.4) + ')');
+    panelEl.style.setProperty('--g-pale', 'rgb(' + mix(0.8) + ')');
+  }
   function pushTheme() {
+    paintPanel();
     if (!panelActive()) return;
     window.CR_THEME_PENDING = themeRgb();
     if (window.CR_FX) window.CR_FX.setTheme(themeRgb());
@@ -263,6 +274,7 @@
     var running = detailEl.getAnimations ? detailEl.getAnimations() : [];
     for (var i = 0; i < running.length; i++) running[i].cancel();
     var render = function () {
+      detailEl.setAttribute('data-th', th.level);
       detailEl.innerHTML = detailHtml(th);
       wireArt(detailEl);
     };
@@ -349,8 +361,17 @@
   viewportEl.addEventListener('pointercancel', function () { swipe = null; });
 
   // re-centre when the size changes or the tab becomes visible
-  if (window.ResizeObserver) new ResizeObserver(function () { layout(false); }).observe(viewportEl);
-  else window.addEventListener('resize', function () { layout(false); });
+  // Only a change of WIDTH needs a re-centre. (The viewport's height changes while a picture grows,
+  // and re-laying out then used to cut the slide short.)
+  var lastW = 0;
+  var onSize = function () {
+    var w = viewportEl.clientWidth;
+    if (w === lastW) return;
+    lastW = w;
+    layout(false);
+  };
+  if (window.ResizeObserver) new ResizeObserver(onSize).observe(viewportEl);
+  else window.addEventListener('resize', onSize);
 
   // Open straight to a town hall from a link like  #guide/th14
   var startLevel = data.defaultLevel && find(data.defaultLevel) ? data.defaultLevel : (list[0] && list[0].level);

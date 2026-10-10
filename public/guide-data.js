@@ -34,7 +34,7 @@ window.GUIDE_DATA = {
   defaultLevel: 14,
 
   // Shown next to the "Armies" heading (a town hall can override it with its own `armiesNote`).
-  armiesNote: 'Guarantees you consistent 3 stars.',
+  armiesNote: 'Guarantees you consistent 3 stars',
 
   generalTips: [
     {
@@ -95,9 +95,9 @@ window.GUIDE_DATA = {
         { name: 'Progress base', note: '', by: 'COC Bases', image: 'assets/bases/th15-progress.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH15%3AHV%3AAAAAMAAAAAJi3-4akhEouEXtoACzZn-6' },
       ],
       armies: [
-        { kind: 'recommended', type: 'air', name: 'Dragon Super Yeti Clone (Basic)', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 36, y: 20, h: 72 }, { src: 'assets/troops/super-yeti.webp', x: 70, y: 0, h: 86 }, { src: 'assets/troops/clone-spell.webp', x: 10, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p9e17_48-6p2e49_43-2m1e4_34-7p4e52_60i1x52-1x147d1x16u14x8-1x23-4x5-1x82-2x10s3x16-1x2', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=9s' },
-        { kind: 'ground', name: 'Root Riders with Backpack Arrow', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/root-rider.webp', x: 24, y: 0, h: 100 }, { src: 'assets/troops/rocket-backpack.webp', x: 58, y: 46, h: 42 }, { src: 'assets/troops/giant-arrow.webp', x: 82, y: 2, h: 52 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h7p4e57_53-1p9e17_48-2p7e4_24-4p3e40_13i3x63-1x5-1x188d1x120-1x53u5x7-3x5-1x97-4x110-5x12-2x58-4x57-2x1-5x26-1x82-1x75s5x35-1x5-3x10-1x70', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=986s' },
-        { kind: 'air', name: 'Dragon Super Yeti Clone (Advance)', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 27, y: 20, h: 70 }, { src: 'assets/troops/super-yeti.webp', x: 76, y: 0, h: 86 }, { src: 'assets/troops/dragon-duke.webp', x: 52, y: 14, h: 56 }, { src: 'assets/troops/clone-spell.webp', x: 9, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p9e17_48-6p2e49_43-2m1e4_34-7p4e52_60i1x52-1x147d1x109-2x120u14x8-1x23-4x5-1x82-2x10s3x16-1x2', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=224s' },
+        { kind: 'recommended', type: 'air', name: 'Dragon Super Yeti Clone (Basic)', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 33, y: 16, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 72, y: 0, h: 88 }, { src: 'assets/troops/clone-spell.webp', x: 10, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p9e17_48-6p2e49_43-2m1e4_34-7p4e52_60i1x52-1x147d1x16u14x8-1x23-4x5-1x82-2x10s3x16-1x2', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=9s' },
+        { kind: 'ground', name: 'Root Riders with Backpack Arrow', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/root-rider.webp', x: 24, y: 0, h: 100 }, { src: 'assets/troops/rocket-backpack.webp', x: 53, y: 40, h: 56 }, { src: 'assets/troops/giant-arrow.webp', x: 75, y: 14, h: 56 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h7p4e57_53-1p9e17_48-2p7e4_24-4p3e40_13i3x63-1x5-1x188d1x120-1x53u5x7-3x5-1x97-4x110-5x12-2x58-4x57-2x1-5x26-1x82-1x75s5x35-1x5-3x10-1x70', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=986s' },
+        { kind: 'air', name: 'Dragon Super Yeti Clone (Advance)', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 25, y: 16, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 79, y: 0, h: 88 }, { src: 'assets/troops/dragon-duke.webp', x: 52, y: 6, h: 104 }, { src: 'assets/troops/clone-spell.webp', x: 9, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p9e17_48-6p2e49_43-2m1e4_34-7p4e52_60i1x52-1x147d1x109-2x120u14x8-1x23-4x5-1x82-2x10s3x16-1x2', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=224s' },
       ],
       tips: [
         {
@@ -119,6 +119,6 @@ window.GUIDE_DATA = {
       ],
     },
     { level: 16, image: 'assets/th/th16.webp', soon: true, theme: [235, 72, 84] },
-    { level: 17, image: null, soon: true, theme: [255, 120, 170] },
+    { level: 17, image: 'assets/th/th17.webp', soon: true, theme: [255, 120, 170] },
   ],
 };

@@ -70,6 +70,11 @@ body {
 /* Aurora: a single glow that lives behind the title only. Bright blue at the
    top centre, turning violet as it fades, gone before it reaches the search
    box. Pure CSS; drifts very slowly. */
+@property --gl-1 { syntax: "<number>#"; inherits: true; initial-value: 255, 176, 62; }
+@property --gl-2 { syntax: "<number>#"; inherits: true; initial-value: 255, 104, 36; }
+@property --gl-f { syntax: "<number>#"; inherits: true; initial-value: 242, 193, 78; }
+/* the top and bottom glows change colour smoothly when the Guide tints them to a town hall */
+:root { transition: --gl-1 0.9s ease, --gl-2 0.9s ease, --gl-f 0.9s ease; }
 body::before {
   content: "";
   position: absolute;
@@ -80,8 +85,8 @@ body::before {
   height: 320px;
   transform: translateX(-50%);
   background:
-    radial-gradient(ellipse 34% 38% at 50% 0%, rgba(var(--aurora-1), 0.34), rgba(var(--aurora-1), 0) 100%),
-    radial-gradient(ellipse 50% 78% at 50% 0%, rgba(var(--aurora-2), 0.22), rgba(var(--aurora-2), 0) 100%);
+    radial-gradient(ellipse 34% 38% at 50% 0%, rgba(var(--gl-1), 0.34), rgba(var(--gl-1), 0) 100%),
+    radial-gradient(ellipse 50% 78% at 50% 0%, rgba(var(--gl-2), 0.22), rgba(var(--gl-2), 0) 100%);
   -webkit-mask-image: linear-gradient(180deg, #000 35%, transparent 100%);
   mask-image: linear-gradient(180deg, #000 35%, transparent 100%);
   pointer-events: none;
@@ -1584,9 +1589,9 @@ body::after {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 70% 100% at 50% 110%, rgba(var(--accent-rgb), 0.11), transparent 70%),
-    radial-gradient(ellipse 40% 80% at 15% 120%, rgba(var(--aurora-2), 0.07), transparent 70%),
-    radial-gradient(ellipse 40% 80% at 85% 120%, rgba(var(--aurora-1), 0.07), transparent 70%);
+    radial-gradient(ellipse 70% 100% at 50% 110%, rgba(var(--gl-f), 0.11), transparent 70%),
+    radial-gradient(ellipse 40% 80% at 15% 120%, rgba(var(--gl-2), 0.07), transparent 70%),
+    radial-gradient(ellipse 40% 80% at 85% 120%, rgba(var(--gl-1), 0.07), transparent 70%);
 }
 
 /* ---- Hero entrance ---- */
@@ -2913,6 +2918,8 @@ body.modal-open { overflow: hidden; }
 /* Town hall carousel: the chosen one sits big in the middle, the others shrink beside it */
 .th-carousel {
   --w-big: 210px;
+  --slide: 0.85s; /* how long the town hall pictures take to slide and resize */
+  --slide-ease: cubic-bezier(0.45, 0, 0.15, 1);
   --w-small: 92px;
   --gap: 8px;
   --t: var(--accent-rgb);
@@ -2933,7 +2940,7 @@ body.modal-open { overflow: hidden; }
   gap: var(--gap);
   width: max-content;
   transform: translateX(var(--tx, 0px));
-  transition: transform 0.55s cubic-bezier(0.2, 0.9, 0.25, 1);
+  transition: transform var(--slide) var(--slide-ease);
 }
 .th-track.no-anim, .th-track.no-anim * { transition: none !important; }
 
@@ -2954,7 +2961,7 @@ body.modal-open { overflow: hidden; }
   border-radius: 20px;
   cursor: pointer;
   opacity: 0.62;
-  transition: width 0.55s cubic-bezier(0.2, 0.9, 0.25, 1), opacity 0.4s ease, background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+  transition: width var(--slide) var(--slide-ease), opacity 0.7s ease, background 0.7s ease, border-color 0.7s ease, box-shadow 0.7s ease;
 }
 .th-item:hover { opacity: 0.95; }
 .th-item:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 2px; }
@@ -2969,7 +2976,7 @@ body.modal-open { overflow: hidden; }
   border-color: rgba(var(--t), 0.55);
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45), 0 0 34px rgba(var(--t), 0.2);
 }
-.th-name { font-family: var(--font-display); font-size: 0.95rem; letter-spacing: 0.01em; color: var(--text); white-space: nowrap; transition: font-size 0.4s ease; }
+.th-name { font-family: var(--font-display); font-size: 0.95rem; letter-spacing: 0.01em; color: var(--text); white-space: nowrap; transition: font-size 0.7s ease; }
 .th-name-long { display: none; }
 .th-item.is-center .th-name { font-size: 1.3rem; }
 .th-item.is-center .th-name-long { display: inline; }
@@ -2977,7 +2984,7 @@ body.modal-open { overflow: hidden; }
 .th-sub { display: none; color: var(--muted); font-size: 0.78rem; }
 .th-item.is-center .th-sub { display: block; color: rgb(var(--t)); }
 
-.th-art { display: flex; align-items: center; justify-content: center; width: 100%; height: 74px; transition: height 0.55s cubic-bezier(0.2, 0.9, 0.25, 1); }
+.th-art { display: flex; align-items: center; justify-content: center; width: 100%; height: 74px; transition: height var(--slide) var(--slide-ease); }
 .th-item.is-center .th-art { height: 156px; }
 .th-art img {
   max-width: 100%;
@@ -2988,8 +2995,6 @@ body.modal-open { overflow: hidden; }
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.5));
 }
 .th-item:not(.is-center) .th-art img { filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5)) saturate(0.75); }
-.th-art-sm { width: 54px; height: 58px; flex: none; }
-.th-art-sm .th-fallback b { font-size: 1.2rem; }
 
 /* shown when a picture is missing (and for town halls that have no picture yet) */
 .th-fallback {
@@ -3000,7 +3005,7 @@ body.modal-open { overflow: hidden; }
   clip-path: polygon(50% 0, 100% 18%, 100% 68%, 50% 100%, 0 68%, 0 18%);
   background: linear-gradient(160deg, rgba(var(--t, var(--accent-rgb)), 0.55), rgba(var(--t, var(--accent-rgb)), 0.12));
 }
-.th-fallback b { font-family: var(--font-display); font-size: 1.3rem; font-weight: 400; color: #fff; transition: font-size 0.4s ease; }
+.th-fallback b { font-family: var(--font-display); font-size: 1.3rem; font-weight: 400; color: #fff; transition: font-size 0.7s ease; }
 .th-item.is-center .th-fallback b { font-size: 2.5rem; }
 .th-soon:not(.is-center) .th-art { filter: grayscale(0.7); }
 
@@ -3037,17 +3042,15 @@ body.modal-open { overflow: hidden; }
 .g-detail.enter > :nth-child(3) { animation-delay: 140ms; }
 .g-detail.enter > :nth-child(4) { animation-delay: 210ms; }
 
-.g-detail-head { display: flex; align-items: center; gap: 0.8rem; padding: 0.2rem 0.2rem 0; }
-.g-detail-head h4 { margin: 0; flex: 1; font-family: var(--font-display); font-weight: 400; font-size: 1.45rem; color: var(--accent-hi); text-shadow: 0 0 18px rgba(var(--accent-rgb), 0.3); }
 
 .g-card {
   padding: 1rem;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01)), var(--panel);
-  border: 1px solid rgba(var(--accent-rgb), 0.22);
+  border: 1px solid rgba(var(--g-rgb), 0.22);
   border-radius: 18px;
 }
 .g-head { display: flex; align-items: center; flex-wrap: wrap; gap: 0.2rem 0.65rem; margin-bottom: 0.85rem; }
-.g-ico { display: grid; place-items: center; width: 34px; height: 34px; color: var(--accent); background: rgba(var(--accent-rgb), 0.12); border: 1px solid rgba(var(--accent-rgb), 0.4); border-radius: 50%; }
+.g-ico { display: grid; place-items: center; width: 34px; height: 34px; color: var(--g-hi); background: rgba(var(--g-rgb), 0.12); border: 1px solid rgba(var(--g-rgb), 0.4); border-radius: 50%; }
 .g-ico svg { width: 19px; height: 19px; }
 .g-title { font-family: var(--font-display); font-size: 1.2rem; }
 .g-sub { color: var(--muted); font-size: 0.82rem; }
@@ -3130,12 +3133,12 @@ a.g-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
 .g-by { color: var(--role); font-size: 0.8rem; }
 .g-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.2rem; }
 .g-actions .g-btn { margin-top: 0; }
-.g-btn-ghost { color: var(--text); background: transparent; border: 1px solid rgba(var(--accent-rgb), 0.45); }
-a.g-btn-ghost:hover { background: rgba(var(--accent-rgb), 0.1); filter: none; }
+.g-btn-ghost { color: var(--text); background: transparent; border: 1px solid rgba(var(--g-rgb), 0.45); }
+a.g-btn-ghost:hover { background: rgba(var(--g-rgb), 0.1); filter: none; }
 .army-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .army-type-air { color: #8fdcf2; background: rgba(60, 150, 255, 0.2); border: 1px solid rgba(90, 170, 255, 0.7); }
 .army-type-ground { color: #ffbd7a; background: rgba(217, 147, 90, 0.16); border: 1px solid rgba(217, 147, 90, 0.5); }
-.tip-chip { margin-left: 0.5rem; padding: 0.05rem 0.45rem; font-style: normal; font-family: var(--font-body); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.1em; color: var(--accent-hi); background: rgba(var(--accent-rgb), 0.12); border: 1px solid rgba(var(--accent-rgb), 0.4); border-radius: 999px; vertical-align: 2px; }
+.tip-chip { margin-left: 0.5rem; padding: 0.05rem 0.45rem; font-style: normal; font-family: var(--font-body); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.1em; color: var(--g-hi); background: rgba(var(--g-rgb), 0.12); border: 1px solid rgba(var(--g-rgb), 0.4); border-radius: 999px; vertical-align: 2px; }
 
 /* army pictures: front troops in the foreground, back troops/spells behind them */
 .army-art {
@@ -3146,7 +3149,7 @@ a.g-btn-ghost:hover { background: rgba(var(--accent-rgb), 0.1); filter: none; }
   margin: -0.1rem -0.1rem 0.15rem;
   overflow: hidden;
   border-radius: 10px;
-  background: radial-gradient(ellipse 70% 80% at 50% 70%, rgba(var(--accent-rgb), 0.16), transparent 75%);
+  background: radial-gradient(ellipse 70% 80% at 50% 70%, rgba(var(--g-rgb), 0.16), transparent 75%);
 }
 .art-row { position: absolute; inset: 0; display: flex; justify-content: center; align-items: flex-end; pointer-events: none; }
 .art-row img { height: 100%; width: auto; max-width: 60%; object-fit: contain; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.55)); }
@@ -3156,25 +3159,28 @@ a.g-btn-ghost:hover { background: rgba(var(--accent-rgb), 0.1); filter: none; }
 .army-art-empty { color: var(--muted); font-size: 0.78rem; text-align: center; background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.025) 0 8px, transparent 8px 16px); border: 1px dashed rgba(150, 156, 170, 0.3); }
 @media (max-width: 440px) { .army-art { height: 92px; } }
 
+/* Colours of the boxes and buttons: set from guide.js to the centred town hall (amber until then) */
+#panel-guide { --g-rgb: var(--accent-rgb); --g-hi: var(--accent-hi); --g-pale: var(--accent-pale); }
+
 /* Guide buttons: glass amber instead of solid yellow-on-black, to match the tab bar and the rest of the site */
 .g-btn {
   padding: 0.36rem 0.8rem;
   font-size: 0.85rem;
   white-space: nowrap;
-  color: var(--accent-pale);
-  text-shadow: 0 0 10px rgba(var(--accent-rgb), 0.45);
-  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.3), rgba(var(--accent-rgb), 0.12));
-  border: 1px solid rgba(var(--accent-rgb), 0.6);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 0 16px rgba(var(--accent-rgb), 0.14);
+  color: var(--g-pale);
+  text-shadow: 0 0 10px rgba(var(--g-rgb), 0.45);
+  background: linear-gradient(180deg, rgba(var(--g-rgb), 0.3), rgba(var(--g-rgb), 0.12));
+  border: 1px solid rgba(var(--g-rgb), 0.6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 0 16px rgba(var(--g-rgb), 0.14);
   transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
 }
-a.g-btn:hover { filter: none; transform: translateY(-1px); background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.42), rgba(var(--accent-rgb), 0.18)); border-color: rgba(var(--accent-rgb), 0.9); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 0 22px rgba(var(--accent-rgb), 0.28); }
-a.g-btn:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 2px; }
+a.g-btn:hover { filter: none; transform: translateY(-1px); background: linear-gradient(180deg, rgba(var(--g-rgb), 0.42), rgba(var(--g-rgb), 0.18)); border-color: rgba(var(--g-rgb), 0.9); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 0 22px rgba(var(--g-rgb), 0.28); }
+a.g-btn:focus-visible { outline: 2px solid var(--g-hi); outline-offset: 2px; }
 .g-btn-ghost { color: var(--text); text-shadow: none; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1); }
 a.g-btn-ghost:hover { background: rgba(255, 255, 255, 0.09); border-color: rgba(255, 255, 255, 0.4); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16); }
 .g-btn-off { color: var(--muted); text-shadow: none; background: rgba(255, 255, 255, 0.03); border: 1px dashed rgba(150, 156, 170, 0.35); box-shadow: none; }
 .army-recommended .army-tag:not(.army-type) { color: var(--accent-pale); background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.32), rgba(var(--accent-rgb), 0.14)); border: 1px solid rgba(var(--accent-rgb), 0.65); }
-.tip-n { color: var(--accent-pale); background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.32), rgba(var(--accent-rgb), 0.12)); border: 1px solid rgba(var(--accent-rgb), 0.6); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2); }
+.tip-n { color: var(--g-pale); background: linear-gradient(180deg, rgba(var(--g-rgb), 0.32), rgba(var(--g-rgb), 0.12)); border: 1px solid rgba(var(--g-rgb), 0.6); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2); }
 .base-shot { aspect-ratio: 2 / 1; }
 
 /* layered army art: each picture is placed freely (see guide-data.js) */

@@ -4,6 +4,20 @@
 (function () {
   'use strict';
 
+  // The big glows at the top and bottom of the page follow the Guide's town hall colour
+  // (null puts the original amber back).
+  function setGlow(rgb) {
+    var root = document.documentElement.style;
+    if (!rgb) {
+      ['--gl-1', '--gl-2', '--gl-f'].forEach(function (k) { root.removeProperty(k); });
+      return;
+    }
+    var deep = rgb.map(function (v) { return Math.round(v * 0.72); });
+    root.setProperty('--gl-1', rgb.join(', '));
+    root.setProperty('--gl-2', deep.join(', '));
+    root.setProperty('--gl-f', rgb.join(', '));
+  }
+
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ---- Embers: a few warm sparks drifting upward ----
@@ -117,6 +131,7 @@
     // Guide tab: tint the lights to the town hall in view; null goes back to amber.
     window.CR_FX = {
       setTheme: function (rgb) {
+        setGlow(rgb);
         var key = rgb ? rgb.join(',') : '';
         if (key === themeKey) return;
         themeKey = key;
@@ -150,7 +165,7 @@
     start();
   }
 
-  if (!window.CR_FX) window.CR_FX = { setTheme: function () {} };
+  if (!window.CR_FX) window.CR_FX = { setTheme: function (rgb) { setGlow(rgb); } };
 
   // ---- Spotlight: the leaderboard panel catches the cursor ----
   // Coordinates are applied at most once per frame.
