@@ -26,8 +26,9 @@
 //    cloned look), flip (mirror it). Use transparent images from public/assets/troops/.
 //    (A simpler `{ front: [...], back: [...] }` form also works.) With no `art`, or
 //    if a file is missing, the card shows an "Army picture coming soon" box.
-//  * Tips: `generalTips` show on every town hall; a town hall's own `tips` are
-//    added after them (set `onlyOwnTips: true` on a town hall to show only its own).
+//  * Tips: `generalTips` show on every town hall (a tip with `from: N` only shows from town
+//    hall N up); a town hall's own `tips` are added after them (set `onlyOwnTips: true` on a
+//    town hall to show only its own).
 // ===========================================================================
 window.GUIDE_DATA = {
   // The town hall that is centred when the Guide opens.
@@ -38,6 +39,7 @@ window.GUIDE_DATA = {
 
   generalTips: [
     {
+      from: 14, // pets arrive at TH14
       title: "Don't sink upgrades into L.A.S.S.I once a better pet is available",
       text: "Upgrade the newer, stronger pet instead. Upgrades on the starter pet are mostly wasted once you can move on.",
     },
@@ -50,6 +52,7 @@ window.GUIDE_DATA = {
       text: 'Blacksmith upgrades unlock level 18 for all equipment, which makes a huge difference in your attacks.',
     },
     {
+      from: 13, // the Royal Champion arrives at TH13
       title: 'Hero upgrade order',
       text: 'Royal Champion first, then Grand Warden, then Archer Queen and Minion Prince equally, and Barbarian King last (RC > GW > AQ = MP > BK).',
     },
@@ -60,6 +63,7 @@ window.GUIDE_DATA = {
       level: 11,
       image: 'assets/th/th11.webp',
       theme: [255, 140, 56], // orange
+      onlyOwnTips: true,
       bases: [
         { name: 'Village base', note: '', by: 'COC Layouts', image: 'assets/bases/th11-village.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH11%3AHV%3AAAAAFwAAAAI54DercfC80Kvl5x8NjcBc' },
         { name: 'War base', note: '', by: 'Unknown2', image: 'assets/bases/th11-war.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH11%3AWB%3AAAAAFwAAAALGsYXdv7ux7Yl8vUW8fpV2' },
@@ -74,6 +78,14 @@ window.GUIDE_DATA = {
         {
           title: 'Upgrade the Grand Warden',
           text: 'Prioritise him and his common equipment, the Eternal Tome and the Rage Gem.',
+        },
+        {
+          title: 'Offensive buildings over defensive buildings',
+          text: 'Upgrade your offensive buildings (Army Camps, Laboratory and the like) before defensive ones.',
+        },
+        {
+          title: 'Eagle Artillery is strong',
+          text: 'Get this building first when you do upgrade your defences.',
         },
       ],
     },

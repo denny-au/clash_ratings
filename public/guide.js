@@ -175,7 +175,7 @@
   }
 
   function tipsHtml(th) {
-    var general = th.onlyOwnTips ? [] : data.generalTips || [];
+    var general = th.onlyOwnTips ? [] : (data.generalTips || []).filter(function (t) { return typeof t.from !== 'number' || th.level >= t.from; });
     var tips = general.concat(th.tips || []);
     var items = tips
       .map(function (t, i) {
