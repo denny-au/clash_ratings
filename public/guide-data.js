@@ -56,7 +56,27 @@ window.GUIDE_DATA = {
   ],
 
   townHalls: [
-    { level: 11, image: 'assets/th/th11.webp', soon: true, theme: [255, 140, 56] },
+    {
+      level: 11,
+      image: 'assets/th/th11.webp',
+      theme: [255, 140, 56], // orange
+      bases: [
+        { name: 'Village base', note: '', by: 'COC Layouts', image: 'assets/bases/th11-village.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH11%3AHV%3AAAAAFwAAAAI54DercfC80Kvl5x8NjcBc' },
+        { name: 'War base', note: '', by: 'Unknown2', image: 'assets/bases/th11-war.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH11%3AWB%3AAAAAFwAAAALGsYXdv7ux7Yl8vUW8fpV2' },
+        { name: 'Progress base', note: '', by: 'COC Bases', image: 'assets/bases/th11-progress.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH11%3AHV%3AAAAAVwAAAAFO02hA0btQhGtd-DTszHoZ' },
+      ],
+      armies: [
+        { kind: 'recommended', type: 'air', name: 'Super Yeti Clone Dragons', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 33, y: 16, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 72, y: 0, h: 88 }, { src: 'assets/troops/clone-spell.webp', x: 10, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en/?action=CopyArmy&army=h1e48_17-6e42_43-2m1e4_24i1x147-1x52d1x120-1x9u11x8-2x23-4x5s3x16-1x2', video: 'https://www.youtube.com/watch?v=zRYwi0rFkd0&t=10s' },
+        { kind: 'ground', name: 'Queen Charge Hybrid', by: 'Sturge', art: { layers: [{ src: 'assets/troops/miner.webp', x: 20, y: 0, h: 66 }, { src: 'assets/troops/hog-rider.webp', x: 80, y: 0, h: 82 }, { src: 'assets/troops/archer-queen.webp', x: 50, y: 0, h: 100 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en/?action=CopyArmy&army=h0e14_8-1e15_48-2e4_5i7x11-1x75d2x5u5x7-1x5-1x23-11x11-13x24-3x1-1x10-1x6-3x55-3x28s2x2-2x1-2x5-1x9', video: 'https://www.youtube.com/watch?v=ufQ-VwmAdmI&t=488s' },
+        { kind: 'air', name: 'Modified Dragons', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 24, y: 16, h: 78, dim: true }, { src: 'assets/troops/dragon.webp', x: 44, y: 18, h: 92 }, { src: 'assets/troops/archer.webp', x: 78, y: 0, h: 80 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en/?action=CopyArmy&army=h0e14_32-1e48_16-2e24_5i1x52-1x1-2x4-3x83d2x120u2x5-1x23-3x28-9x27-5x7-1x6-4x1-1x17s1x2-5x35-1x9-3x5', video: 'https://www.youtube.com/watch?v=zRYwi0rFkd0&t=486s' },
+      ],
+      tips: [
+        {
+          title: 'Upgrade the Grand Warden',
+          text: 'Prioritise him and his common equipment, the Eternal Tome and the Rage Gem.',
+        },
+      ],
+    },
     { level: 12, image: 'assets/th/th12.webp', soon: true, theme: [64, 152, 255] },
     { level: 13, image: 'assets/th/th13.webp', soon: true, theme: [60, 206, 206] },
     {
