@@ -1774,8 +1774,22 @@ button.pod.is-open {
 button.pod:focus-visible { outline: 2px solid var(--hi); outline-offset: 3px; }
 
 .pod-1 { --m: 242, 193, 78; --hi: #ffe08a; --bh: 52px; padding-top: 1.35rem; }
-.pod-2 { --m: 207, 213, 227; --hi: #eef1f8; }
-.pod-3 { --m: 217, 147, 90; --hi: #f7d6b8; --bh: 24px; }
+.pod-2 { --m: 207, 213, 227; --hi: #eef1f8; --edge: linear-gradient(160deg, #ffffff 0%, #c4cbda 28%, #7f889d 55%, #e6eaf3 80%, #9aa3b8 100%); }
+.pod-3 { --m: 217, 147, 90; --hi: #f7d6b8; --bh: 24px; --edge: linear-gradient(160deg, #ffd9b3 0%, #d9935a 30%, #8f4f22 58%, #f0b886 82%, #a8622f 100%); }
+
+/* Silver and bronze get a solid metallic edge (gold keeps its spinning light),
+   done with a second background layer so no extra elements are needed. */
+.pod-2,
+.pod-3 {
+  border: 2px solid transparent;
+  border-bottom: none;
+  background:
+    linear-gradient(180deg, rgba(var(--m), 0.2), rgba(var(--m), 0.045) 65%, rgba(var(--m), 0.02)) padding-box,
+    linear-gradient(var(--panel), var(--panel)) padding-box,
+    var(--edge) border-box;
+}
+button.pod-2:hover, button.pod-2.is-open,
+button.pod-3:hover, button.pod-3.is-open { border-color: transparent; filter: brightness(1.12); }
 
 /* Rotating light on the gold card's edge: a big conic gradient that spins by
    transform (cheap) inside a ring-shaped mask, instead of animating a gradient
@@ -2503,6 +2517,21 @@ body.modal-open { overflow: hidden; }
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.4);
   vertical-align: 1px;
 }
+
+/* nobody has this award yet: greyed out, with the requirement underneath */
+.award-empty {
+  --ac: 150, 156, 170;
+  background: var(--panel);
+  border-style: dashed;
+  border-color: rgba(150, 156, 170, 0.28);
+  filter: grayscale(1) brightness(0.85); /* not opacity: the glide-in animation would reset that */
+}
+.award-empty::before { display: none; }
+.award-empty:hover { transform: none; box-shadow: none; border-color: rgba(150, 156, 170, 0.28); }
+.award-empty .award-medal { background: rgba(150, 156, 170, 0.1); border-color: rgba(150, 156, 170, 0.3); box-shadow: none; }
+.award-empty .award-medal svg { filter: none; opacity: 0.55; }
+.award-empty .award-title { color: var(--muted); }
+.award-empty .award-name { font-size: 0.95rem; color: var(--muted); white-space: normal; overflow: visible; text-overflow: clip; }
 
 /* cards glide in when the awards open */
 .fold[open] .award,

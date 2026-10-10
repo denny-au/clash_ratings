@@ -262,7 +262,13 @@ function sparklineSvg(values, w, h, { area = false } = {}) {
 }
 
 // ---------- Player card (opens under a row) ----------
-const HERO_SHORT = { 'Barbarian King': 'BK', 'Archer Queen': 'AQ', 'Grand Warden': 'GW', 'Royal Champion': 'RC', 'Minion Prince': 'MP' };
+const HERO_SHORT = { 'Barbarian King': 'BK', 'Archer Queen': 'AQ', 'Grand Warden': 'GW', 'Royal Champion': 'RC', 'Minion Prince': 'MP', 'Dragon Duke': 'DD' };
+// Known heroes use the table above; a brand-new multi-word hero falls back to its initials.
+function heroShort(name) {
+  if (HERO_SHORT[name]) return HERO_SHORT[name];
+  const words = String(name || '').trim().split(/\s+/).filter(Boolean);
+  return words.length > 1 ? words.map((w) => w[0].toUpperCase()).join('').slice(0, 3) : String(name || '');
+}
 const profileCache = new Map(); // tag -> profile | { error }
 
 function starsHtml(n) {
@@ -293,7 +299,7 @@ function profileHtml(p) {
   const heroes = (p.heroes || [])
     .map((h) => {
       const pct = h.maxLevel ? Math.round((h.level / h.maxLevel) * 100) : 0;
-      const short = HERO_SHORT[h.name] || h.name;
+      const short = heroShort(h.name);
       return `<li title="${escapeHtml(h.name)} ${h.level}/${h.maxLevel}"><span>${escapeHtml(short)}</span><span class="hbar"><i style="width:${pct}%"></i></span><b>${h.level}</b></li>`;
     })
     .join('');
@@ -534,8 +540,10 @@ function createLeaderboard(prefix, opts = {}) {
   }
 
   async function toggle(tag) {
-    if (open.has(tag)) open.delete(tag);
-    else open.add(tag);
+    // One player card open at a time, across the podium and the table.
+    const wasOpen = open.has(tag);
+    open.clear();
+    if (!wasOpen) open.add(tag);
     if (boardEl) boardEl.classList.remove('enter'); // don't replay the row entrance
     draw();
     drawPodiumDetail();
@@ -788,9 +796,34 @@ const AWARD_TINTS = {
   challenger: '255,82,110',
 };
 
-function awardsHtml(awards) {
-  return (awards || [])
+// Every award always gets a card; when nobody has earned it the card is
+// greyed out with the requirement, so the set never changes shape.
+const AWARD_SLOTS = [
+  { key: 'champion', title: 'Champion', hint: 'Needs a Mastery Rating above 0' },
+  { key: 'donor', title: 'Top Donor', hint: 'Needs at least 1 troop donated' },
+  { key: 'stars', title: 'Star Collector', hint: 'Needs at least 1 war star' },
+  { key: 'raider', title: 'Raid Master', hint: 'Needs at least 1 raid attack' },
+  { key: 'sharpshooter', title: 'Sharpshooter', hint: 'Needs 2+ war attacks' },
+  { key: 'challenger', title: 'Challenger', hint: 'Needs 3+ attacks on higher town halls, over half of their war attacks', rare: true },
+];
+
+function awardsHtml(awards, { when = 'month' } = {}) {
+  const byKey = new Map((awards || []).map((a) => [a.key, a]));
+  const list = AWARD_SLOTS.map((slot) => byKey.get(slot.key) || { key: slot.key, title: slot.title, empty: true, hint: slot.hint });
+  for (const a of awards || []) if (!AWARD_SLOTS.some((s) => s.key === a.key)) list.push(a); // future awards still show
+  return list
     .map((a, i) => {
+      if (a.empty) {
+        const text = when === 'last' ? 'No one earned this' : 'No one has earned this yet';
+        return `<div class="award award-${escapeHtml(a.key)} award-empty" style="--i:${i}">
+        <span class="award-medal"><svg viewBox="0 0 24 24" aria-hidden="true">${AWARD_ICONS[a.key] || ''}</svg></span>
+        <span class="award-body">
+          <span class="award-title">${escapeHtml(a.title)}</span>
+          <span class="award-name">${text}</span>
+          <span class="award-sub">${escapeHtml(a.hint)}</span>
+        </span>
+      </div>`;
+      }
       const rare = a.rare ? ' award-rare' : '';
       const sub = a.rare && a.of ? `<span class="award-sub">That's ${fmt(a.value)} of their ${fmt(a.of)} war attacks</span>` : '';
       return `<div class="award award-${escapeHtml(a.key)}${rare}" style="--ac:${AWARD_TINTS[a.key] || '242,193,78'};--i:${i}">
@@ -808,11 +841,7 @@ function awardsHtml(awards) {
 
 function renderMonthAwards(awards) {
   const card = $('month-awards');
-  if (!awards || !awards.length) {
-    card.hidden = true;
-    return;
-  }
-  $('month-awards-body').innerHTML = awardsHtml(awards);
+  $('month-awards-body').innerHTML = awardsHtml(awards, { when: 'month' });
   card.hidden = false;
 }
 
@@ -1646,12 +1675,8 @@ async function fetchPreviousMonth(tag) {
         })
       );
       const awardsWrap = $('last-awards-wrap');
-      if (data.awards && data.awards.length) {
-        $('last-awards').innerHTML = awardsHtml(data.awards);
-        awardsWrap.hidden = false;
-      } else {
-        awardsWrap.hidden = true;
-      }
+      $('last-awards').innerHTML = awardsHtml(data.awards, { when: 'last' });
+      awardsWrap.hidden = false;
       shareData.last = { monthLabel: data.monthLabel, clanName: clanName.textContent, rows: lastBoard.rows() };
       $('share-last').hidden = false;
       lastTab.hidden = false;
