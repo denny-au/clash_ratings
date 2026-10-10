@@ -31,12 +31,14 @@ function openDrawer() {
   sideDrawer.classList.add('open');
   drawerOverlay.classList.add('open');
   menuToggle.setAttribute('aria-expanded', 'true');
+  document.body.classList.add('menu-open');
 }
 
 function closeDrawer() {
   sideDrawer.classList.remove('open');
   drawerOverlay.classList.remove('open');
   menuToggle.setAttribute('aria-expanded', 'false');
+  document.body.classList.remove('menu-open');
 }
 
 function showDrawerPanel(name) {

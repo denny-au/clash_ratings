@@ -71,6 +71,7 @@
       acc += Math.min(0.1, (now - last) / 1000 || 0);
       last = now;
       if (acc < STEP) return; // skip frames: ~30fps is plenty for slow dust
+      if (document.body.classList.contains('menu-open')) { acc = 0; return; } // rest while the menu is open
       var dt = acc;
       acc = 0;
       ctx.clearRect(0, 0, w, h);
