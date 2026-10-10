@@ -88,14 +88,22 @@ Two things are tracked per attack, in the "Same # / Diff #" and "TH Matchup" col
 
 The member table's "Raid Attacks" column shows attacks used out of the max available (e.g. `4/6`) for the most recent Capital Raid Weekend — ongoing or just-ended, whichever is more recent. Unlike regular wars, Supercell's API *does* keep this data around (via `/clans/{tag}/capitalraidseasons`), so no background tracking is needed for this one — it's always live. A member who shows just `0` (no slash) means they weren't in the season's participant list at all — didn't attack and didn't contribute Capital Gold.
 
+## Rank movement, trends, awards, sharing
+
+- **Daily MR snapshots** (`data/mr-history.json`): each member's MR and rank is saved about once a day (refreshed through the day, at most every 20 minutes, by page loads and the 15-minute background poller). They power the ▲/▼ arrows (compared with the last saved earlier day *this month*; the 1st of a month starts fresh because MR resets) and the trend lines. Same 2-month window as everything else: anything older than last month is erased. History starts the day this feature is deployed.
+- **Awards**: Champion (highest MR), Top Donor, Star Collector (war stars), Raid Master (raid attacks) and Sharpshooter (stars per attack, min. 2 attacks). Ties go to the higher MR. This month's standings sit in a collapsed "Month awards" section; last month's final results show as a Hall of Fame on the Last Month tab, and last month's Champion gets a small trophy beside their name.
+- **Share**: the Share button draws the top 5 onto an image in the browser (nothing is uploaded) and opens the phone's share sheet, or downloads a PNG on desktop.
+- **Install on a phone**: `manifest.webmanifest` + the icons in `public/` let people use "Add to Home Screen".
+
 ## Project layout
 
 - `server.js` — Express server. Serves the frontend and exposes:
-  - `GET /api/clan?tag=...` — clan info + member list (this month's war stars from local history, donations, current raid weekend attacks).
+  - `GET /api/clan?tag=...` — clan info + member list (this month's war stars from local history, donations, current raid weekend attacks), plus each member's MR breakdown, rank movement and daily MR trend, the summary-strip numbers, this month's award leaders, and last month's champion.
+  - `GET /api/player?tag=...&clan=...` — one member's live game profile (town hall, trophies, heroes; cached 5 min) plus their war attacks recorded this month. Powers the card that opens when you click a row.
   - `GET /api/currentwar?tag=...` — per-attack detail (target, mirror match, TH matchup, stars, destruction) for the clan's active war, if any.
   - `GET /api/war-history?tag=...` — aggregated per-member stats for the current calendar month.
-  - `GET /api/previous-month?tag=...` — last calendar month's leaderboard (MR, war stars, raid attacks) and War History table, in one response.
-- `warTracker.js` — reads/writes `data/war-history.json` and `data/config.json`; groups recorded wars by calendar month, aggregates per-member stats, and prunes anything older than last month.
+  - `GET /api/previous-month?tag=...` — last calendar month's leaderboard (MR, war stars, raid attacks) plus that month's awards (Hall of Fame).
+- `warTracker.js` — reads/writes `data/war-history.json`, `raid-history.json`, `donation-history.json`, `mr-history.json` and `config.json`; groups recorded wars by calendar month, aggregates per-member stats, and prunes anything older than last month.
 - `public/` — the frontend: `index.html`, `style.css`, `app.js`.
 - `.env` — your API key and settings (not committed anywhere, keep it private).
 - `data/` — local war history and the currently-tracked clan tag. Auto-created; safe to delete if you want to start history over.

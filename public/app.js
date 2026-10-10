@@ -136,6 +136,7 @@ function activateTab(name, { updateHash = true } = {}) {
   }
   for (const [key, el] of Object.entries(panels)) el.hidden = key !== name;
   positionPill(true);
+  syncSummary(); // the strip is this month's numbers, so it sits out the Last Month tab
   if (updateHash) {
     try {
       history.replaceState(null, '', name === 'month' ? location.pathname + location.search : `#${name}`);
@@ -207,6 +208,14 @@ function crownHtml(rank) {
   </span>`;
 }
 
+// Small trophy shown next to last month's Champion.
+function champHtml(label) {
+  return `<svg class="champ" viewBox="0 0 24 24" role="img" aria-label="${escapeHtml(label)}"><title>${escapeHtml(label)}</title>
+    <path d="M7 3h10v4a5 5 0 0 1-10 0V3Z" /><path d="M7 4H3.5v1.5A3.5 3.5 0 0 0 7 9M17 4h3.5v1.5A3.5 3.5 0 0 1 17 9" fill="none" stroke-width="1.6" />
+    <rect x="10.5" y="12" width="3" height="4" /><rect x="7.5" y="17" width="9" height="3" rx="1" />
+  </svg>`;
+}
+
 function memberCellHtml(row, reserveIcon) {
   const iconUrl = safeIconUrl(row.leagueIcon);
   const icon = iconUrl
@@ -218,17 +227,158 @@ function memberCellHtml(row, reserveIcon) {
   const roleHtml = label
     ? `<span class="sep" aria-hidden="true">|</span><span class="role role-${escapeHtml(row.role)}">${label}</span>`
     : '';
-  return `<td class="member"><div class="who">${icon}<span class="who-text"><span class="name">${escapeHtml(row.name)}</span>${roleHtml}</span></div></td>`;
+  const champ = row.champLabel ? champHtml(row.champLabel) : '';
+  return `<td class="member"><div class="who">${icon}<span class="who-text"><span class="name-line"><span class="name">${escapeHtml(row.name)}</span>${champ}</span>${roleHtml}</span></div></td>`;
 }
 
+// ---------- Rank movement + sparkline ----------
+function moveHtml(change) {
+  if (change == null) return '';
+  if (change > 0) return `<span class="move up" title="Up ${change} since the last saved day">▲${change}</span>`;
+  if (change < 0) return `<span class="move down" title="Down ${-change} since the last saved day">▼${-change}</span>`;
+  return '<span class="move same" title="Same place as the last saved day">–</span>';
+}
+
+// values: numbers or null (null = no entry that day). Draws a thin line.
+function sparklineSvg(values, w, h, { area = false } = {}) {
+  const pts = [];
+  values.forEach((v, i) => {
+    if (v != null) pts.push([i, v]);
+  });
+  if (pts.length < 2) return '';
+  const n = values.length - 1 || 1;
+  const min = Math.min(...pts.map((p) => p[1]));
+  const max = Math.max(...pts.map((p) => p[1]));
+  const span = max - min || 1;
+  const pad = 3;
+  const xy = pts.map(([i, v]) => [pad + (i / n) * (w - pad * 2), h - pad - ((v - min) / span) * (h - pad * 2)]);
+  const d = xy.map(([x, y], k) => `${k ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
+  const last = xy[xy.length - 1];
+  const fill = area ? `<path class="spark-area" d="${d} L${last[0].toFixed(1)} ${h} L${xy[0][0].toFixed(1)} ${h} Z" />` : '';
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true" focusable="false">${fill}<path class="spark-line" d="${d}" /><circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.2" /></svg>`;
+}
+
+// ---------- Player card (opens under a row) ----------
+const HERO_SHORT = { 'Barbarian King': 'BK', 'Archer Queen': 'AQ', 'Grand Warden': 'GW', 'Royal Champion': 'RC', 'Minion Prince': 'MP' };
+const profileCache = new Map(); // tag -> profile | { error }
+
+function starsHtml(n) {
+  const k = Math.max(0, Math.min(3, Number(n) || 0));
+  return `<span class="stars" aria-label="${k} stars">${'★'.repeat(k)}<i>${'★'.repeat(3 - k)}</i></span>`;
+}
+
+function thDeltaLabel(a) {
+  if (a.defenderTownhall == null) return '';
+  const d = a.thDelta;
+  const rel = d == null ? '' : d > 0 ? ` (+${d})` : d < 0 ? ` (${d})` : ' (=)';
+  return `TH${a.defenderTownhall}${rel}`;
+}
+
+function mrBreakdownHtml(b, mr) {
+  if (!b) return '';
+  const total = Math.max(1, (b.donations || 0) + (b.raids || 0) + (b.wars || 0));
+  const seg = (cls, v) => (v > 0 ? `<i class="${cls}" style="width:${((v / total) * 100).toFixed(2)}%"></i>` : '');
+  const item = (cls, label, v) => `<li><span class="dot ${cls}"></span>${label}<b>${fmt(v)}</b></li>`;
+  return `<div class="mr-split" role="img" aria-label="MR split">${seg('s-don', b.donations)}${seg('s-raid', b.raids)}${seg('s-war', b.wars)}</div>
+    <ul class="mr-legend">${item('s-don', 'Donations', b.donations)}${item('s-raid', 'Raids', b.raids)}${item('s-war', 'Wars', b.wars)}</ul>`;
+}
+
+function profileHtml(p) {
+  if (!p) return '<p class="dc-note">Loading profile…</p>';
+  if (p.error) return `<p class="dc-note error">${escapeHtml(p.error)}</p>`;
+  const icon = safeIconUrl(p.leagueIcon);
+  const heroes = (p.heroes || [])
+    .map((h) => {
+      const pct = h.maxLevel ? Math.round((h.level / h.maxLevel) * 100) : 0;
+      const short = HERO_SHORT[h.name] || h.name;
+      return `<li title="${escapeHtml(h.name)} ${h.level}/${h.maxLevel}"><span>${escapeHtml(short)}</span><span class="hbar"><i style="width:${pct}%"></i></span><b>${h.level}</b></li>`;
+    })
+    .join('');
+  const facts = [
+    p.townHall ? ['Town Hall', p.townHall] : null,
+    p.expLevel ? ['XP level', p.expLevel] : null,
+    p.lifetimeWarStars != null ? ['War stars (all-time)', fmt(p.lifetimeWarStars)] : null,
+    p.seasonDonated != null ? ['Donated this season', fmt(p.seasonDonated)] : null,
+    p.seasonReceived != null ? ['Received this season', fmt(p.seasonReceived)] : null,
+  ].filter(Boolean);
+  return `<div class="dc-league">${icon ? `<img src="${icon}" alt="" width="40" height="40" loading="lazy" referrerpolicy="no-referrer" />` : ''}
+      <div><b>${escapeHtml(p.leagueName || 'Unranked')}</b><span>${p.trophies != null ? `${fmt(p.trophies)} trophies` : ''}${p.bestTrophies != null ? ` · best ${fmt(p.bestTrophies)}` : ''}</span></div></div>
+    <dl class="dc-facts">${facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>
+    ${heroes ? `<ul class="dc-heroes">${heroes}</ul>` : ''}`;
+}
+
+function warAttacksHtml(list) {
+  if (!list) return '';
+  if (!list.length) return '<p class="dc-note">No recorded war attacks yet this month.</p>';
+  const shown = list.slice(0, 6);
+  return `<ul class="dc-attacks">${shown
+    .map(
+      (a) => `<li>${starsHtml(a.stars)}<span class="pct">${Math.round(a.destruction || 0)}%</span><span class="vs">${escapeHtml(a.opponent || 'war')}</span><span class="th">${escapeHtml(thDeltaLabel(a))}</span></li>`
+    )
+    .join('')}</ul>${list.length > shown.length ? `<p class="dc-note">+ ${list.length - shown.length} more this month</p>` : ''}`;
+}
+
+function detailInnerHtml(row, profile, rankBaselineLabel) {
+  const move = row.rankChange;
+  const moveText =
+    move == null
+      ? ''
+      : move > 0
+        ? `Up ${move} place${move === 1 ? '' : 's'} since ${rankBaselineLabel}`
+        : move < 0
+          ? `Down ${-move} place${move === -1 ? '' : 's'} since ${rankBaselineLabel}`
+          : `Holding steady since ${rankBaselineLabel}`;
+  const spark = sparklineSvg(row.trend || [], 240, 56, { area: true });
+  return `<div class="dc-grid">
+    <section class="dc-col">
+      <h5>MR this month</h5>
+      ${mrBreakdownHtml(row.breakdown, row.mr)}
+      ${spark ? `<div class="dc-spark">${spark}<span class="dc-sub">MR day by day</span></div>` : ''}
+      ${moveText ? `<p class="dc-move ${move > 0 ? 'up' : move < 0 ? 'down' : ''}">${moveText}</p>` : ''}
+    </section>
+    <section class="dc-col dp">${profileHtml(profile)}</section>
+    <section class="dc-col">
+      <h5>War attacks this month</h5>
+      <div class="dw">${profile ? (profile.error ? '<p class="dc-note">Unavailable right now.</p>' : warAttacksHtml(profile.warAttacks)) : '<p class="dc-note">Loading…</p>'}</div>
+    </section>
+  </div>`;
+}
+
+const profileErrors = new Map(); // tag -> { error } from the last failed open (retried next open)
+
+// Successful profiles are cached for the page's lifetime; failures never are.
+async function loadProfile(tag) {
+  if (profileCache.has(tag)) return profileCache.get(tag);
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/player?tag=${encodeURIComponent(tag)}&clan=${encodeURIComponent(currentClanTag || '')}`);
+    const data = await res.json();
+    if (!res.ok) return { error: data.error || "Couldn't load this player." };
+    profileCache.set(tag, data);
+    return data;
+  } catch (e) {
+    return { error: "Couldn't reach the server." };
+  }
+}
+
+const profileFor = (tag) => profileCache.get(tag) || profileErrors.get(tag) || null;
+
 // ---------- Leaderboard component (used by This Month and Last Month) ----------
-// rows: [{ rank, name, role, leagueIcon, mr, warStars, donated, raids }]
-function createLeaderboard(prefix) {
+// rows: [{ tag, rank, name, role, leagueIcon, mr, warStars, donated, raids,
+//          rankChange, trend, breakdown, champLabel }]
+// opts.trend  -> show the sparkline column + rank arrows
+// opts.details -> rows open into a player card on click/Enter
+function createLeaderboard(prefix, opts = {}) {
   const table = $(`${prefix}-table`);
   const body = $(`${prefix}-rows`);
   const moreBtn = $(`${prefix}-more`);
   let rows = [];
   let expanded = false;
+  const open = new Set();
+  let baselineLabel = 'the last check';
+
+  // Columns actually showing (the trend column is hidden on phones). A colspan
+  // bigger than that would add a phantom column and squash the member names.
+  const colCount = () => Array.from(table.querySelectorAll('thead th')).filter((th) => th.offsetParent !== null).length || 1;
 
   function draw() {
     const maxMr = Math.max(1, ...rows.map((r) => r.mr || 0));
@@ -238,15 +388,22 @@ function createLeaderboard(prefix) {
     body.innerHTML = visible
       .map((r) => {
         const pct = Math.max(3, Math.round(((r.mr || 0) / maxMr) * 100));
-        const rankCell = r.rank <= 3 ? crownHtml(r.rank) : r.rank;
-        return `<tr class="${r.rank <= 3 ? `rank-${r.rank}` : ''}">
+        const move = opts.trend ? moveHtml(r.rankChange) : '';
+        const rankCell = r.rank <= 3 ? `${crownHtml(r.rank)}${move}` : `<span class="rank-num">${r.rank}</span>${move}`;
+        const isOpen = opts.details && open.has(r.tag);
+        const trendCell = opts.trend ? `<td class="trend">${sparklineSvg(r.trend || [], 64, 22)}</td>` : '';
+        const attrs = opts.details ? ` data-tag="${escapeHtml(r.tag)}" tabindex="0" aria-expanded="${isOpen}"` : '';
+        const main = `<tr class="${r.rank <= 3 ? `rank-${r.rank}` : ''}${opts.details ? ' expandable' : ''}${isOpen ? ' is-open' : ''}"${attrs}>
           <td class="rank">${rankCell}</td>
           ${memberCellHtml(r, reserveIcon)}
+          ${trendCell}
           <td class="num mr"><span class="mr-val">${fmt(r.mr)}</span><span class="mr-bar"><i style="width:${pct}%"></i></span></td>
           <td class="num">${fmt(r.warStars)}</td>
           <td class="num">${fmt(r.donated)}</td>
           <td class="num">${fmt(r.raids)}</td>
         </tr>`;
+        if (!isOpen) return main;
+        return `${main}<tr class="detail" data-for="${escapeHtml(r.tag)}"><td colspan="${colCount()}"><div class="detail-card">${detailInnerHtml(r, profileFor(r.tag), baselineLabel)}</div></td></tr>`;
       })
       .join('');
 
@@ -257,20 +414,65 @@ function createLeaderboard(prefix) {
     table.hidden = rows.length === 0;
   }
 
+  function refreshDetail(tag) {
+    const row = rows.find((r) => r.tag === tag);
+    const holder = body.querySelector(`tr.detail[data-for="${CSS.escape(tag)}"] .detail-card`);
+    if (row && holder) holder.innerHTML = detailInnerHtml(row, profileFor(tag), baselineLabel);
+  }
+
+  async function toggle(tag) {
+    if (open.has(tag)) open.delete(tag);
+    else open.add(tag);
+    draw();
+    const tr = body.querySelector(`tr[data-tag="${CSS.escape(tag)}"]`);
+    if (tr) tr.focus({ preventScroll: true });
+    if (open.has(tag) && !profileCache.has(tag)) {
+      profileErrors.delete(tag);
+      const result = await loadProfile(tag);
+      if (result.error) profileErrors.set(tag, result);
+      refreshDetail(tag);
+    }
+  }
+
+  if (opts.details) {
+    body.addEventListener('click', (e) => {
+      const tr = e.target.closest('tr.expandable');
+      if (tr) toggle(tr.dataset.tag);
+    });
+    body.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const tr = e.target.closest('tr.expandable');
+      if (!tr || e.target !== tr) return;
+      e.preventDefault();
+      toggle(tr.dataset.tag);
+    });
+  }
+
   moreBtn.addEventListener('click', () => {
     expanded = !expanded;
     draw();
   });
 
+  // Crossing the phone/desktop breakpoint changes which columns show.
+  if (opts.details && window.matchMedia) {
+    window.matchMedia('(max-width: 640px)').addEventListener('change', () => {
+      if (rows.length) draw();
+    });
+  }
+
   return {
-    show(newRows) {
+    show(newRows, extra = {}) {
       rows = newRows;
       expanded = false;
+      open.clear();
+      baselineLabel = extra.baselineLabel || 'the last check';
       draw();
     },
+    rows: () => rows,
     clear() {
       rows = [];
       expanded = false;
+      open.clear();
       body.innerHTML = '';
       table.hidden = true;
       moreBtn.hidden = true;
@@ -278,7 +480,7 @@ function createLeaderboard(prefix) {
   };
 }
 
-const monthBoard = createLeaderboard('member');
+const monthBoard = createLeaderboard('member', { trend: true, details: true });
 const lastBoard = createLeaderboard('last');
 
 // ---------- Search ----------
@@ -301,6 +503,10 @@ async function searchClan(tag) {
   for (const el of Object.values(panels)) el.hidden = true;
   monthBoard.clear();
   lastBoard.clear();
+  summaryHasData = false;
+  summaryEl.hidden = true;
+  $('month-awards').hidden = true;
+  shareData.month = shareData.last = null;
   $('tab-last').hidden = true;
   $('war-live-dot').hidden = true;
   $('history-card').hidden = true;
@@ -327,7 +533,6 @@ async function searchClan(tag) {
   }
 }
 
-searchClan(DEFAULT_CLAN_TAG);
 
 function renderClan(data) {
   clanName.textContent = data.name;
@@ -356,8 +561,13 @@ function renderClan(data) {
 
   membersByTag = new Map(data.members.map((m) => [m.tag, m]));
 
+  const champTag = data.lastChampion ? data.lastChampion.tag : null;
+  const champLabel = data.lastChampion ? `Champion of ${data.lastChampion.monthLabel}` : '';
+  const baselineLabel = shortDateLabel(data.rankBaseline);
+
   monthBoard.show(
     data.members.map((m) => ({
+      tag: m.tag,
       rank: m.mrRank,
       name: m.name,
       role: m.role,
@@ -366,9 +576,290 @@ function renderClan(data) {
       warStars: m.monthWarStars,
       donated: m.donations,
       raids: m.raidAttacks,
-    }))
+      rankChange: m.rankChange,
+      trend: m.trend,
+      breakdown: m.breakdown,
+      champLabel: champTag && m.tag === champTag ? champLabel : '',
+    })),
+    { baselineLabel }
   );
+
+  renderSummary(data.summary);
+  renderMonthAwards(data.awards);
+  shareData.month = { monthLabel: data.monthLabel, clanName: data.name, rows: monthBoard.rows() };
 }
+
+// "Oct 6" for a "2026-10-06" date key.
+function shortDateLabel(key) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key || '');
+  if (!m) return 'the last check';
+  return new Date(+m[1], +m[2] - 1, +m[3]).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+// ---------- Clan summary strip ----------
+const summaryEl = $('summary');
+let summaryHasData = false;
+
+function syncSummary() {
+  summaryEl.hidden = !summaryHasData || activeTab === 'last';
+}
+
+function renderSummary(sum) {
+  summaryHasData = !!sum;
+  if (!sum) {
+    syncSummary();
+    return;
+  }
+  const w = sum.wars || {};
+  const record = w.total ? `${w.won || 0}–${w.lost || 0}${w.tied ? `–${w.tied}` : ''}` : '–';
+  const tiles = [
+    ['Donated', fmt(sum.totalDonations)],
+    ['Avg MR', fmt(sum.avgMr)],
+    ['War stars', fmt(sum.warStars)],
+    ['Raid attacks', fmt(sum.raidAttacks)],
+    ['Wars W–L', record],
+  ];
+  summaryEl.innerHTML = tiles.map(([label, value]) => `<div class="stat"><b>${escapeHtml(value)}</b><span>${escapeHtml(label)}</span></div>`).join('');
+  syncSummary();
+}
+
+// ---------- Awards ----------
+const AWARD_ICONS = {
+  champion: '<path d="M7 3h10v4a5 5 0 0 1-10 0V3Z"/><path d="M7 4H3.5v1.5A3.5 3.5 0 0 0 7 9M17 4h3.5v1.5A3.5 3.5 0 0 1 17 9" fill="none" stroke-width="1.6"/><rect x="10.5" y="12" width="3" height="4"/><rect x="7.5" y="17" width="9" height="3" rx="1"/>',
+  donor: '<path d="M12 20.5s-7.5-4.6-7.5-10A4.2 4.2 0 0 1 12 8a4.2 4.2 0 0 1 7.5 2.5c0 5.4-7.5 10-7.5 10Z"/>',
+  stars: '<path d="m12 2.8 2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 16.6 6.6 19.6l1.1-6.1L3.2 9.2l6.1-.8L12 2.8Z"/>',
+  raider: '<path d="M4 21V4h2v2h12l-2.5 4L18 14H6v7H4Z"/>',
+  sharpshooter: '<circle cx="12" cy="12" r="8.5" fill="none" stroke-width="1.8"/><circle cx="12" cy="12" r="4.6" fill="none" stroke-width="1.8"/><circle cx="12" cy="12" r="1.6"/>',
+};
+
+function awardsHtml(awards) {
+  return (awards || [])
+    .map(
+      (a) => `<div class="award award-${escapeHtml(a.key)}">
+        <svg viewBox="0 0 24 24" aria-hidden="true">${AWARD_ICONS[a.key] || ''}</svg>
+        <span class="award-title">${escapeHtml(a.title)}</span>
+        <span class="award-name">${escapeHtml(a.name)}</span>
+        <span class="award-value"><b>${fmt(a.value)}</b> ${escapeHtml(a.unit)}</span>
+      </div>`
+    )
+    .join('');
+}
+
+function renderMonthAwards(awards) {
+  const card = $('month-awards');
+  if (!awards || !awards.length) {
+    card.hidden = true;
+    return;
+  }
+  $('month-awards-body').innerHTML = awardsHtml(awards);
+  card.hidden = false;
+}
+
+// ---------- Share as picture ----------
+// Draws the top 5 onto a canvas and either opens the phone's share sheet or
+// downloads a PNG. Uses only text and shapes (no game artwork).
+const shareData = { month: null, last: null };
+
+const METALS = {
+  1: { a: '#fff0b0', b: '#f2c14e', c: '#c8902a', text: '#ffe9a6', wash: 'rgba(242,193,78,0.20)' },
+  2: { a: '#ffffff', b: '#cfd5e3', c: '#8f98ad', text: '#eef1f8', wash: 'rgba(207,213,227,0.16)' },
+  3: { a: '#f6c79d', b: '#d9935a', c: '#a8622f', text: '#f7d6b8', wash: 'rgba(217,147,90,0.17)' },
+};
+
+function fitText(ctx, text, maxWidth) {
+  if (ctx.measureText(text).width <= maxWidth) return text;
+  let t = text;
+  while (t.length > 1 && ctx.measureText(t + '…').width > maxWidth) t = t.slice(0, -1);
+  return t + '…';
+}
+
+function drawCrown(ctx, x, y, size, metal) {
+  const s = size / 32;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+  const g = ctx.createLinearGradient(0, 0, 0, 26);
+  g.addColorStop(0, metal.a);
+  g.addColorStop(0.55, metal.b);
+  g.addColorStop(1, metal.c);
+  ctx.fillStyle = g;
+  ctx.strokeStyle = 'rgba(40,24,0,0.55)';
+  ctx.lineWidth = 1;
+  ctx.fill(new Path2D('M3 22 L1.6 7.5 L9.6 13.2 L16 3.2 L22.4 13.2 L30.4 7.5 L29 22 Z'));
+  ctx.stroke(new Path2D('M3 22 L1.6 7.5 L9.6 13.2 L16 3.2 L22.4 13.2 L30.4 7.5 L29 22 Z'));
+  ctx.beginPath();
+  ctx.roundRect(3, 22, 26, 3, 1.5);
+  ctx.fill();
+  for (const [cx, cy, r] of [[1.8, 6.6, 1.8], [16, 3, 1.9], [30.2, 6.6, 1.8]]) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+async function buildShareCanvas(info) {
+  try {
+    await Promise.all([document.fonts.load('64px "Titan One"'), document.fonts.load('40px "Lilita One"')]);
+  } catch (e) {
+    /* fall back to system fonts */
+  }
+  const W = 1080;
+  const rowH = 148;
+  const top = 360;
+  const rows = info.rows.slice(0, 5);
+  const H = top + rows.length * rowH + 190;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const display = '"Lilita One", "Titan One", "Segoe UI", sans-serif';
+
+  ctx.fillStyle = '#06070c';
+  ctx.fillRect(0, 0, W, H);
+  const glow = ctx.createRadialGradient(W / 2, 0, 20, W / 2, 0, 520);
+  glow.addColorStop(0, 'rgba(56,128,255,0.38)');
+  glow.addColorStop(0.55, 'rgba(150,84,255,0.2)');
+  glow.addColorStop(1, 'rgba(150,84,255,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, 620);
+
+  // Title
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = '120px "Titan One", "Lilita One", sans-serif';
+  const tg = ctx.createLinearGradient(0, 90, 0, 210);
+  tg.addColorStop(0, '#fff4c4');
+  tg.addColorStop(0.5, '#ffcf4a');
+  tg.addColorStop(1, '#ff9a1c');
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 14;
+  ctx.strokeStyle = '#5a2f00';
+  ctx.strokeText('Clash Ratings', W / 2, 200);
+  ctx.fillStyle = tg;
+  ctx.fillText('Clash Ratings', W / 2, 200);
+
+  ctx.font = `46px ${display}`;
+  ctx.fillStyle = '#e8e6f2';
+  ctx.fillText(fitText(ctx, info.clanName || '', W - 160), W / 2, 275);
+  ctx.font = `36px ${display}`;
+  ctx.fillStyle = '#9298ad';
+  ctx.fillText(info.monthLabel || '', W / 2, 325);
+
+  // Rows
+  rows.forEach((r, i) => {
+    const y = top + i * rowH;
+    const rank = r.rank <= 3 ? r.rank : null;
+    const metal = rank ? METALS[rank] : null;
+    const x0 = 60;
+    const w = W - 120;
+    ctx.beginPath();
+    ctx.roundRect(x0, y + 6, w, rowH - 14, 22);
+    ctx.fillStyle = '#0e1017';
+    ctx.fill();
+    if (metal) {
+      const wash = ctx.createLinearGradient(x0, 0, x0 + w, 0);
+      wash.addColorStop(0, metal.wash);
+      wash.addColorStop(0.7, 'rgba(255,255,255,0.02)');
+      wash.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = wash;
+      ctx.fill();
+    }
+    ctx.strokeStyle = metal ? metal.b : '#272a38';
+    ctx.globalAlpha = metal ? 0.55 : 1;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    const cy = y + rowH / 2 - 1;
+    if (rank) {
+      drawCrown(ctx, x0 + 26, cy - 30, 76, metal);
+      ctx.textAlign = 'center';
+      ctx.font = `34px ${display}`;
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = 7;
+      ctx.strokeStyle = rank === 1 ? '#8a5f12' : rank === 2 ? '#5f6880' : '#7d4519';
+      ctx.strokeText(String(rank), x0 + 26 + 38, cy + 15);
+      ctx.fillStyle = rank === 2 ? '#ffffff' : rank === 1 ? '#fff8de' : '#fff0df';
+      ctx.fillText(String(rank), x0 + 26 + 38, cy + 15);
+    } else {
+      ctx.textAlign = 'center';
+      ctx.font = `46px ${display}`;
+      ctx.fillStyle = '#9298ad';
+      ctx.fillText(String(r.rank), x0 + 64, cy + 16);
+    }
+
+    ctx.textAlign = 'left';
+    ctx.font = `${rank ? 56 : 50}px ${display}`;
+    ctx.fillStyle = metal ? metal.text : '#f4f1ea';
+    ctx.fillText(fitText(ctx, r.name || '', 560), x0 + 140, cy - (r.role ? 2 : -14));
+    const roleLabel = ROLE_LABELS[r.role];
+    if (roleLabel) {
+      ctx.font = `30px ${display}`;
+      ctx.fillStyle = '#a3adcf';
+      ctx.fillText(roleLabel, x0 + 142, cy + 38);
+    }
+
+    ctx.textAlign = 'right';
+    ctx.font = `${rank ? 66 : 58}px ${display}`;
+    ctx.fillStyle = metal ? metal.text : '#ffffff';
+    ctx.fillText(fmt(r.mr), x0 + w - 36, cy + 14);
+    ctx.font = `26px ${display}`;
+    ctx.fillStyle = '#9298ad';
+    ctx.fillText('MR', x0 + w - 36, cy + 48);
+  });
+
+  // Footer
+  ctx.textAlign = 'center';
+  ctx.font = `40px ${display}`;
+  ctx.fillStyle = '#f2c14e';
+  ctx.fillText('clashratings.lol', W / 2, H - 100);
+  ctx.font = '22px -apple-system, "Segoe UI", sans-serif';
+  ctx.fillStyle = '#6f7388';
+  ctx.fillText('Unofficial fan project. Not endorsed by Supercell.', W / 2, H - 56);
+  return canvas;
+}
+
+async function shareBoard(info, button) {
+  if (!info || !info.rows.length) return;
+  const original = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Making picture…';
+  try {
+    const canvas = await buildShareCanvas(info);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) throw new Error('no image');
+    const name = `clash-ratings-${(info.monthLabel || 'leaderboard').toLowerCase().replace(/\s+/g, '-')}.png`;
+    const file = new File([blob], name, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: `Clash Ratings · ${info.monthLabel}` });
+        return;
+      } catch (e) {
+        if (e && e.name === 'AbortError') return; // closed the share sheet on purpose
+      }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  } catch (err) {
+    console.error('Share picture failed:', err);
+    button.textContent = "Couldn't make the picture";
+    setTimeout(() => (button.textContent = original), 2500);
+    button.disabled = false;
+    return;
+  }
+  button.textContent = original;
+  button.disabled = false;
+}
+
+$('share-month').addEventListener('click', (e) => shareBoard(shareData.month, e.currentTarget));
+$('share-last').addEventListener('click', (e) => shareBoard(shareData.last, e.currentTarget));
 
 // ---------- War tab: compact current-war card ----------
 const warToggle = $('war-toggle');
@@ -564,6 +1055,8 @@ async function fetchPreviousMonth(tag) {
   lastStatus.textContent = '';
   lastStatus.classList.remove('error');
   lastBoard.clear();
+  $('last-awards-wrap').hidden = true;
+  $('share-last').hidden = true;
 
   const fail = () => {
     lastTitle.textContent = 'Last month';
@@ -600,6 +1093,15 @@ async function fetchPreviousMonth(tag) {
           };
         })
       );
+      const awardsWrap = $('last-awards-wrap');
+      if (data.awards && data.awards.length) {
+        $('last-awards').innerHTML = awardsHtml(data.awards);
+        awardsWrap.hidden = false;
+      } else {
+        awardsWrap.hidden = true;
+      }
+      shareData.last = { monthLabel: data.monthLabel, clanName: clanName.textContent, rows: lastBoard.rows() };
+      $('share-last').hidden = false;
       lastTab.hidden = false;
       // If the page was opened straight to #last, switch to it now that it exists.
       if (hashTab() === 'last' && activeTab !== 'last') activateTab('last', { updateHash: false });
@@ -609,3 +1111,6 @@ async function fetchPreviousMonth(tag) {
     fail();
   }
 }
+
+// Kick off the first search last, once everything above is defined.
+searchClan(DEFAULT_CLAN_TAG);

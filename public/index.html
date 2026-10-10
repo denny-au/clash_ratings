@@ -9,8 +9,12 @@
   <link rel="icon" href="favicon.ico" sizes="48x48 32x32 16x16" />
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Clash Ratings" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Titan+One&display=swap" rel="stylesheet" />
@@ -104,6 +108,8 @@
         </div>
       </section>
 
+      <section id="summary" class="summary" aria-label="Clan summary this month" hidden></section>
+
       <div id="tabs" class="tabs" role="tablist" aria-label="Views" hidden>
         <span id="tab-pill" class="tab-pill" aria-hidden="true"></span>
         <button type="button" role="tab" id="tab-month" class="tab" data-tab="month" aria-selected="true" aria-controls="panel-month">This Month</button>
@@ -113,7 +119,10 @@
 
       <!-- ===== This Month ===== -->
       <section id="panel-month" class="panel" role="tabpanel" aria-labelledby="tab-month" hidden>
-        <h3 id="month-title" class="panel-title"></h3>
+        <div class="panel-head">
+          <h3 id="month-title" class="panel-title"></h3>
+          <button type="button" id="share-month" class="tool-btn" title="Save a picture of the top 5 to share">Share</button>
+        </div>
         <div class="board">
           <div class="table-scroll">
             <table id="member-table" class="leaderboard" hidden>
@@ -121,10 +130,11 @@
                 <tr>
                   <th class="rank">#</th>
                   <th>Member</th>
-                  <th class="num" title="Member Rating: 1 pt/donation, 25 pts/raid attack this month, 50 pts per war star this month from regular wars and CWL (adjusted by how much harder or easier the target's town hall was)">MR</th>
-                  <th class="num"><span class="long">War Stars</span><span class="short">Stars</span></th>
-                  <th class="num">Donated</th>
-                  <th class="num"><span class="long">Raid Attacks</span><span class="short">Raids</span></th>
+                  <th class="trend" title="Each member's MR on each day recorded this month">Trend</th>
+                  <th class="num c-mr" title="Member Rating: 1 pt/donation, 25 pts/raid attack this month, 50 pts per war star this month from regular wars and CWL (adjusted by how much harder or easier the target's town hall was)">MR</th>
+                  <th class="num c-stars"><span class="long">War Stars</span><span class="short">Stars</span></th>
+                  <th class="num c-donated">Donated</th>
+                  <th class="num c-raids"><span class="long">Raid Attacks</span><span class="short">Raids</span></th>
                 </tr>
               </thead>
               <tbody id="member-rows"></tbody>
@@ -132,12 +142,28 @@
           </div>
           <button type="button" id="member-more" class="more-btn" aria-expanded="false" hidden></button>
         </div>
+
+        <details id="month-awards" class="fold" hidden>
+          <summary>
+            <span>Month awards</span>
+            <span class="fold-meta">who's leading so far</span>
+            <span class="chev" aria-hidden="true"></span>
+          </summary>
+          <div class="fold-body"><div id="month-awards-body" class="awards"></div></div>
+        </details>
       </section>
 
       <!-- ===== Last Month ===== -->
       <section id="panel-last" class="panel" role="tabpanel" aria-labelledby="tab-last" hidden>
-        <h3 id="last-title" class="panel-title"></h3>
+        <div class="panel-head">
+          <h3 id="last-title" class="panel-title"></h3>
+          <button type="button" id="share-last" class="tool-btn" title="Save a picture of the top 5 to share" hidden>Share</button>
+        </div>
         <p id="last-status" class="panel-note"></p>
+        <div id="last-awards-wrap" class="hof" hidden>
+          <h4 class="hof-title">Hall of Fame</h4>
+          <div id="last-awards" class="awards"></div>
+        </div>
         <div class="board">
           <div class="table-scroll">
             <table id="last-table" class="leaderboard" hidden>
@@ -145,10 +171,10 @@
                 <tr>
                   <th class="rank">#</th>
                   <th>Member</th>
-                  <th class="num" title="Member Rating from recorded raid attacks (25 pts each), war stars (50 pts each, adjusted for town hall difference) and donations (1 pt each)">MR</th>
-                  <th class="num"><span class="long">War Stars</span><span class="short">Stars</span></th>
-                  <th class="num" title="Donations as they stood at the end of the month (0 if that month wasn't captured)">Donated</th>
-                  <th class="num"><span class="long">Raid Attacks</span><span class="short">Raids</span></th>
+                  <th class="num c-mr" title="Member Rating from recorded raid attacks (25 pts each), war stars (50 pts each, adjusted for town hall difference) and donations (1 pt each)">MR</th>
+                  <th class="num c-stars"><span class="long">War Stars</span><span class="short">Stars</span></th>
+                  <th class="num c-donated" title="Donations as they stood at the end of the month (0 if that month wasn't captured)">Donated</th>
+                  <th class="num c-raids"><span class="long">Raid Attacks</span><span class="short">Raids</span></th>
                 </tr>
               </thead>
               <tbody id="last-rows"></tbody>

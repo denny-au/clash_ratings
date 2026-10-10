@@ -130,6 +130,7 @@ const HISTORY_FILE = 'war-history.json';
 const CONFIG_FILE = 'config.json';
 const RAID_HISTORY_FILE = 'raid-history.json';
 const DONATION_HISTORY_FILE = 'donation-history.json';
+const MR_HISTORY_FILE = 'mr-history.json';
 
 // Clash's API returns timestamps like "20260815T183000.000Z" (ISO 8601
 // "basic" format, no dashes/colons). Convert to something Date() reliably
@@ -430,6 +431,152 @@ async function getDonationSnapshot(clanTag, year, month) {
   return snap ? snap.members : [];
 }
 
+// --- Daily MR snapshots (rank movement + trend lines) ---
+//
+// Once a day-ish we save every member's MR and rank, so the site can show
+// "climbed 3 spots since yesterday" arrows and a little line of each
+// member's MR across the month. Same 2-month window as everything else
+// (older days are erased). At most one entry per clan per calendar day: it
+// is refreshed through the day, so the one that stays is that day's last
+// look. Written at most every MR_SNAPSHOT_MIN_GAP_MIN minutes, and only when
+// something actually changed, so frequent calls cost nothing.
+const MR_SNAPSHOT_MIN_GAP_MIN = 20;
+
+function dateKey(d) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function parseDateKey(key) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key || '');
+  return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+}
+
+function sameMrRows(a, b) {
+  if (a.length !== b.length) return false;
+  const byTag = new Map(a.map((m) => [m.tag, m]));
+  return b.every((m) => {
+    const o = byTag.get(m.tag);
+    return o && o.mr === m.mr && o.rank === m.rank;
+  });
+}
+
+// members: [{ tag, mr, mrRank }]  (as built for /api/clan)
+async function recordMrSnapshot(clanTag, members, now = new Date()) {
+  if (!Array.isArray(members) || members.length === 0) return false; // never let a failed fetch wipe a good day
+  const cutoff = historyCutoff(now);
+  const today = dateKey(now);
+
+  const raw = await loadData(MR_HISTORY_FILE, []);
+  const kept = raw.filter((e) => {
+    const d = parseDateKey(e.date);
+    return d && d >= cutoff;
+  });
+  let changed = kept.length !== raw.length;
+
+  const rows = members.map((m) => ({ tag: m.tag, mr: m.mr, rank: m.mrRank }));
+  const idx = kept.findIndex((e) => e.clanTag === clanTag && e.date === today);
+  const entry = { clanTag, date: today, capturedAt: now.toISOString(), members: rows };
+
+  if (idx === -1) {
+    kept.push(entry);
+    changed = true;
+  } else {
+    const ageMin = (now.getTime() - new Date(kept[idx].capturedAt).getTime()) / 60000;
+    if (ageMin >= MR_SNAPSHOT_MIN_GAP_MIN && !sameMrRows(kept[idx].members, rows)) {
+      kept[idx] = entry;
+      changed = true;
+    }
+  }
+
+  if (changed) await saveData(MR_HISTORY_FILE, kept, `MR snapshot for ${clanTag} (${today})`);
+  return changed;
+}
+
+// Adds rank movement + a per-day MR trend to each member (mutates them).
+//   rankChange: positive = climbed that many places since the last saved day
+//               earlier this month, negative = dropped, 0 = same, null = no
+//               comparison available (first day of the month, or a new member).
+//   trend:      MR on each of trendDates (null where the member had no entry);
+//               the last point is always today's live MR.
+// Comparisons never cross a month boundary, because MR resets on the 1st.
+// Returns { trendDates, baselineDate }.
+async function applyMrTrends(clanTag, members, now = new Date()) {
+  const today = dateKey(now);
+  const all = await loadData(MR_HISTORY_FILE, []);
+  const earlier = all
+    .filter((e) => {
+      if (e.clanTag !== clanTag || e.date >= today) return false;
+      const d = parseDateKey(e.date);
+      return d && d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    })
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
+
+  const baseline = earlier.length ? earlier[earlier.length - 1] : null;
+  const baselineRank = new Map(baseline ? baseline.members.map((m) => [m.tag, m.rank]) : []);
+  const trendDates = [...earlier.map((e) => e.date), today];
+  const mrByDay = earlier.map((e) => new Map(e.members.map((m) => [m.tag, m.mr])));
+
+  for (const m of members) {
+    const was = baselineRank.get(m.tag);
+    m.rankChange = baseline && was != null ? was - m.mrRank : null;
+    m.trend = [...mrByDay.map((day) => (day.has(m.tag) ? day.get(m.tag) : null)), m.mr];
+  }
+  return { trendDates, baselineDate: baseline ? baseline.date : null };
+}
+
+// --- Monthly awards ---
+// rows: [{ tag, name, mr, donated, warStars, warAttacks, raidAttacks }], any
+// order. Each award goes to whoever is highest (ties go to the higher MR);
+// an award nobody earned (best value is 0) is left out. "Sharpshooter" is
+// stars per war attack and needs at least 2 attacks so one lucky 3-star
+// doesn't win it.
+const SHARPSHOOTER_MIN_ATTACKS = 2;
+
+function computeAwards(rows) {
+  const ranked = [...rows].sort((a, b) => (b.mr || 0) - (a.mr || 0));
+  const best = (valueOf, eligible = () => true) => {
+    let top = null;
+    let topValue = 0;
+    for (const r of ranked) {
+      if (!eligible(r)) continue;
+      const v = valueOf(r);
+      if (v > topValue) {
+        top = r;
+        topValue = v;
+      }
+    }
+    return top ? { row: top, value: topValue } : null;
+  };
+
+  const defs = [
+    { key: 'champion', title: 'Champion', unit: 'MR', pick: best((r) => r.mr || 0) },
+    { key: 'donor', title: 'Top Donor', unit: 'troops donated', pick: best((r) => r.donated || 0) },
+    { key: 'stars', title: 'Star Collector', unit: 'war stars', pick: best((r) => r.warStars || 0) },
+    { key: 'raider', title: 'Raid Master', unit: 'raid attacks', pick: best((r) => r.raidAttacks || 0) },
+    {
+      key: 'sharpshooter',
+      title: 'Sharpshooter',
+      unit: 'stars per attack',
+      pick: best(
+        (r) => (r.warStars || 0) / r.warAttacks,
+        (r) => (r.warAttacks || 0) >= SHARPSHOOTER_MIN_ATTACKS
+      ),
+    },
+  ];
+
+  return defs
+    .filter((d) => d.pick)
+    .map((d) => ({
+      key: d.key,
+      title: d.title,
+      unit: d.unit,
+      tag: d.pick.row.tag,
+      name: d.pick.row.name,
+      value: d.key === 'sharpshooter' ? Math.round(d.pick.value * 100) / 100 : Math.round(d.pick.value),
+    }));
+}
+
 // --- Capital Raid Weekend tracking (stacks through the month) ---
 //
 // The member table shows a running total of raid attacks for the whole
@@ -550,6 +697,9 @@ module.exports = {
   pruneRaidHistory,
   recordDonationSnapshot,
   getDonationSnapshot,
+  recordMrSnapshot,
+  applyMrTrends,
+  computeAwards,
   monthLabel,
   summarizeByMember,
   parseClashTimestamp,

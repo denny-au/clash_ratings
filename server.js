@@ -333,6 +333,143 @@ function describeRaidWeekend(season) {
   };
 }
 
+// The numbers for the strip under the clan card.
+function buildSummary(members, monthWars) {
+  const sum = (key) => members.reduce((t, m) => t + (m[key] || 0), 0);
+  const wars = { won: 0, lost: 0, tied: 0, total: monthWars.length };
+  for (const w of monthWars) {
+    if (w.result === 'win') wars.won += 1;
+    else if (w.result === 'lose') wars.lost += 1;
+    else if (w.result === 'tie') wars.tied += 1;
+  }
+  return {
+    members: members.length,
+    totalDonations: sum('donations'),
+    avgMr: members.length ? Math.round(sum('mr') / members.length) : 0,
+    warStars: sum('monthWarStars'),
+    raidAttacks: sum('raidAttacks'),
+    wars,
+  };
+}
+
+// Builds this month's per-member ratings from a /clans/{tag} payload: war
+// stars (recorded + live, regular wars + CWL), raid attacks (recorded + live)
+// and the MR that adds them to donations. Also records any war / raid weekend
+// that just ended. Shared by /api/clan and the background snapshot poller.
+async function buildRatings(data, tag, now = new Date()) {
+  // Shape a clean payload for the frontend
+  const members = (data.memberList || []).map((m) => ({
+    tag: m.tag,
+    name: m.name,
+    donations: m.donations,
+    clanRank: m.clanRank,
+    role: m.role || null, // 'leader' | 'coLeader' | 'admin' (Elder) | 'member'
+    leagueIcon: memberLeagueIcon(m),
+    monthWarStars: 0, // filled in below
+    raidAttacks: 0, // filled in below — stacks across the whole month, see below
+    mr: 0, // filled in below
+  }));
+
+  // This month's war stars (and their MR value) come from our own
+  // recorded history (local file, no extra API calls — Supercell has no
+  // "war stars this month" endpoint to call anyway). Only the raid
+  // season needs a live request.
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  // Fold in the war happening right now, if any, so War Stars/MR don't
+  // wait for the background poller (up to POLL_INTERVAL_MINUTES) to catch
+  // up. A war can only ever count once: while it's live it's counted via
+  // liveStatsByTag below (never in monthStatsByTag, since recordWarIfNew
+  // requires state === 'warEnded'); the moment it ends, we record it
+  // immediately here — before reading monthWars — so it moves straight
+  // into the "recorded" bucket in this very request instead of briefly
+  // counting nowhere.
+  let liveStatsByTag = new Map();
+  const currentWarData = await fetchCurrentWarRaw(tag);
+  if (currentWarData && currentWarData.state === 'warEnded') {
+    await warTracker.recordWarIfNew(tag, currentWarData);
+  } else if (currentWarData && (currentWarData.state === 'inWar' || currentWarData.state === 'preparation')) {
+    const liveAnnotated = warTracker.annotateMembers(currentWarData);
+    const liveSummary = warTracker.summarizeByMember([{ members: liveAnnotated }]);
+    liveStatsByTag = new Map(liveSummary.map((s) => [s.tag, s]));
+  }
+
+  // Clan War League runs alongside/instead of regular wars for about a
+  // week each month. This also records any newly-finished CWL round into
+  // the same war history used above, and hands back live stats for
+  // whichever CWL war is happening right now — merged additively into
+  // liveStatsByTag so CWL stars land in the exact same War Stars total
+  // and MR math as regular wars, live or recorded either way.
+  const cwlLiveStatsByTag = await processCwlForClan(tag);
+  for (const [cwlTag, cwlStats] of cwlLiveStatsByTag) {
+    const existing = liveStatsByTag.get(cwlTag);
+    if (existing) {
+      liveStatsByTag.set(cwlTag, {
+        ...existing,
+        stars: existing.stars + cwlStats.stars,
+        warStarMR: existing.warStarMR + cwlStats.warStarMR,
+      });
+    } else {
+      liveStatsByTag.set(cwlTag, cwlStats);
+    }
+  }
+
+  const monthWars = await warTracker.getHistoryForClanInMonth(tag, currentYear, currentMonth);
+  const monthSummary = warTracker.summarizeByMember(monthWars);
+  const monthStatsByTag = new Map(monthSummary.map((s) => [s.tag, s]));
+
+  const raidSeason = await fetchLatestRaidSeason(tag);
+
+  // Same live/recorded split as war stars above: a raid weekend counts
+  // once — while it's ongoing its attacks are live (below), the moment
+  // it ends this records it into raid history, so the monthly total
+  // never double-counts and never briefly disappears in between.
+  let liveRaidByTag = new Map();
+  if (raidSeason && raidSeason.state === 'ended') {
+    await warTracker.recordRaidSeasonIfNew(tag, raidSeason);
+  } else if (raidSeason && raidSeason.state === 'ongoing') {
+    liveRaidByTag = new Map((raidSeason.members || []).map((m) => [m.tag, m.attacks || 0]));
+  }
+
+  const monthRaidSeasons = await warTracker.getRaidHistoryForClanInMonth(tag, currentYear, currentMonth);
+  const monthRaidSummary = warTracker.summarizeRaidByMember(monthRaidSeasons);
+  const monthRaidByTag = new Map(monthRaidSummary.map((s) => [s.tag, s.attacks]));
+
+  // MR (Member Rating) — this site's main ranking. 1 point per donation,
+  // 25 per raid attack this month, and this month's war stars weighted
+  // by how much harder/easier the target's town hall was (see
+  // warTracker's warStarMrMultiplier for the exact table).
+  members.forEach((m) => {
+    const monthStats = monthStatsByTag.get(m.tag);
+    const liveStats = liveStatsByTag.get(m.tag);
+    const recordedStars = monthStats ? monthStats.stars : 0;
+    const recordedWarStarMR = monthStats ? monthStats.warStarMR : 0;
+    const liveStars = liveStats ? liveStats.stars : 0;
+    const liveWarStarMR = liveStats ? liveStats.warStarMR : 0;
+    m.monthWarStars = recordedStars + liveStars;
+    m.warAttacks = (monthStats ? monthStats.attacks : 0) + (liveStats ? liveStats.attacks || 0 : 0);
+    const warStarMR = recordedWarStarMR + liveWarStarMR;
+
+    const recordedRaidAttacks = monthRaidByTag.get(m.tag) || 0;
+    const liveRaidAttacks = liveRaidByTag.get(m.tag) || 0;
+    m.raidAttacks = recordedRaidAttacks + liveRaidAttacks;
+
+    const donationMR = m.donations * 1;
+    const raidMR = m.raidAttacks * 25;
+    m.mr = Math.round(donationMR + raidMR + warStarMR);
+    // Where the MR came from (the wars part absorbs rounding so the three always add up).
+    m.breakdown = { donations: donationMR, raids: raidMR, wars: m.mr - donationMR - raidMR };
+  });
+
+  // MR is the main ranking for this site — sort by it, highest first.
+  members.sort((a, b) => b.mr - a.mr);
+  members.forEach((m, i) => {
+    m.mrRank = i + 1;
+  });
+
+  return { members, raidSeason, monthWars, year: currentYear, month: currentMonth };
+}
+
 app.get('/api/clan', async (req, res) => {
   if (!API_KEY) {
     return res.status(500).json({
@@ -379,113 +516,46 @@ app.get('/api/clan', async (req, res) => {
       console.error('Donation snapshot failed:', snapErr.message);
     }
 
-    // Shape a clean payload for the frontend
-    const members = (data.memberList || []).map((m) => ({
-      tag: m.tag,
-      name: m.name,
-      donations: m.donations,
-      clanRank: m.clanRank,
-      role: m.role || null, // 'leader' | 'coLeader' | 'admin' (Elder) | 'member'
-      leagueIcon: memberLeagueIcon(m),
-      monthWarStars: 0, // filled in below
-      raidAttacks: 0, // filled in below — stacks across the whole month, see below
-      mr: 0, // filled in below
-    }));
+    // Everything that turns the raw member list into this month's ratings
+    // (war stars, raid attacks, MR) lives in buildRatings so the background
+    // poller can build the exact same numbers for the daily snapshot.
+    const { members, raidSeason, monthWars, year: currentYear, month: currentMonth } = await buildRatings(data, tag);
 
-    // This month's war stars (and their MR value) come from our own
-    // recorded history (local file, no extra API calls — Supercell has no
-    // "war stars this month" endpoint to call anyway). Only the raid
-    // season needs a live request.
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
-    // Fold in the war happening right now, if any, so War Stars/MR don't
-    // wait for the background poller (up to POLL_INTERVAL_MINUTES) to catch
-    // up. A war can only ever count once: while it's live it's counted via
-    // liveStatsByTag below (never in monthStatsByTag, since recordWarIfNew
-    // requires state === 'warEnded'); the moment it ends, we record it
-    // immediately here — before reading monthWars — so it moves straight
-    // into the "recorded" bucket in this very request instead of briefly
-    // counting nowhere.
-    let liveStatsByTag = new Map();
-    const currentWarData = await fetchCurrentWarRaw(tag);
-    if (currentWarData && currentWarData.state === 'warEnded') {
-      await warTracker.recordWarIfNew(tag, currentWarData);
-    } else if (currentWarData && (currentWarData.state === 'inWar' || currentWarData.state === 'preparation')) {
-      const liveAnnotated = warTracker.annotateMembers(currentWarData);
-      const liveSummary = warTracker.summarizeByMember([{ members: liveAnnotated }]);
-      liveStatsByTag = new Map(liveSummary.map((s) => [s.tag, s]));
+    // Rank movement + trend lines come from earlier days' snapshots; today's
+    // own snapshot is saved afterwards. A storage hiccup must never break
+    // the leaderboard.
+    let trendDates = [];
+    let rankBaseline = null;
+    try {
+      const trends = await warTracker.applyMrTrends(data.tag, members);
+      trendDates = trends.trendDates;
+      rankBaseline = trends.baselineDate;
+      await warTracker.recordMrSnapshot(data.tag, members);
+    } catch (trendErr) {
+      console.error('MR trend/snapshot failed:', trendErr.message);
     }
 
-    // Clan War League runs alongside/instead of regular wars for about a
-    // week each month. This also records any newly-finished CWL round into
-    // the same war history used above, and hands back live stats for
-    // whichever CWL war is happening right now — merged additively into
-    // liveStatsByTag so CWL stars land in the exact same War Stars total
-    // and MR math as regular wars, live or recorded either way.
-    const cwlLiveStatsByTag = await processCwlForClan(tag);
-    for (const [cwlTag, cwlStats] of cwlLiveStatsByTag) {
-      const existing = liveStatsByTag.get(cwlTag);
-      if (existing) {
-        liveStatsByTag.set(cwlTag, {
-          ...existing,
-          stars: existing.stars + cwlStats.stars,
-          warStarMR: existing.warStarMR + cwlStats.warStarMR,
-        });
-      } else {
-        liveStatsByTag.set(cwlTag, cwlStats);
-      }
+    const awards = warTracker.computeAwards(
+      members.map((m) => ({
+        tag: m.tag,
+        name: m.name,
+        mr: m.mr,
+        donated: m.donations,
+        warStars: m.monthWarStars,
+        warAttacks: m.warAttacks,
+        raidAttacks: m.raidAttacks,
+      }))
+    );
+
+    // Who won last month's Champion award (gets a little trophy by their name).
+    let lastChampion = null;
+    try {
+      const prevMonth = await buildPreviousMonth(tag);
+      const champ = prevMonth.awards.find((a) => a.key === 'champion');
+      if (champ) lastChampion = { tag: champ.tag, name: champ.name, monthLabel: prevMonth.monthLabel };
+    } catch (champErr) {
+      console.error('Last champion lookup failed:', champErr.message);
     }
-
-    const monthWars = await warTracker.getHistoryForClanInMonth(tag, currentYear, currentMonth);
-    const monthSummary = warTracker.summarizeByMember(monthWars);
-    const monthStatsByTag = new Map(monthSummary.map((s) => [s.tag, s]));
-
-    const raidSeason = await fetchLatestRaidSeason(tag);
-
-    // Same live/recorded split as war stars above: a raid weekend counts
-    // once — while it's ongoing its attacks are live (below), the moment
-    // it ends this records it into raid history, so the monthly total
-    // never double-counts and never briefly disappears in between.
-    let liveRaidByTag = new Map();
-    if (raidSeason && raidSeason.state === 'ended') {
-      await warTracker.recordRaidSeasonIfNew(tag, raidSeason);
-    } else if (raidSeason && raidSeason.state === 'ongoing') {
-      liveRaidByTag = new Map((raidSeason.members || []).map((m) => [m.tag, m.attacks || 0]));
-    }
-
-    const monthRaidSeasons = await warTracker.getRaidHistoryForClanInMonth(tag, currentYear, currentMonth);
-    const monthRaidSummary = warTracker.summarizeRaidByMember(monthRaidSeasons);
-    const monthRaidByTag = new Map(monthRaidSummary.map((s) => [s.tag, s.attacks]));
-
-    // MR (Member Rating) — this site's main ranking. 1 point per donation,
-    // 25 per raid attack this month, and this month's war stars weighted
-    // by how much harder/easier the target's town hall was (see
-    // warTracker's warStarMrMultiplier for the exact table).
-    members.forEach((m) => {
-      const monthStats = monthStatsByTag.get(m.tag);
-      const liveStats = liveStatsByTag.get(m.tag);
-      const recordedStars = monthStats ? monthStats.stars : 0;
-      const recordedWarStarMR = monthStats ? monthStats.warStarMR : 0;
-      const liveStars = liveStats ? liveStats.stars : 0;
-      const liveWarStarMR = liveStats ? liveStats.warStarMR : 0;
-      m.monthWarStars = recordedStars + liveStars;
-      const warStarMR = recordedWarStarMR + liveWarStarMR;
-
-      const recordedRaidAttacks = monthRaidByTag.get(m.tag) || 0;
-      const liveRaidAttacks = liveRaidByTag.get(m.tag) || 0;
-      m.raidAttacks = recordedRaidAttacks + liveRaidAttacks;
-
-      const donationMR = m.donations * 1;
-      const raidMR = m.raidAttacks * 25;
-      m.mr = Math.round(donationMR + raidMR + warStarMR);
-    });
-
-    // MR is the main ranking for this site — sort by it, highest first.
-    members.sort((a, b) => b.mr - a.mr);
-    members.forEach((m, i) => {
-      m.mrRank = i + 1;
-    });
 
     // Remember this as the clan to auto-poll for war history in the background.
     await warTracker.setTrackedTag(data.tag);
@@ -498,6 +568,11 @@ app.get('/api/clan', async (req, res) => {
       badgeUrl: data.badgeUrls ? data.badgeUrls.medium : null,
       raidWeekend: describeRaidWeekend(raidSeason),
       monthLabel: warTracker.monthLabel(currentYear, currentMonth),
+      trendDates,
+      rankBaseline,
+      summary: buildSummary(members, monthWars),
+      awards,
+      lastChampion,
       members,
     });
   } catch (err) {
@@ -653,12 +728,9 @@ app.get('/api/war-history', async (req, res) => {
 // MR is the same formula as the live leaderboard: 1 per donation, 25 per
 // raid attack, plus the town-hall-adjusted MR of every recorded war star
 // (regular wars and CWL).
-app.get('/api/previous-month', async (req, res) => {
-  const tag = normalizeTag(req.query.tag);
-  if (!tag || tag.length < 2) {
-    return res.status(400).json({ error: 'Please provide a clan tag, e.g. #2Y8V0YLQ' });
-  }
-
+// Last month's final standings (from the saved war/raid records and the
+// end-of-month donation snapshot) plus that month's awards.
+async function buildPreviousMonth(tag) {
   const prev = warTracker.getPreviousMonth();
   const wars = await warTracker.getHistoryForClanInMonth(tag, prev.year, prev.month);
   const warMembers = warTracker.summarizeByMember(wars);
@@ -668,7 +740,7 @@ app.get('/api/previous-month', async (req, res) => {
   const donationMembers = await warTracker.getDonationSnapshot(tag, prev.year, prev.month);
 
   const byTag = new Map();
-  const blank = (m) => ({ tag: m.tag, name: m.name, warStars: 0, warStarMR: 0, raidAttacks: 0, donated: 0 });
+  const blank = (m) => ({ tag: m.tag, name: m.name, warStars: 0, warAttacks: 0, warStarMR: 0, raidAttacks: 0, donated: 0 });
   for (const r of raidMembers) {
     const entry = byTag.get(r.tag) || blank(r);
     entry.raidAttacks = r.attacks;
@@ -677,6 +749,7 @@ app.get('/api/previous-month', async (req, res) => {
   for (const w of warMembers) {
     const entry = byTag.get(w.tag) || blank(w);
     entry.warStars = w.stars;
+    entry.warAttacks = w.attacks;
     entry.warStarMR = w.warStarMR;
     byTag.set(w.tag, entry);
   }
@@ -691,20 +764,108 @@ app.get('/api/previous-month', async (req, res) => {
     tag: m.tag,
     name: m.name,
     warStars: m.warStars,
+    warAttacks: m.warAttacks,
     raidAttacks: m.raidAttacks,
     donated: m.donated,
     mr: Math.round(m.donated + m.raidAttacks * 25 + m.warStarMR),
   }));
   members.sort((a, b) => b.mr - a.mr);
 
-  res.json({
+  return {
     year: prev.year,
     month: prev.month,
     monthLabel: prev.label,
     warsRecorded: wars.length,
     weekendsRecorded: seasons.length,
+    awards: warTracker.computeAwards(members),
     members,
-  });
+  };
+}
+
+app.get('/api/previous-month', async (req, res) => {
+  const tag = normalizeTag(req.query.tag);
+  if (!tag || tag.length < 2) {
+    return res.status(400).json({ error: 'Please provide a clan tag, e.g. #2Y8V0YLQ' });
+  }
+  res.json(await buildPreviousMonth(tag));
+});
+
+// A member's game profile (town hall, trophies, heroes...) plus their war
+// attacks recorded this month. The profile comes live from Supercell and is
+// cached for a few minutes; the war attacks come from our own saved history.
+const playerCache = makeCache(CACHE_TTL_MS);
+
+app.get('/api/player', async (req, res) => {
+  if (!API_KEY) {
+    return res.status(500).json({ error: 'Server is missing COC_API_KEY.' });
+  }
+  const tag = normalizeTag(req.query.tag);
+  if (!tag || !/^#[0-9A-Z]{3,15}$/.test(tag)) {
+    return res.status(400).json({ error: 'Please provide a player tag, e.g. #ABC123' });
+  }
+  const clanTag = normalizeTag(req.query.clan);
+
+  try {
+    let profile = playerCache.get(tag);
+    if (profile === undefined) {
+      const response = await fetch(`${COC_BASE}/players/${encodeURIComponent(tag)}`, { headers: authHeaders() });
+      if (response.status === 404) return res.status(404).json({ error: 'No player found for that tag.' });
+      if (!response.ok) return res.status(response.status).json({ error: 'Could not load that player right now.' });
+      const p = await response.json();
+      const tier = p.leagueTier || p.league || null;
+      const iconUrls = tier && tier.iconUrls ? tier.iconUrls : null;
+      profile = {
+        tag: p.tag,
+        name: p.name,
+        role: p.role || null,
+        townHall: p.townHallLevel || null,
+        townHallWeapon: p.townHallWeaponLevel || null,
+        expLevel: p.expLevel || null,
+        trophies: p.trophies != null ? p.trophies : null,
+        bestTrophies: p.bestTrophies != null ? p.bestTrophies : null,
+        leagueName: tier ? tier.name || null : null,
+        leagueIcon: iconUrls ? iconUrls.small || iconUrls.medium || iconUrls.tiny || null : null,
+        lifetimeWarStars: p.warStars != null ? p.warStars : null,
+        attackWins: p.attackWins != null ? p.attackWins : null,
+        defenseWins: p.defenseWins != null ? p.defenseWins : null,
+        seasonDonated: p.donations != null ? p.donations : null,
+        seasonReceived: p.donationsReceived != null ? p.donationsReceived : null,
+        capitalContributions: p.clanCapitalContributions != null ? p.clanCapitalContributions : null,
+        heroes: (p.heroes || [])
+          .filter((h) => !h.village || h.village === 'home')
+          .map((h) => ({ name: h.name, level: h.level, maxLevel: h.maxLevel })),
+      };
+      playerCache.set(tag, profile);
+    }
+
+    // This month's recorded war attacks for this player (needs the clan tag).
+    let warAttacks = [];
+    if (clanTag) {
+      const now = new Date();
+      const wars = await warTracker.getHistoryForClanInMonth(clanTag, now.getFullYear(), now.getMonth() + 1);
+      for (const war of wars) {
+        const me = (war.members || []).find((m) => m.tag === tag);
+        if (!me) continue;
+        for (const a of me.attacks || []) {
+          warAttacks.push({
+            opponent: war.opponentName || null,
+            result: war.result || null,
+            endTime: war.endTime,
+            stars: a.stars,
+            destruction: a.destructionPercentage,
+            thDelta: a.thDelta,
+            defenderTownhall: a.defenderTownhall,
+          });
+        }
+      }
+      warAttacks.sort((x, y) => (x.endTime < y.endTime ? 1 : -1)); // newest first
+    }
+
+    res.json({ ...profile, warAttacks });
+  } catch (err) {
+    console.error('Player lookup failed:', err.message);
+    res.status(502).json({ error: 'Could not reach the Clash of Clans API.' });
+  }
 });
 
 // Checks the tracked clan's current war and, if it just ended, records it.
@@ -789,8 +950,12 @@ async function pollTrackedClanForDonations() {
     if (!response.ok) return;
     const data = await response.json();
     await warTracker.recordDonationSnapshot(data.tag, data.memberList);
+    // Same numbers the website builds, saved as today's MR snapshot so rank
+    // movement and trend lines keep filling in even when nobody opens the page.
+    const { members } = await buildRatings(data, tag);
+    await warTracker.recordMrSnapshot(data.tag, members);
   } catch (err) {
-    console.error('Background donation snapshot failed:', err.message);
+    console.error('Background donation/MR snapshot failed:', err.message);
   }
 }
 
