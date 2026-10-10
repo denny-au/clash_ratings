@@ -68,6 +68,34 @@
     var v = safeVideo(url);
     return v ? '<a class="g-btn g-btn-ghost" href="' + esc(v) + '" target="_blank" rel="noopener noreferrer">Watch video</a>' : '';
   }
+  // Army picture: `front` pictures in the foreground, `back` pictures behind them.
+  function artHtml(art) {
+    var row = function (list, cls) {
+      var imgs = (list || [])
+        .map(function (u) { var s = safeImg(u); return s ? '<img src="' + esc(s) + '" alt="" loading="lazy" />' : ''; })
+        .join('');
+      return imgs ? '<span class="art-row ' + cls + '">' + imgs + '</span>' : '';
+    };
+    var inner = art ? row(art.back, 'art-back') + row(art.front, 'art-front') : '';
+    return '<span class="army-art' + (inner ? '' : ' army-art-empty') + '">' + (inner || '<span>Army picture coming soon</span>') + '</span>';
+  }
+  // If a picture file is missing, drop it quietly (and fall back to the placeholder if none are left).
+  function wireArt(scope) {
+    var imgs = scope.querySelectorAll('.army-art img');
+    for (var i = 0; i < imgs.length; i++) {
+      imgs[i].addEventListener('error', function (e) {
+        var img = e.target, art = img.closest('.army-art');
+        var row = img.parentNode;
+        img.remove();
+        if (row && !row.querySelector('img')) row.remove();
+        if (art && !art.querySelector('img')) {
+          art.classList.add('army-art-empty');
+          art.innerHTML = '<span>Army picture coming soon</span>';
+        }
+      });
+    }
+  }
+
   function byHtml(by) {
     return by ? '<span class="g-by">by ' + esc(by) + '</span>' : '';
   }
@@ -102,6 +130,7 @@
         var hasContent = troops || safeLink(a.link);
         return (
           '<div class="g-item army army-' + esc(a.kind) + '" style="--i:' + i + '">' +
+          artHtml(a.art) +
           '<span class="army-tags"><span class="army-tag">' + esc(KIND[a.kind] || a.kind) + '</span>' + typeTag + '</span>' +
           '<span class="g-item-name">' + esc(a.name) + '</span>' + byHtml(a.by) +
           (a.summary ? '<span class="g-item-note">' + esc(a.summary) + '</span>' : '') +
@@ -111,7 +140,7 @@
         );
       })
       .join('');
-    return '<section class="g-card">' + cardHead('army', 'Recommended armies', 'One ground, one air, and the overall pick') + '<div class="g-grid g-grid-3">' + (items || '<p class="g-empty">Nothing here yet.</p>') + '</div></section>';
+    return '<section class="g-card">' + cardHead('army', 'Armies', th.armiesNote || data.armiesNote || '') + '<div class="g-grid g-grid-3">' + (items || '<p class="g-empty">Nothing here yet.</p>') + '</div></section>';
   }
 
   function tipsHtml(th) {
@@ -163,6 +192,7 @@
     if (selected) {
       detailEl.innerHTML = detailHtml(find(selected));
       detailEl.hidden = false;
+      wireArt(detailEl);
       detailEl.classList.remove('enter');
       void detailEl.offsetWidth; // replay the entrance
       detailEl.classList.add('enter');
