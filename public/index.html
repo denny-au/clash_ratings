@@ -141,6 +141,7 @@
         <button type="button" role="tab" id="tab-month" class="tab" data-tab="month" aria-selected="true" aria-controls="panel-month">This Month</button>
         <button type="button" role="tab" id="tab-last" class="tab" data-tab="last" aria-selected="false" aria-controls="panel-last" tabindex="-1" hidden>Last Month</button>
         <button type="button" role="tab" id="tab-war" class="tab" data-tab="war" aria-selected="false" aria-controls="panel-war" tabindex="-1">War <span id="war-live-dot" class="live-dot" hidden title="A war is active right now" aria-hidden="true"></span></button>
+        <button type="button" role="tab" id="tab-guide" class="tab" data-tab="guide" aria-selected="false" aria-controls="panel-guide" tabindex="-1">Guide</button>
       </div>
 
       <!-- ===== This Month ===== -->
@@ -209,6 +210,15 @@
           </div>
           <button type="button" id="last-more" class="more-btn" aria-expanded="false" hidden></button>
         </div>
+      </section>
+
+      <!-- ===== Guide ===== -->
+      <section id="panel-guide" class="panel" role="tabpanel" aria-labelledby="tab-guide" hidden>
+        <div class="panel-head">
+          <h3 class="panel-title">Guide</h3>
+        </div>
+        <p class="guide-intro">Pick your town hall for recommended armies, bases and tips.</p>
+        <div id="guide-root"></div>
       </section>
 
       <!-- ===== War ===== -->
@@ -309,6 +319,8 @@
     </div>
   </div>
 
+  <script src="guide-data.js"></script>
+  <script src="guide.js"></script>
   <script src="app.js"></script>
   <script src="fx.js" defer></script>
 </body>

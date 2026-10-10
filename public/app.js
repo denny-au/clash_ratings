@@ -16,7 +16,7 @@ const drawerTabs = document.querySelectorAll('.drawer-tab');
 
 const tabsEl = $('tabs');
 const tabButtons = Array.from(document.querySelectorAll('.tab'));
-const panels = { month: $('panel-month'), last: $('panel-last'), war: $('panel-war') };
+const panels = { month: $('panel-month'), last: $('panel-last'), war: $('panel-war'), guide: $('panel-guide') };
 
 // How many leaderboard rows show before the "Show all" button. Change this
 // one number to show more or fewer by default (set it very high to always
@@ -144,7 +144,8 @@ function activateTab(name, { updateHash = true } = {}) {
   syncSummary(); // the strip is this month's numbers, so it sits out the Last Month tab
   if (updateHash) {
     try {
-      history.replaceState(null, '', name === 'month' ? location.pathname + location.search : `#${name}`);
+      const hash = name === 'guide' && window.CR_GUIDE ? window.CR_GUIDE.hash() : `#${name}`;
+      history.replaceState(null, '', name === 'month' ? location.pathname + location.search : hash);
     } catch (e) {
       /* file:// or sandboxed — the hash is just a convenience */
     }
@@ -164,7 +165,7 @@ for (const b of tabButtons) {
 }
 
 function hashTab() {
-  const h = location.hash.replace('#', '');
+  const h = location.hash.replace('#', '').split('/')[0];
   return panels[h] ? h : 'month';
 }
 
@@ -750,7 +751,7 @@ const summaryEl = $('summary');
 let summaryHasData = false;
 
 function syncSummary() {
-  summaryEl.hidden = !summaryHasData || activeTab === 'last';
+  summaryEl.hidden = !summaryHasData || activeTab === 'last' || activeTab === 'guide';
 }
 
 function renderSummary(sum) {
