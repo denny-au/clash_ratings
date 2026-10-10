@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <canvas id="embers" class="embers" aria-hidden="true"></canvas>
   <!-- Shared crown gradients (referenced by every top-3 crown below). -->
   <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
     <defs>
@@ -123,14 +124,14 @@
           <h3 id="month-title" class="panel-title"></h3>
           <button type="button" id="share-month" class="tool-btn" title="Save a picture of the top 5 to share">Share</button>
         </div>
-        <div class="board">
+        <div id="member-podium" class="podium-wrap" hidden></div>
+        <div class="board" id="member-board">
           <div class="table-scroll">
             <table id="member-table" class="leaderboard" hidden>
               <thead>
                 <tr>
                   <th class="rank">#</th>
                   <th>Member</th>
-                  <th class="trend" title="Each member's MR on each day recorded this month">Trend</th>
                   <th class="num c-mr" title="Member Rating: 1 pt/donation, 25 pts/raid attack this month, 50 pts per war star this month from regular wars and CWL (adjusted by how much harder or easier the target's town hall was)">MR</th>
                   <th class="num c-stars"><span class="long">War Stars</span><span class="short">Stars</span></th>
                   <th class="num c-donated">Donated</th>
@@ -164,7 +165,8 @@
           <h4 class="hof-title">Hall of Fame</h4>
           <div id="last-awards" class="awards"></div>
         </div>
-        <div class="board">
+        <div id="last-podium" class="podium-wrap" hidden></div>
+        <div class="board" id="last-board">
           <div class="table-scroll">
             <table id="last-table" class="leaderboard" hidden>
               <thead>
@@ -251,5 +253,6 @@
   </div>
 
   <script src="app.js"></script>
+  <script src="fx.js" defer></script>
 </body>
 </html>

@@ -125,6 +125,8 @@ if (window.ResizeObserver) {
 }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => positionPill(false));
 
+const boardReplays = {}; // tab name -> function that replays that board's entrance
+
 function activateTab(name, { updateHash = true } = {}) {
   const btn = tabButtons.find((b) => b.dataset.tab === name);
   if (!btn || btn.hidden) name = 'month'; // e.g. "#last" but there's no last-month data
@@ -136,6 +138,7 @@ function activateTab(name, { updateHash = true } = {}) {
   }
   for (const [key, el] of Object.entries(panels)) el.hidden = key !== name;
   positionPill(true);
+  if (boardReplays[name]) boardReplays[name]();
   syncSummary(); // the strip is this month's numbers, so it sits out the Last Month tab
   if (updateHash) {
     try {
@@ -362,41 +365,77 @@ async function loadProfile(tag) {
 
 const profileFor = (tag) => profileCache.get(tag) || profileErrors.get(tag) || null;
 
+// ---------- Entrance animation + count-up ----------
+const reduceMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+function countUp(el, ms = 1100) {
+  const target = Number(el.dataset.count) || 0;
+  if (reduceMotion() || target < 10) {
+    el.textContent = fmt(target);
+    return;
+  }
+  const t0 = performance.now();
+  const step = (now) => {
+    const t = Math.min(1, (now - t0) / ms);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = fmt(Math.round(target * eased));
+    if (t < 1) requestAnimationFrame(step);
+  };
+  el.textContent = '0';
+  requestAnimationFrame(step);
+}
+
+// Restarts the CSS entrance on a board/podium by toggling a class, and counts
+// the podium numbers up. Safe to call any time; does nothing visual when the
+// user prefers reduced motion (the CSS also switches animations off).
+function playEntrance(...els) {
+  for (const el of els) {
+    if (!el) continue;
+    el.classList.remove('enter');
+    void el.offsetWidth; // restart the animation
+    el.classList.add('enter');
+    clearTimeout(el._enterTimer);
+    el._enterTimer = setTimeout(() => el.classList.remove('enter'), 2200);
+    el.querySelectorAll('[data-count]').forEach((n) => countUp(n));
+  }
+}
+
 // ---------- Leaderboard component (used by This Month and Last Month) ----------
 // rows: [{ tag, rank, name, role, leagueIcon, mr, warStars, donated, raids,
 //          rankChange, trend, breakdown, champLabel }]
-// opts.trend  -> show the sparkline column + rank arrows
+// opts.trend  -> show rank arrows (the sparkline lives in the player card)
 // opts.details -> rows open into a player card on click/Enter
 function createLeaderboard(prefix, opts = {}) {
   const table = $(`${prefix}-table`);
   const body = $(`${prefix}-rows`);
   const moreBtn = $(`${prefix}-more`);
+  const podiumEl = opts.podium ? $(`${prefix}-podium`) : null;
+  const boardEl = table.closest('.board');
   let rows = [];
   let expanded = false;
   const open = new Set();
   let baselineLabel = 'the last check';
 
-  // Columns actually showing (the trend column is hidden on phones). A colspan
+  // Columns actually showing (some columns hide on phones). A colspan
   // bigger than that would add a phantom column and squash the member names.
   const colCount = () => Array.from(table.querySelectorAll('thead th')).filter((th) => th.offsetParent !== null).length || 1;
 
   function draw() {
     const maxMr = Math.max(1, ...rows.map((r) => r.mr || 0));
     const reserveIcon = rows.some((r) => safeIconUrl(r.leagueIcon));
-    const visible = expanded ? rows : rows.slice(0, TOP_N);
+    const start = hasPodium() ? 3 : 0; // the top three live on the podium
+    const visible = expanded ? rows.slice(start) : rows.slice(start, Math.max(start, TOP_N));
 
     body.innerHTML = visible
-      .map((r) => {
+      .map((r, idx) => {
         const pct = Math.max(3, Math.round(((r.mr || 0) / maxMr) * 100));
         const move = opts.trend ? moveHtml(r.rankChange) : '';
         const rankCell = r.rank <= 3 ? `${crownHtml(r.rank)}${move}` : `<span class="rank-num">${r.rank}</span>${move}`;
         const isOpen = opts.details && open.has(r.tag);
-        const trendCell = opts.trend ? `<td class="trend">${sparklineSvg(r.trend || [], 64, 22)}</td>` : '';
         const attrs = opts.details ? ` data-tag="${escapeHtml(r.tag)}" tabindex="0" aria-expanded="${isOpen}"` : '';
-        const main = `<tr class="${r.rank <= 3 ? `rank-${r.rank}` : ''}${opts.details ? ' expandable' : ''}${isOpen ? ' is-open' : ''}"${attrs}>
+        const main = `<tr class="${r.rank <= 3 ? `rank-${r.rank}` : ''}${opts.details ? ' expandable' : ''}${isOpen ? ' is-open' : ''}" style="--i:${idx}"${attrs}>
           <td class="rank">${rankCell}</td>
           ${memberCellHtml(r, reserveIcon)}
-          ${trendCell}
           <td class="num mr"><span class="mr-val">${fmt(r.mr)}</span><span class="mr-bar"><i style="width:${pct}%"></i></span></td>
           <td class="num">${fmt(r.warStars)}</td>
           <td class="num">${fmt(r.donated)}</td>
@@ -411,20 +450,84 @@ function createLeaderboard(prefix, opts = {}) {
     moreBtn.hidden = !hasMore;
     moreBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     moreBtn.textContent = expanded ? `Show top ${TOP_N}` : `Show all ${rows.length}`;
-    table.hidden = rows.length === 0;
+    table.hidden = visible.length === 0;
+    if (boardEl) boardEl.hidden = visible.length === 0;
+  }
+
+  // ---- Podium: the top three as big cards (2nd | 1st | 3rd) ----
+  const hasPodium = () => !!podiumEl && rows.length >= 3;
+
+  function podHtml(r) {
+    const iconUrl = safeIconUrl(r.leagueIcon);
+    const icon = iconUrl ? `<img class="league" src="${iconUrl}" alt="" width="28" height="28" referrerpolicy="no-referrer" />` : '';
+    const label = ROLE_LABELS[r.role] || '';
+    const isOpen = opts.details && open.has(r.tag);
+    const el = opts.details ? 'button' : 'div';
+    const attrs = opts.details ? ` type="button" data-tag="${escapeHtml(r.tag)}" aria-expanded="${isOpen}"` : '';
+    return `<${el} class="pod pod-${r.rank}${isOpen ? ' is-open' : ''}"${attrs}>
+      <span class="pod-glow" aria-hidden="true"></span>
+      <span class="pod-crown">${crownHtml(r.rank)}</span>
+      <span class="pod-who">${icon}<span class="pod-name">${escapeHtml(r.name)}</span>${r.champLabel ? champHtml(r.champLabel) : ''}</span>
+      <span class="pod-role">${escapeHtml(label)}</span>
+      <span class="pod-mr"><b data-count="${Number(r.mr) || 0}">${fmt(r.mr)}</b><i>MR</i></span>
+      ${opts.trend ? `<span class="pod-move">${moveHtml(r.rankChange)}</span>` : ''}
+      <span class="pod-stats"><span><b>${fmt(r.warStars)}</b>stars</span><span><b>${fmt(r.donated)}</b>donated</span><span><b>${fmt(r.raids)}</b>raids</span></span>
+      <span class="pod-base" aria-hidden="true"><b>${r.rank}</b></span>
+    </${el}>`;
+  }
+
+  function podiumDetailHtml() {
+    return rows
+      .slice(0, 3)
+      .filter((r) => opts.details && open.has(r.tag))
+      .map(
+        (r) => `<div class="pod-detail" data-for="${escapeHtml(r.tag)}">
+          <div class="pod-detail-head"><span>${escapeHtml(r.name)}</span><button type="button" class="pod-close" data-close="${escapeHtml(r.tag)}" aria-label="Close player card">×</button></div>
+          <div class="detail-card">${detailInnerHtml(r, profileFor(r.tag), baselineLabel)}</div>
+        </div>`
+      )
+      .join('');
+  }
+
+  // Cards are only rebuilt when the rows change, so their entrance animation
+  // doesn't replay every time a player card is opened.
+  function drawPodium() {
+    if (!podiumEl) return;
+    if (!hasPodium()) {
+      podiumEl.hidden = true;
+      podiumEl.innerHTML = '';
+      return;
+    }
+    const [a, b, c] = rows;
+    podiumEl.innerHTML = `<div class="podium">${podHtml(b)}${podHtml(a)}${podHtml(c)}</div><div class="pod-detail-slot">${podiumDetailHtml()}</div>`;
+    podiumEl.hidden = false;
+  }
+
+  function drawPodiumDetail() {
+    const slot = podiumEl && podiumEl.querySelector('.pod-detail-slot');
+    if (slot) slot.innerHTML = podiumDetailHtml();
+    for (const pod of podiumEl ? podiumEl.querySelectorAll('.pod[data-tag]') : []) {
+      const on = open.has(pod.dataset.tag);
+      pod.classList.toggle('is-open', on);
+      pod.setAttribute('aria-expanded', on ? 'true' : 'false');
+    }
   }
 
   function refreshDetail(tag) {
     const row = rows.find((r) => r.tag === tag);
     const holder = body.querySelector(`tr.detail[data-for="${CSS.escape(tag)}"] .detail-card`);
     if (row && holder) holder.innerHTML = detailInnerHtml(row, profileFor(tag), baselineLabel);
+    const pod = podiumEl && podiumEl.querySelector(`.pod-detail[data-for="${CSS.escape(tag)}"] .detail-card`);
+    if (row && pod) pod.innerHTML = detailInnerHtml(row, profileFor(tag), baselineLabel);
   }
 
   async function toggle(tag) {
     if (open.has(tag)) open.delete(tag);
     else open.add(tag);
+    if (boardEl) boardEl.classList.remove('enter'); // don't replay the row entrance
     draw();
-    const tr = body.querySelector(`tr[data-tag="${CSS.escape(tag)}"]`);
+    drawPodiumDetail();
+    const tr = body.querySelector(`tr[data-tag="${CSS.escape(tag)}"]`) || (podiumEl && podiumEl.querySelector(`.pod[data-tag="${CSS.escape(tag)}"]`));
     if (tr) tr.focus({ preventScroll: true });
     if (open.has(tag) && !profileCache.has(tag)) {
       profileErrors.delete(tag);
@@ -448,6 +551,18 @@ function createLeaderboard(prefix, opts = {}) {
     });
   }
 
+  if (podiumEl && opts.details) {
+    podiumEl.addEventListener('click', (e) => {
+      const close = e.target.closest('[data-close]');
+      if (close) {
+        toggle(close.dataset.close);
+        return;
+      }
+      const pod = e.target.closest('.pod[data-tag]');
+      if (pod) toggle(pod.dataset.tag);
+    });
+  }
+
   moreBtn.addEventListener('click', () => {
     expanded = !expanded;
     draw();
@@ -467,6 +582,12 @@ function createLeaderboard(prefix, opts = {}) {
       open.clear();
       baselineLabel = extra.baselineLabel || 'the last check';
       draw();
+      drawPodium();
+      this.replay();
+    },
+    // Re-run the entrance animation (rows slide in, numbers count up).
+    replay() {
+      playEntrance(boardEl, podiumEl);
     },
     rows: () => rows,
     clear() {
@@ -476,12 +597,18 @@ function createLeaderboard(prefix, opts = {}) {
       body.innerHTML = '';
       table.hidden = true;
       moreBtn.hidden = true;
+      if (podiumEl) {
+        podiumEl.hidden = true;
+        podiumEl.innerHTML = '';
+      }
     },
   };
 }
 
-const monthBoard = createLeaderboard('member', { trend: true, details: true });
-const lastBoard = createLeaderboard('last');
+const monthBoard = createLeaderboard('member', { trend: true, details: true, podium: true });
+const lastBoard = createLeaderboard('last', { podium: true });
+boardReplays.month = () => monthBoard.replay();
+boardReplays.last = () => lastBoard.replay();
 
 // ---------- Search ----------
 form.addEventListener('submit', (e) => {
@@ -612,14 +739,20 @@ function renderSummary(sum) {
   }
   const w = sum.wars || {};
   const record = w.total ? `${w.won || 0}–${w.lost || 0}${w.tied ? `–${w.tied}` : ''}` : '–';
+  // Same left-to-right order as the leaderboard columns (MR, War Stars,
+  // Donated, Raid Attacks) so each tile sits over the column it summarises;
+  // the war record sits on the left over the member names.
   const tiles = [
-    ['Donated', fmt(sum.totalDonations)],
-    ['Avg MR', fmt(sum.avgMr)],
-    ['War stars', fmt(sum.warStars)],
-    ['Raid attacks', fmt(sum.raidAttacks)],
-    ['Wars W–L', record],
+    ['Wars W–L', record, null],
+    ['Avg MR', fmt(sum.avgMr), sum.avgMr],
+    ['War stars', fmt(sum.warStars), sum.warStars],
+    ['Donated', fmt(sum.totalDonations), sum.totalDonations],
+    ['Raid attacks', fmt(sum.raidAttacks), sum.raidAttacks],
   ];
-  summaryEl.innerHTML = tiles.map(([label, value]) => `<div class="stat"><b>${escapeHtml(value)}</b><span>${escapeHtml(label)}</span></div>`).join('');
+  summaryEl.innerHTML = tiles
+    .map(([label, value, n], i) => `<div class="stat" style="--i:${i}"><b${n == null ? '' : ` data-count="${Number(n) || 0}"`}>${escapeHtml(value)}</b><span>${escapeHtml(label)}</span></div>`)
+    .join('');
+  summaryEl.querySelectorAll('[data-count]').forEach((n) => countUp(n));
   syncSummary();
 }
 
