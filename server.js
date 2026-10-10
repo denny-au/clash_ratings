@@ -314,6 +314,16 @@ async function fetchCurrentCwlWar(tag) {
   return activeWar;
 }
 
+// Small league icon for a clan member, straight from the API's own artwork
+// URLs (unmodified). Supercell's newer ranked-league system reports it as
+// `leagueTier`; older payloads use `league` — take whichever is present, and
+// return null (the frontend just omits the icon) if neither is.
+function memberLeagueIcon(m) {
+  const icons = (m.leagueTier && m.leagueTier.iconUrls) || (m.league && m.league.iconUrls) || null;
+  if (!icons) return null;
+  return icons.small || icons.medium || icons.tiny || null;
+}
+
 function describeRaidWeekend(season) {
   if (!season) return null;
   const end = warTracker.parseClashTimestamp(season.endTime);
@@ -375,6 +385,8 @@ app.get('/api/clan', async (req, res) => {
       name: m.name,
       donations: m.donations,
       clanRank: m.clanRank,
+      role: m.role || null, // 'leader' | 'coLeader' | 'admin' (Elder) | 'member'
+      leagueIcon: memberLeagueIcon(m),
       monthWarStars: 0, // filled in below
       raidAttacks: 0, // filled in below — stacks across the whole month, see below
       mr: 0, // filled in below

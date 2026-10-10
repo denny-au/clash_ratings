@@ -1,20 +1,32 @@
 :root {
   color-scheme: dark;
-  --bg: #060607;
-  --panel: #121214;
-  --panel-2: #17181b;
-  --text: #f5f5f7;
-  --muted: #9a9aa4;
-  --accent: #4d8dff;
-  --accent-dim: #2c4a8a;
-  --border: #232327;
-  --gold: #ffd75e;
-  --silver: #a9b7d1;
-  --bronze: #e3a469;
+  --bg: #07070b;
+  --panel: #0f1017;
+  --panel-2: #151622;
+  --border: #23253a;
+  --border-soft: #1a1c2c;
+  --text: #f5f2ec;
+  --muted: #9a98ad;
+  --role: #a4a8cc; /* lighter, softer tone for the role next to a name */
+
+  --gold: #f2c14e;
+  --gold-hi: #ffe08a;
+  --gold-deep: #b8862b;
+  --gold-ink: #1d1404;
+  --silver: #cfd5e3;
+  --bronze: #d9935a;
+
+  --font-display: "Lilita One", "Segoe UI", system-ui, -apple-system, "Noto Sans", sans-serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  --radius: 16px;
 }
 
 * {
   box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 html {
@@ -23,244 +35,679 @@ html {
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-body);
   color: var(--text);
-  background: var(--bg);
+  /* A soft violet + warm gold glow behind the title, drawn in pure CSS (no
+     game artwork is altered or reused here). */
+  background:
+    radial-gradient(900px 380px at 50% -70px, rgba(122, 72, 200, 0.32), transparent 70%),
+    radial-gradient(520px 260px at 50% -30px, rgba(242, 193, 78, 0.14), transparent 72%),
+    var(--bg);
+  background-repeat: no-repeat;
+  min-height: 100vh;
 }
 
-/* ---------- Page content ---------- */
+/* ---------- Page layout ---------- */
 .page-content {
-  padding: 3.5rem 1.25rem 4rem;
+  padding: 3.25rem 1.25rem 2.5rem;
 }
 
-.site-header {
-  max-width: 720px;
-  margin: 0 auto 2rem;
+.hero {
+  max-width: 760px;
+  margin: 0 auto 1.5rem;
   text-align: center;
 }
 
 h1 {
-  margin: 0 0 1rem;
-  font-size: clamp(2.75rem, 11vw, 5.5rem);
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  margin: 0 0 0.6rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(2.8rem, 11vw, 5rem);
+  letter-spacing: 0.01em;
   line-height: 1;
-  color: var(--text);
+  background: linear-gradient(180deg, #fff6d0 10%, var(--gold) 85%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 3px 0 rgba(96, 58, 0, 0.55));
 }
 
 .subtitle {
   color: var(--muted);
-  margin: 0 auto;
+  margin: 0 auto 1.4rem;
   max-width: 420px;
 }
 
 main {
-  max-width: 720px;
+  max-width: 760px;
   margin: 0 auto;
 }
 
+/* ---------- Search ---------- */
 #search-form {
   display: flex;
   gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  max-width: 520px;
+  margin: 0 auto;
 }
 
 #clan-tag-input {
   flex: 1;
-  padding: 0.65rem 0.9rem;
-  border-radius: 8px;
+  min-width: 0;
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--panel);
   color: var(--text);
   font-size: 1rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-button {
-  padding: 0.65rem 1.25rem;
-  border-radius: 8px;
+#clan-tag-input:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(242, 193, 78, 0.18);
+}
+
+.btn-primary {
+  padding: 0.7rem 1.4rem;
+  border-radius: 12px;
   border: none;
-  background: var(--accent);
-  color: white;
-  font-weight: 600;
+  background: linear-gradient(180deg, #ffd96e, var(--gold) 55%, #d9a02f);
+  color: var(--gold-ink);
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  letter-spacing: 0.02em;
   cursor: pointer;
+  box-shadow: 0 2px 0 var(--gold-deep), 0 6px 16px rgba(242, 193, 78, 0.18);
+  transition: transform 0.1s ease, filter 0.15s ease;
 }
 
-button:hover {
-  filter: brightness(1.1);
+.btn-primary:hover {
+  filter: brightness(1.07);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
 }
 
 #status {
   min-height: 1.25rem;
   color: var(--muted);
-  margin: 0.25rem 0 1.25rem;
+  margin: 0.8rem 0 0;
+  font-size: 0.92rem;
 }
 
 #status.error {
-  color: #ff8080;
+  color: #ff8c8c;
 }
 
-#clan-info {
+/* ---------- Clan card ---------- */
+.clan-card {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.25rem;
+  padding: 1.1rem 1.35rem;
   margin-bottom: 1.25rem;
+  background: linear-gradient(135deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
-#clan-badge {
-  width: 56px;
-  height: 56px;
+.clan-badge {
+  width: 92px;
+  height: 92px;
+  flex: none;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
 }
 
 .clan-info-text {
   flex: 1;
+  min-width: 0;
 }
 
 .clan-name-row {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  align-items: baseline;
+  gap: 0.6rem;
   flex-wrap: wrap;
 }
 
 #clan-name {
   margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1.6rem, 5vw, 2.1rem);
+  line-height: 1.1;
+}
+
+.clan-tag {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+#clan-meta {
+  margin: 0.3rem 0 0.7rem;
+  color: var(--muted);
+  font-size: 0.92rem;
 }
 
 .pill-button {
   display: inline-block;
-  padding: 0.3rem 0.7rem;
+  padding: 0.35rem 0.9rem;
   border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  color: var(--accent);
-  font-size: 0.78rem;
-  font-weight: 600;
+  border: 1px solid rgba(242, 193, 78, 0.45);
+  background: rgba(242, 193, 78, 0.08);
+  color: var(--gold-hi);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
   text-decoration: none;
   white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .pill-button:hover {
-  filter: brightness(1.3);
+  background: rgba(242, 193, 78, 0.16);
+  border-color: var(--gold);
 }
 
-.month-title {
-  text-align: center;
-  margin: 0 0 1rem;
+/* ---------- Tabs ---------- */
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.35rem;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto 1.25rem;
+  padding: 0.3rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.tab {
+  padding: 0.5rem 1.15rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
   color: var(--muted);
-  font-size: 1rem;
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-size: 0.98rem;
   letter-spacing: 0.02em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
-#clan-meta {
-  margin: 0.15rem 0 0;
+.tab:hover {
+  color: var(--text);
+}
+
+.tab[aria-selected="true"] {
+  background: linear-gradient(180deg, #ffd96e, var(--gold) 60%, #d9a02f);
+  color: var(--gold-ink);
+  box-shadow: 0 1px 0 var(--gold-deep);
+}
+
+.tab:focus-visible,
+.more-btn:focus-visible,
+.war-head:focus-visible,
+.fold summary:focus-visible,
+.pill-button:focus-visible,
+.btn-primary:focus-visible {
+  outline: 2px solid var(--gold-hi);
+  outline-offset: 2px;
+}
+
+/* ---------- Panels & boards ---------- */
+.panel-title {
+  margin: 0 0 0.8rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.15rem;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+
+.panel-note {
+  margin: 0 0 0.8rem;
+  text-align: center;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.panel-note:empty {
+  display: none;
+}
+
+.panel-note.error,
+.panel-note .error {
+  color: #ff8c8c;
+}
+
+.board {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.table-scroll {
+  overflow-x: auto;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  background: var(--panel);
-  border-radius: 10px;
-  overflow: hidden;
 }
 
-th, td {
+th,
+td {
   text-align: left;
-  padding: 0.55rem 0.75rem;
-  border-bottom: 1px solid var(--border);
+  padding: 0.6rem 0.8rem;
+  border-bottom: 1px solid var(--border-soft);
   font-size: 0.92rem;
+  white-space: nowrap;
 }
 
 th {
   color: var(--muted);
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
+  background: rgba(255, 255, 255, 0.015);
 }
 
 tbody tr:last-child td {
   border-bottom: none;
 }
 
+tbody tr {
+  transition: background 0.12s ease;
+}
+
 tbody tr:hover {
-  background: rgba(77, 141, 255, 0.08);
+  background: rgba(242, 193, 78, 0.05);
 }
 
-/* ---------- Podium highlighting for the top 3 leaderboard rows ---------- */
-/* Subtle tint + slightly taller row, not a dramatic size jump. */
-tbody tr.rank-gold,
-tbody tr.rank-silver,
-tbody tr.rank-bronze {
-  font-size: 1.02em;
+.short {
+  display: none;
 }
 
-tbody tr.rank-gold td,
-tbody tr.rank-silver td,
-tbody tr.rank-bronze td {
-  padding-top: 0.7rem;
-  padding-bottom: 0.7rem;
+/* ---------- Leaderboard ---------- */
+.leaderboard th.rank,
+.leaderboard td.rank {
+  width: 56px;
+  text-align: center;
+  padding-left: 0.6rem;
+  padding-right: 0.4rem;
 }
 
-tbody tr.rank-gold {
-  background: linear-gradient(90deg, rgba(255, 215, 94, 0.14), transparent 70%);
+.leaderboard td {
+  padding-top: 0.8rem;
+  padding-bottom: 0.8rem;
+  font-variant-numeric: tabular-nums;
 }
 
-tbody tr.rank-gold td:nth-child(2) {
-  color: var(--gold);
-  font-weight: 700;
+.leaderboard .num {
+  text-align: right;
 }
 
-tbody tr.rank-silver {
-  background: linear-gradient(90deg, rgba(215, 217, 224, 0.12), transparent 70%);
+.leaderboard td.rank {
+  font-family: var(--font-display);
+  color: var(--muted);
 }
 
-tbody tr.rank-silver td:nth-child(2) {
-  color: var(--silver);
-  font-weight: 700;
+.leaderboard td.member {
+  width: 100%;
+  white-space: normal;
 }
 
-tbody tr.rank-bronze {
-  background: linear-gradient(90deg, rgba(227, 164, 105, 0.14), transparent 70%);
+.who {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
 }
 
-tbody tr.rank-bronze td:nth-child(2) {
-  color: var(--bronze);
-  font-weight: 700;
+.league {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  object-fit: contain;
 }
 
-#war-section,
-#history-section,
-#raid-archive-section {
-  margin-top: 2rem;
-}
-
-#war-section h2,
-#history-section h2,
-#raid-archive-section h2 {
-  font-size: 1.15rem;
-  margin: 0 0 0.4rem;
-}
-
-/* Pulsing red dot next to "Current War" while a war is actually active
-   (preparation day or the war itself) — a quick "this is live right now"
-   signal at a glance. */
-.live-dot {
+.league-empty {
   display: inline-block;
+}
+
+.who-text {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.name {
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  letter-spacing: 0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sep {
+  color: rgba(164, 168, 204, 0.4);
+}
+
+.role {
+  color: var(--role);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.role-leader {
+  color: #d8bb72;
+}
+
+.role-coLeader {
+  color: #c4c8ec;
+}
+
+.leaderboard td.mr {
+  min-width: 88px;
+}
+
+.mr-val {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  letter-spacing: 0.01em;
+}
+
+.mr-bar {
+  display: block;
+  height: 3px;
+  margin-top: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+.mr-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--gold-deep), var(--gold-hi));
+}
+
+/* Top three: a metal-tinted edge + crown; the leader's row gets a glow. */
+.leaderboard tr.rank-1 td:first-child {
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+.leaderboard tr.rank-2 td:first-child {
+  box-shadow: inset 3px 0 0 var(--silver);
+}
+.leaderboard tr.rank-3 td:first-child {
+  box-shadow: inset 3px 0 0 var(--bronze);
+}
+
+.leaderboard tr.rank-1 {
+  background: linear-gradient(90deg, rgba(242, 193, 78, 0.16), rgba(242, 193, 78, 0.03) 60%, transparent);
+}
+
+.leaderboard tr.rank-1 td {
+  padding-top: 1.05rem;
+  padding-bottom: 1.05rem;
+}
+
+.leaderboard tr.rank-1 .name {
+  color: var(--gold-hi);
+  font-size: 1.15rem;
+  text-shadow: 0 0 14px rgba(242, 193, 78, 0.35);
+}
+
+.leaderboard tr.rank-1 .mr-val {
+  color: var(--gold-hi);
+  font-size: 1.2rem;
+}
+
+.leaderboard tr.rank-2 .name {
+  color: #e9edf6;
+}
+
+.leaderboard tr.rank-3 .name {
+  color: #f1d2b6;
+}
+
+/* Crowns */
+.crown {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 29px;
+  vertical-align: middle;
+}
+
+.crown svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: 1;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.55));
+}
+
+.crown.gold svg {
+  fill: url(#crown-gold);
+  stroke: #8a5f12;
+}
+.crown.silver svg {
+  fill: url(#crown-silver);
+  stroke: #6c7488;
+}
+.crown.bronze svg {
+  fill: url(#crown-bronze);
+  stroke: #7d4519;
+}
+
+.crown b {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 41%;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 0.78rem;
+  line-height: 1;
+  color: #2a1a02;
+}
+
+.crown.gold {
+  filter: drop-shadow(0 0 8px rgba(242, 193, 78, 0.35));
+}
+
+.leaderboard tr.rank-1 .crown {
+  width: 42px;
+  height: 34px;
+}
+
+.leaderboard tr.rank-1 .crown b {
+  font-size: 0.9rem;
+}
+
+/* ---------- Show all / show top ---------- */
+.more-btn {
+  display: block;
+  width: 100%;
+  padding: 0.8rem;
+  border: none;
+  border-top: 1px solid var(--border-soft);
+  background: rgba(255, 255, 255, 0.015);
+  color: var(--gold-hi);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.more-btn:hover {
+  background: rgba(242, 193, 78, 0.08);
+}
+
+/* ---------- War card ---------- */
+.war-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.war-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.war-head:disabled {
+  cursor: default;
+  color: var(--muted);
+}
+
+.war-head:not(:disabled):hover {
+  background: rgba(242, 193, 78, 0.05);
+}
+
+.war-main {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  line-height: 1.35;
+}
+
+.badge {
+  padding: 0.12rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(122, 72, 200, 0.28);
+  border: 1px solid rgba(160, 120, 235, 0.55);
+  color: #d8c6ff;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.war-detail {
+  border-top: 1px solid var(--border-soft);
+}
+
+.table-scroll.flat {
+  background: transparent;
+}
+
+/* Chevron shared by the war card and War History */
+.chev {
+  flex: none;
   width: 10px;
   height: 10px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg) translate(-2px, -2px);
+  transition: transform 0.2s ease;
+}
+
+.war-head:disabled .chev {
+  visibility: hidden;
+}
+
+.war-head[aria-expanded="true"] .chev,
+.fold[open] .chev {
+  transform: rotate(-135deg) translate(-2px, -2px);
+}
+
+/* ---------- War History fold ---------- */
+.fold {
+  margin-top: 1rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.fold summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  letter-spacing: 0.01em;
+}
+
+.fold summary::-webkit-details-marker {
+  display: none;
+}
+
+.fold summary:hover {
+  background: rgba(242, 193, 78, 0.05);
+}
+
+.fold summary .chev {
+  margin-left: auto;
+}
+
+.fold-meta {
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+}
+
+.fold-body {
+  border-top: 1px solid var(--border-soft);
+  padding-top: 0.9rem;
+}
+
+.fold-body .panel-note {
+  padding: 0 1.25rem;
+}
+
+.fold-body .panel-note:empty {
+  display: none;
+}
+
+/* ---------- Live dot (active war) ---------- */
+.live-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: #ff4d4d;
-  margin-left: 0.5rem;
+  margin-left: 0.4rem;
   vertical-align: middle;
   animation: live-dot-pulse 1.8s ease-out infinite;
 }
 
-/* Same specificity as .live-dot above, so source order alone would decide
-   the winner — spelled out explicitly so a hidden dot actually stays
-   hidden regardless of rule order. */
 .live-dot[hidden] {
   display: none;
 }
@@ -270,21 +717,31 @@ tbody tr.rank-bronze td:nth-child(2) {
     box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.55);
   }
   70% {
-    box-shadow: 0 0 0 9px rgba(255, 77, 77, 0);
+    box-shadow: 0 0 0 8px rgba(255, 77, 77, 0);
   }
   100% {
     box-shadow: 0 0 0 0 rgba(255, 77, 77, 0);
   }
 }
 
-#war-section table,
-#history-section table,
-#raid-archive-section table {
-  margin-top: 0.5rem;
+/* ---------- Footer ---------- */
+.site-footer {
+  max-width: 760px;
+  margin: 3rem auto 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-soft);
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
 }
 
-.table-scroll {
-  overflow-x: auto;
+.site-footer p {
+  margin: 0.3rem 0;
+}
+
+.site-footer a {
+  color: var(--gold-hi);
 }
 
 /* ---------- Hamburger menu ---------- */
@@ -331,7 +788,7 @@ tbody tr.rank-bronze td:nth-child(2) {
 .drawer-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.6);
   z-index: 40;
   opacity: 0;
   pointer-events: none;
@@ -374,19 +831,22 @@ tbody tr.rank-bronze td:nth-child(2) {
   border: 1px solid var(--border);
   background: transparent;
   color: var(--muted);
-  font-weight: 600;
-  font-size: 0.85rem;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
   cursor: pointer;
 }
 
 .drawer-tab.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: white;
+  background: linear-gradient(180deg, #ffd96e, var(--gold) 60%, #d9a02f);
+  border-color: var(--gold);
+  color: var(--gold-ink);
 }
 
 .drawer-panel h3 {
-  font-size: 1rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.05rem;
   margin: 1.25rem 0 0.4rem;
 }
 
@@ -422,26 +882,146 @@ tbody tr.rank-bronze td:nth-child(2) {
 }
 
 .faq-footer a {
-  color: var(--accent);
+  color: var(--gold-hi);
 }
 
-@media (max-width: 600px) {
+/* ---------- Small screens ---------- */
+@media (max-width: 640px) {
   .page-content {
     /* Extra top clearance so the big title never sits behind the fixed
        hamburger button in the corner. */
-    padding: 4.5rem 1rem 3rem;
+    padding: 4.5rem 0.85rem 2rem;
   }
 
-  #search-form {
-    flex-wrap: wrap;
+  .clan-card {
+    padding: 0.9rem 1rem;
+    gap: 0.9rem;
   }
 
-  #clan-info {
-    flex-wrap: wrap;
+  .clan-badge {
+    width: 68px;
+    height: 68px;
   }
 
-  th, td {
-    padding: 0.5rem 0.55rem;
-    font-size: 0.85rem;
+  th,
+  td {
+    padding: 0.5rem 0.45rem;
+    font-size: 0.82rem;
+  }
+
+  .leaderboard td {
+    padding-top: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+
+  .long {
+    display: none;
+  }
+
+  .short {
+    display: inline;
+  }
+
+  .leaderboard th.rank,
+  .leaderboard td.rank {
+    width: 40px;
+    padding-left: 0.3rem;
+    padding-right: 0.2rem;
+  }
+
+  .crown {
+    width: 30px;
+    height: 24px;
+  }
+
+  .leaderboard tr.rank-1 .crown {
+    width: 34px;
+    height: 28px;
+  }
+
+  .who {
+    gap: 0.4rem;
+  }
+
+  .league {
+    width: 22px;
+    height: 22px;
+  }
+
+  .who-text {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+
+  .sep {
+    display: none;
+  }
+
+  .name {
+    max-width: 100%;
+    font-size: 0.95rem;
+  }
+
+  /* Fixed column widths so all six columns fit a phone without sideways
+     scrolling; long names get an ellipsis instead of pushing columns off. */
+  .leaderboard {
+    table-layout: fixed;
+  }
+
+  .leaderboard th,
+  .leaderboard td {
+    padding-left: 0.3rem;
+    padding-right: 0.3rem;
+  }
+
+  .leaderboard th {
+    font-size: 0.68rem;
+    letter-spacing: 0.02em;
+  }
+
+  .leaderboard th:nth-child(1) { width: 38px; }
+  .leaderboard th:nth-child(3) { width: 60px; }
+  .leaderboard th:nth-child(4) { width: 46px; }
+  .leaderboard th:nth-child(5) { width: 60px; }
+  .leaderboard th:nth-child(6) { width: 46px; }
+
+  .leaderboard td.member {
+    width: auto;
+    overflow: hidden;
+  }
+
+  .leaderboard td.mr {
+    min-width: 0;
+  }
+
+  .who-text {
+    flex: 1;
+  }
+
+  .role {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mr-val {
+    font-size: 0.98rem;
+  }
+
+  .tab {
+    padding: 0.5rem 0.9rem;
+    font-size: 0.92rem;
+  }
+
+  .war-head {
+    padding: 0.95rem 1rem;
+    font-size: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
   }
 }

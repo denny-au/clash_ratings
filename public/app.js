@@ -1,20 +1,30 @@
-const form = document.getElementById('search-form');
-const input = document.getElementById('clan-tag-input');
-const statusEl = document.getElementById('status');
-const clanInfo = document.getElementById('clan-info');
-const clanBadge = document.getElementById('clan-badge');
-const clanName = document.getElementById('clan-name');
-const clanMeta = document.getElementById('clan-meta');
-const table = document.getElementById('member-table');
-const rowsEl = document.getElementById('member-rows');
-const monthTitle = document.getElementById('month-title');
-const openInGameBtn = document.getElementById('open-in-game-btn');
-const menuToggle = document.getElementById('menu-toggle');
-const sideDrawer = document.getElementById('side-drawer');
-const drawerOverlay = document.getElementById('drawer-overlay');
+const $ = (id) => document.getElementById(id);
+
+const form = $('search-form');
+const input = $('clan-tag-input');
+const statusEl = $('status');
+const clanInfo = $('clan-info');
+const clanBadge = $('clan-badge');
+const clanName = $('clan-name');
+const clanTagEl = $('clan-tag');
+const clanMeta = $('clan-meta');
+const openInGameBtn = $('open-in-game-btn');
+const menuToggle = $('menu-toggle');
+const sideDrawer = $('side-drawer');
+const drawerOverlay = $('drawer-overlay');
 const drawerTabs = document.querySelectorAll('.drawer-tab');
 
+const tabsEl = $('tabs');
+const tabButtons = Array.from(document.querySelectorAll('.tab'));
+const panels = { month: $('panel-month'), last: $('panel-last'), war: $('panel-war') };
+
+// How many leaderboard rows show before the "Show all" button. Change this
+// one number to show more or fewer by default (set it very high to always
+// show everyone).
+const TOP_N = 10;
+
 let currentClanTag = null;
+let membersByTag = new Map(); // current clan members, used to add role/icon to last month's rows
 
 // --- Hamburger menu / FAQ / About drawer ---
 function openDrawer() {
@@ -33,8 +43,8 @@ function showDrawerPanel(name) {
   for (const tab of drawerTabs) {
     tab.classList.toggle('active', tab.dataset.panel === name);
   }
-  document.getElementById('drawer-panel-faq').hidden = name !== 'faq';
-  document.getElementById('drawer-panel-about').hidden = name !== 'about';
+  $('drawer-panel-faq').hidden = name !== 'faq';
+  $('drawer-panel-about').hidden = name !== 'about';
 }
 
 menuToggle.addEventListener('click', () => {
@@ -73,6 +83,165 @@ const BACKEND_URL =
     ? ''
     : 'https://147-224-36-247.sslip.io';
 
+// ---------- Tabs: This Month / Last Month / War ----------
+let activeTab = 'month';
+
+function activateTab(name, { updateHash = true } = {}) {
+  const btn = tabButtons.find((b) => b.dataset.tab === name);
+  if (!btn || btn.hidden) name = 'month'; // e.g. "#last" but there's no last-month data
+  activeTab = name;
+  for (const b of tabButtons) {
+    const on = b.dataset.tab === name;
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+    b.tabIndex = on ? 0 : -1;
+  }
+  for (const [key, el] of Object.entries(panels)) el.hidden = key !== name;
+  if (updateHash) {
+    try {
+      history.replaceState(null, '', name === 'month' ? location.pathname + location.search : `#${name}`);
+    } catch (e) {
+      /* file:// or sandboxed — the hash is just a convenience */
+    }
+  }
+}
+
+for (const b of tabButtons) {
+  b.addEventListener('click', () => activateTab(b.dataset.tab));
+  b.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const visible = tabButtons.filter((t) => !t.hidden);
+    const i = visible.indexOf(b);
+    const next = visible[(i + (e.key === 'ArrowRight' ? 1 : visible.length - 1)) % visible.length];
+    next.focus();
+    activateTab(next.dataset.tab);
+  });
+}
+
+function hashTab() {
+  const h = location.hash.replace('#', '');
+  return panels[h] ? h : 'month';
+}
+
+// ---------- Formatting helpers ----------
+const ROLE_LABELS = { leader: 'Leader', coLeader: 'Co-Leader', admin: 'Elder', member: 'Member' };
+const fmt = (n) => (Number(n) || 0).toLocaleString();
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
+function safeIconUrl(url) {
+  return typeof url === 'string' && /^https:\/\//i.test(url) ? url.replace(/"/g, '%22') : null;
+}
+
+// Clash's API sends times like "20261101T040000.000Z".
+function parseCocTime(raw) {
+  const m = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/.exec(raw || '');
+  return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6])) : null;
+}
+
+function durationLabel(ms) {
+  if (!(ms > 0)) return null;
+  const mins = Math.floor(ms / 60000);
+  const d = Math.floor(mins / 1440);
+  const h = Math.floor((mins % 1440) / 60);
+  const m = mins % 60;
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${Math.max(m, 1)}m`;
+}
+
+// ---------- Crowns (top 3) ----------
+const CROWN_TIERS = { 1: 'gold', 2: 'silver', 3: 'bronze' };
+
+function crownHtml(rank) {
+  return `<span class="crown ${CROWN_TIERS[rank]}" role="img" aria-label="Rank ${rank}" title="Rank ${rank}">
+    <svg viewBox="0 0 32 26" aria-hidden="true">
+      <path d="M3 22 L1.6 7.5 L9.6 13.2 L16 3.2 L22.4 13.2 L30.4 7.5 L29 22 Z" />
+      <rect x="3" y="22" width="26" height="3" rx="1.5" />
+      <circle cx="1.8" cy="6.6" r="1.8" /><circle cx="16" cy="3" r="1.9" /><circle cx="30.2" cy="6.6" r="1.8" />
+    </svg>
+    <b>${rank}</b>
+  </span>`;
+}
+
+function memberCellHtml(row, reserveIcon) {
+  const iconUrl = safeIconUrl(row.leagueIcon);
+  const icon = iconUrl
+    ? `<img class="league" src="${iconUrl}" alt="" width="26" height="26" loading="lazy" referrerpolicy="no-referrer" />`
+    : reserveIcon
+      ? '<span class="league league-empty"></span>'
+      : '';
+  const label = ROLE_LABELS[row.role];
+  const roleHtml = label
+    ? `<span class="sep" aria-hidden="true">|</span><span class="role role-${escapeHtml(row.role)}">${label}</span>`
+    : '';
+  return `<td class="member"><div class="who">${icon}<span class="who-text"><span class="name">${escapeHtml(row.name)}</span>${roleHtml}</span></div></td>`;
+}
+
+// ---------- Leaderboard component (used by This Month and Last Month) ----------
+// rows: [{ rank, name, role, leagueIcon, mr, warStars, donated, raids }]
+function createLeaderboard(prefix) {
+  const table = $(`${prefix}-table`);
+  const body = $(`${prefix}-rows`);
+  const moreBtn = $(`${prefix}-more`);
+  let rows = [];
+  let expanded = false;
+
+  function draw() {
+    const maxMr = Math.max(1, ...rows.map((r) => r.mr || 0));
+    const reserveIcon = rows.some((r) => safeIconUrl(r.leagueIcon));
+    const visible = expanded ? rows : rows.slice(0, TOP_N);
+
+    body.innerHTML = visible
+      .map((r) => {
+        const pct = Math.max(3, Math.round(((r.mr || 0) / maxMr) * 100));
+        const rankCell = r.rank <= 3 ? crownHtml(r.rank) : r.rank;
+        return `<tr class="${r.rank <= 3 ? `rank-${r.rank}` : ''}">
+          <td class="rank">${rankCell}</td>
+          ${memberCellHtml(r, reserveIcon)}
+          <td class="num mr"><span class="mr-val">${fmt(r.mr)}</span><span class="mr-bar"><i style="width:${pct}%"></i></span></td>
+          <td class="num">${fmt(r.warStars)}</td>
+          <td class="num">${fmt(r.donated)}</td>
+          <td class="num">${fmt(r.raids)}</td>
+        </tr>`;
+      })
+      .join('');
+
+    const hasMore = rows.length > TOP_N;
+    moreBtn.hidden = !hasMore;
+    moreBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    moreBtn.textContent = expanded ? `Show top ${TOP_N}` : `Show all ${rows.length}`;
+    table.hidden = rows.length === 0;
+  }
+
+  moreBtn.addEventListener('click', () => {
+    expanded = !expanded;
+    draw();
+  });
+
+  return {
+    show(newRows) {
+      rows = newRows;
+      expanded = false;
+      draw();
+    },
+    clear() {
+      rows = [];
+      expanded = false;
+      body.innerHTML = '';
+      table.hidden = true;
+      moreBtn.hidden = true;
+    },
+  };
+}
+
+const monthBoard = createLeaderboard('member');
+const lastBoard = createLeaderboard('last');
+
+// ---------- Search ----------
 form.addEventListener('submit', (e) => {
   e.preventDefault();
   const tag = input.value.trim();
@@ -80,10 +249,21 @@ form.addEventListener('submit', (e) => {
   searchClan(tag);
 });
 
+function setStatus(message, isError) {
+  statusEl.textContent = message;
+  statusEl.classList.toggle('error', isError);
+}
+
 async function searchClan(tag) {
   setStatus('Searching...', false);
   clanInfo.hidden = true;
-  table.hidden = true;
+  tabsEl.hidden = true;
+  for (const el of Object.values(panels)) el.hidden = true;
+  monthBoard.clear();
+  lastBoard.clear();
+  $('tab-last').hidden = true;
+  $('war-live-dot').hidden = true;
+  $('history-card').hidden = true;
 
   try {
     const res = await fetch(`${BACKEND_URL}/api/clan?tag=${encodeURIComponent(tag)}`);
@@ -96,7 +276,9 @@ async function searchClan(tag) {
 
     currentClanTag = data.tag;
     renderClan(data);
-    setStatus(`Found ${data.memberCount} members.`, false);
+    setStatus('', false); // the clan card already says how many members — no need to repeat it
+    tabsEl.hidden = false;
+    activateTab(hashTab(), { updateHash: false });
     fetchCurrentWar(data.tag);
     fetchWarHistory(data.tag);
     fetchPreviousMonth(data.tag);
@@ -107,17 +289,13 @@ async function searchClan(tag) {
 
 searchClan(DEFAULT_CLAN_TAG);
 
-function setStatus(message, isError) {
-  statusEl.textContent = message;
-  statusEl.classList.toggle('error', isError);
-}
-
 function renderClan(data) {
-  clanName.textContent = `${data.name} (${data.tag})`;
-  let meta = `Level ${data.level} - ${data.memberCount} members`;
+  clanName.textContent = data.name;
+  clanTagEl.textContent = data.tag;
+  let meta = `Level ${data.level} · ${data.memberCount} members`;
   if (data.raidWeekend) {
     const label = data.raidWeekend.state === 'ongoing' ? 'ongoing' : `ended ${data.raidWeekend.endLabel}`;
-    meta += ` - Raid Weekend: ${label}`;
+    meta += ` · Raid Weekend: ${label}`;
   }
   clanMeta.textContent = meta;
   if (data.badgeUrl) {
@@ -126,7 +304,7 @@ function renderClan(data) {
   }
   clanInfo.hidden = false;
 
-  monthTitle.textContent = data.monthLabel || '';
+  $('month-title').textContent = data.monthLabel || '';
 
   const rawTag = (data.tag || '').replace('#', '');
   if (rawTag) {
@@ -136,34 +314,50 @@ function renderClan(data) {
     openInGameBtn.hidden = true;
   }
 
-  rowsEl.innerHTML = '';
-  for (const m of data.members) {
-    const tr = document.createElement('tr');
-    if (m.mrRank === 1) tr.classList.add('rank-gold');
-    else if (m.mrRank === 2) tr.classList.add('rank-silver');
-    else if (m.mrRank === 3) tr.classList.add('rank-bronze');
-    tr.innerHTML = `
-      <td>${m.mrRank}</td>
-      <td>${escapeHtml(m.name)}</td>
-      <td><strong>${m.mr.toLocaleString()}</strong></td>
-      <td>${m.monthWarStars.toLocaleString()}</td>
-      <td>${m.donations.toLocaleString()}</td>
-      <td>${m.raidAttacks.toLocaleString()}</td>
-    `;
-    rowsEl.appendChild(tr);
+  membersByTag = new Map(data.members.map((m) => [m.tag, m]));
+
+  monthBoard.show(
+    data.members.map((m) => ({
+      rank: m.mrRank,
+      name: m.name,
+      role: m.role,
+      leagueIcon: m.leagueIcon,
+      mr: m.mr,
+      warStars: m.monthWarStars,
+      donated: m.donations,
+      raids: m.raidAttacks,
+    }))
+  );
+}
+
+// ---------- War tab: compact current-war card ----------
+const warToggle = $('war-toggle');
+const warDetail = $('war-detail');
+
+warToggle.addEventListener('click', () => {
+  const open = warToggle.getAttribute('aria-expanded') !== 'true';
+  warToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  warDetail.hidden = !open;
+});
+
+function setWarCard({ headline, badge = false, expandable = false }) {
+  $('war-headline').textContent = headline;
+  $('war-badge').hidden = !badge;
+  warToggle.disabled = !expandable;
+  if (!expandable) {
+    warToggle.setAttribute('aria-expanded', 'false');
+    warDetail.hidden = true;
   }
-  table.hidden = false;
 }
 
 async function fetchCurrentWar(tag) {
-  const section = document.getElementById('war-section');
-  const warStatus = document.getElementById('war-status');
-  const warTable = document.getElementById('war-table');
-  const warRows = document.getElementById('war-rows');
-  const liveDot = document.getElementById('war-live-dot');
+  const warStatus = $('war-status');
+  const warTable = $('war-table');
+  const warRows = $('war-rows');
+  const liveDot = $('war-live-dot');
 
-  section.hidden = false;
-  warStatus.textContent = 'Checking current war...';
+  setWarCard({ headline: 'Checking current war...' });
+  warStatus.textContent = '';
   warStatus.classList.remove('error');
   warTable.hidden = true;
   liveDot.hidden = true;
@@ -173,6 +367,7 @@ async function fetchCurrentWar(tag) {
     const data = await res.json();
 
     if (!res.ok) {
+      setWarCard({ headline: 'War info unavailable' });
       warStatus.textContent = data.error || 'Could not load war data.';
       warStatus.classList.add('error');
       return;
@@ -183,21 +378,26 @@ async function fetchCurrentWar(tag) {
     liveDot.hidden = !(data.state === 'inWar' || data.state === 'preparation');
 
     if (data.state === 'notInWar') {
-      warStatus.textContent = 'This clan is not currently in a war.';
+      setWarCard({ headline: 'Not in a war right now' });
       return;
     }
 
-    const stateLabel =
-      {
-        preparation: 'Preparation day — no attacks yet.',
-        inWar: 'War is live.',
-        warEnded: 'War has ended.',
-      }[data.state] || data.state;
+    const stateLabel = { preparation: 'Prep day', inWar: 'War live', warEnded: 'War ended' }[data.state] || data.state;
+    const parts = [stateLabel];
+    if (data.opponentName) parts.push(`vs ${data.opponentName}`);
 
-    const cwlPrefix = data.isCwl ? '[CWL] ' : '';
-    warStatus.textContent = data.opponentName
-      ? `${cwlPrefix}${stateLabel} Opponent: ${data.opponentName}.`
-      : `${cwlPrefix}${stateLabel}`;
+    const totalAttacks = (data.teamSize || data.members.length) * (data.attacksPerMember || 1);
+    if (data.state !== 'preparation') {
+      const used = data.members.reduce((sum, m) => sum + (m.attacksUsed || 0), 0);
+      parts.push(`${used} of ${totalAttacks} attacks used`);
+    }
+    if (data.state === 'inWar') {
+      const end = parseCocTime(data.endTime);
+      const left = end ? durationLabel(end.getTime() - Date.now()) : null;
+      if (left) parts.push(`ends in ${left}`);
+    }
+
+    setWarCard({ headline: parts.join(' · '), badge: !!data.isCwl, expandable: true });
 
     warRows.innerHTML = '';
     for (const m of data.members) {
@@ -236,13 +436,13 @@ async function fetchCurrentWar(tag) {
     }
     warTable.hidden = false;
   } catch (err) {
+    setWarCard({ headline: 'War info unavailable' });
     warStatus.textContent = 'Could not reach the server for war data.';
     warStatus.classList.add('error');
   }
 }
 
-// Shared by the current-month and previous-month War History panels —
-// same columns, same meaning, just a different month behind them.
+// ---------- War tab: War History (collapsed by default) ----------
 function renderHistoryRows(tbody, members) {
   tbody.innerHTML = '';
   for (const m of members) {
@@ -264,113 +464,108 @@ function renderHistoryRows(tbody, members) {
 }
 
 async function fetchWarHistory(tag) {
-  const section = document.getElementById('history-section');
-  const title = document.getElementById('history-title');
-  const historyStatus = document.getElementById('history-status');
-  const historyTable = document.getElementById('history-table');
-  const historyRows = document.getElementById('history-rows');
+  const card = $('history-card');
+  const title = $('history-title');
+  const count = $('history-count');
+  const historyStatus = $('history-status');
+  const historyTable = $('history-table');
+  const historyRows = $('history-rows');
 
-  section.hidden = false;
-  historyStatus.textContent = 'Loading war history...';
+  historyStatus.textContent = '';
   historyStatus.classList.remove('error');
   historyTable.hidden = true;
+  card.open = false;
 
   try {
     const res = await fetch(`${BACKEND_URL}/api/war-history?tag=${encodeURIComponent(tag)}`);
     const data = await res.json();
 
     if (!res.ok) {
+      title.textContent = 'War History';
+      count.textContent = '';
       historyStatus.textContent = data.error || 'Could not load war history.';
       historyStatus.classList.add('error');
+      card.hidden = false;
       return;
     }
 
     title.textContent = `War History — ${data.monthLabel}`;
+    card.hidden = false;
 
     if (data.warsRecorded === 0) {
+      count.textContent = 'none yet';
       historyStatus.textContent =
-        'No wars recorded yet this month. This app can only see wars that finished while it was running and tracking this clan — leave it running (or start it back up regularly) and this will fill in as wars wrap up.';
+        'No wars recorded yet this month. Wars show up here once they finish.';
       return;
     }
 
-    historyStatus.textContent = `${data.warsRecorded} war${data.warsRecorded === 1 ? '' : 's'} recorded in ${data.monthLabel} so far.`;
-
+    count.textContent = `${data.warsRecorded} war${data.warsRecorded === 1 ? '' : 's'}`;
     renderHistoryRows(historyRows, data.members);
     historyTable.hidden = false;
   } catch (err) {
+    title.textContent = 'War History';
+    count.textContent = '';
     historyStatus.textContent = 'Could not reach the server for war history.';
     historyStatus.classList.add('error');
+    card.hidden = false;
   }
 }
 
-// Last month's leaderboard at the very bottom of the page — the only past
-// month the site keeps (the server erases anything older, so on the 1st of a
-// new month this automatically becomes the month that just ended).
+// ---------- Last Month tab ----------
+// Last month's leaderboard — the only past month the site keeps (the server
+// erases anything older, so on the 1st of a new month this automatically
+// becomes the month that just ended). The tab only appears when there's data.
 async function fetchPreviousMonth(tag) {
-  const lbSection = document.getElementById('raid-archive-section');
-  const lbTitle = document.getElementById('raid-archive-title');
-  const lbStatus = document.getElementById('raid-archive-status');
-  const lbTable = document.getElementById('raid-archive-table');
-  const lbRows = document.getElementById('raid-archive-rows');
+  const lastTab = $('tab-last');
+  const lastTitle = $('last-title');
+  const lastStatus = $('last-status');
 
-  // Hidden until there's something to show, and cleared on every new search
-  // so a previous clan's last-month data never lingers.
-  lbSection.hidden = true;
-  lbTable.hidden = true;
+  lastTab.hidden = true;
+  lastStatus.textContent = '';
+  lastStatus.classList.remove('error');
+  lastBoard.clear();
+
+  const fail = () => {
+    lastTitle.textContent = 'Last month';
+    lastStatus.textContent = "Couldn't load last month's leaderboard.";
+    lastStatus.classList.add('error');
+    lastTab.hidden = false;
+  };
 
   try {
     const res = await fetch(`${BACKEND_URL}/api/previous-month?tag=${encodeURIComponent(tag)}`);
     const data = await res.json();
     if (!res.ok) {
-      showPreviousMonthError(lbSection, lbTitle, lbStatus, "Couldn't load last month's leaderboard.");
+      fail();
       return;
     }
 
     if (data.members && data.members.length > 0) {
-      lbTitle.textContent = data.monthLabel;
-      lbStatus.classList.remove('error');
-      lbStatus.textContent = ''; // no caption — the title alone is enough, same as the main leaderboard
-
-      // Same look as the main leaderboard (#, Name, MR, War Stars, Donated,
-      // Raid Attacks + gold/silver/bronze podium rows). Donated is the
-      // end-of-month snapshot (0 for a month that was never captured).
-      lbRows.innerHTML = '';
-      data.members.forEach((m, i) => {
-        const rank = i + 1;
-        const tr = document.createElement('tr');
-        if (rank === 1) tr.classList.add('rank-gold');
-        else if (rank === 2) tr.classList.add('rank-silver');
-        else if (rank === 3) tr.classList.add('rank-bronze');
-        tr.innerHTML = `
-          <td>${rank}</td>
-          <td>${escapeHtml(m.name)}</td>
-          <td><strong>${(m.mr || 0).toLocaleString()}</strong></td>
-          <td>${(m.warStars || 0).toLocaleString()}</td>
-          <td>${(m.donated || 0).toLocaleString()}</td>
-          <td>${(m.raidAttacks || 0).toLocaleString()}</td>
-        `;
-        lbRows.appendChild(tr);
-      });
-      lbSection.hidden = false;
-      lbTable.hidden = false;
+      lastTitle.textContent = data.monthLabel;
+      // Same leaderboard as This Month. Role/league icon come from the
+      // current member list when the person is still in the clan; Donated is
+      // the end-of-month snapshot (0 for a month that was never captured).
+      lastBoard.show(
+        data.members.map((m, i) => {
+          const current = membersByTag.get(m.tag) || {};
+          return {
+            rank: i + 1,
+            name: m.name,
+            role: current.role,
+            leagueIcon: current.leagueIcon,
+            mr: m.mr || 0,
+            warStars: m.warStars || 0,
+            donated: m.donated || 0,
+            raids: m.raidAttacks || 0,
+          };
+        })
+      );
+      lastTab.hidden = false;
+      // If the page was opened straight to #last, switch to it now that it exists.
+      if (hashTab() === 'last' && activeTab !== 'last') activateTab('last', { updateHash: false });
     }
   } catch (err) {
     console.error('Last month leaderboard failed:', err);
-    showPreviousMonthError(lbSection, lbTitle, lbStatus, "Couldn't load last month's leaderboard.");
+    fail();
   }
-}
-
-// A failure here used to just hide the whole section with no clue why —
-// say so instead, so a problem is visible rather than looking like "no data".
-function showPreviousMonthError(section, title, status, message) {
-  title.textContent = 'Last month';
-  status.textContent = message;
-  status.classList.add('error');
-  section.hidden = false;
-}
-
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
 }

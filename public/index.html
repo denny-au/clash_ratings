@@ -4,9 +4,29 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Clash Ratings</title>
+  <meta name="description" content="Clan leaderboard for Clash of Clans: donations, war stars and raid attacks rolled into one Member Rating." />
+  <meta name="theme-color" content="#07070b" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Shared crown gradients (referenced by every top-3 crown below). -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="crown-gold" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#fff0b0" /><stop offset="0.55" stop-color="#f2c14e" /><stop offset="1" stop-color="#c8902a" />
+      </linearGradient>
+      <linearGradient id="crown-silver" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#ffffff" /><stop offset="0.55" stop-color="#cfd5e3" /><stop offset="1" stop-color="#8f98ad" />
+      </linearGradient>
+      <linearGradient id="crown-bronze" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#f6c79d" /><stop offset="0.55" stop-color="#d9935a" /><stop offset="1" stop-color="#a8622f" />
+      </linearGradient>
+    </defs>
+  </svg>
+
   <button id="menu-toggle" class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="side-drawer">
     <span></span><span></span><span></span>
   </button>
@@ -46,12 +66,10 @@
   </nav>
 
   <div class="page-content">
-    <header class="site-header">
+    <header class="hero">
       <h1>Clash Ratings</h1>
       <p class="subtitle">Enter a clan tag.</p>
-    </header>
 
-    <main>
       <form id="search-form">
         <input
           id="clan-tag-input"
@@ -59,103 +77,144 @@
           placeholder="#2RJPU9JY0"
           autocomplete="off"
           spellcheck="false"
+          aria-label="Clan tag"
         />
-        <button type="submit">Search</button>
+        <button type="submit" class="btn-primary">Search</button>
       </form>
 
       <p id="status" role="status"></p>
+    </header>
 
-      <section id="clan-info" hidden>
-        <img id="clan-badge" alt="" />
+    <main>
+      <section id="clan-info" class="clan-card" hidden>
+        <img id="clan-badge" class="clan-badge" alt="" width="92" height="92" />
         <div class="clan-info-text">
           <div class="clan-name-row">
             <h2 id="clan-name"></h2>
-            <a id="open-in-game-btn" class="pill-button" href="#" target="_blank" rel="noopener" hidden>Open in Clash of Clans</a>
+            <span id="clan-tag" class="clan-tag"></span>
           </div>
           <p id="clan-meta"></p>
+          <a id="open-in-game-btn" class="pill-button" href="#" target="_blank" rel="noopener" hidden>Open in Clash of Clans</a>
         </div>
       </section>
 
-      <h3 id="month-title" class="month-title"></h3>
-
-      <div class="table-scroll">
-        <table id="member-table" hidden>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Name</th>
-              <th title="Member Rating: 1 pt/donation, 25 pts/raid attack this month, 50 pts per war star this month from regular wars and CWL (adjusted by how much harder or easier the target's town hall was)">MR</th>
-              <th>War Stars</th>
-              <th>Donated</th>
-              <th>Raid Attacks</th>
-            </tr>
-          </thead>
-          <tbody id="member-rows"></tbody>
-        </table>
+      <div id="tabs" class="tabs" role="tablist" aria-label="Views" hidden>
+        <button type="button" role="tab" id="tab-month" class="tab" data-tab="month" aria-selected="true" aria-controls="panel-month">This Month</button>
+        <button type="button" role="tab" id="tab-last" class="tab" data-tab="last" aria-selected="false" aria-controls="panel-last" tabindex="-1" hidden>Last Month</button>
+        <button type="button" role="tab" id="tab-war" class="tab" data-tab="war" aria-selected="false" aria-controls="panel-war" tabindex="-1">War <span id="war-live-dot" class="live-dot" hidden title="A war is active right now" aria-hidden="true"></span></button>
       </div>
 
-      <section id="war-section" hidden>
-        <h2>Current War <span id="war-live-dot" class="live-dot" hidden title="A war is active right now" aria-hidden="true"></span></h2>
-        <p id="war-status"></p>
-        <div class="table-scroll">
-          <table id="war-table" hidden>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Attack</th>
-                <th title="Who they hit: their opponent's map number, and 'mirror' if it's the opponent assigned to the same number as them">Target</th>
-                <th title="Defender's town hall, and the difference vs. the attacker's own (+ = attacked higher, - = attacked lower)">TH</th>
-                <th>Stars</th>
-                <th>Destruction</th>
-              </tr>
-            </thead>
-            <tbody id="war-rows"></tbody>
-          </table>
+      <!-- ===== This Month ===== -->
+      <section id="panel-month" class="panel" role="tabpanel" aria-labelledby="tab-month" hidden>
+        <h3 id="month-title" class="panel-title"></h3>
+        <div class="board">
+          <div class="table-scroll">
+            <table id="member-table" class="leaderboard" hidden>
+              <thead>
+                <tr>
+                  <th class="rank">#</th>
+                  <th>Member</th>
+                  <th class="num" title="Member Rating: 1 pt/donation, 25 pts/raid attack this month, 50 pts per war star this month from regular wars and CWL (adjusted by how much harder or easier the target's town hall was)">MR</th>
+                  <th class="num"><span class="long">War Stars</span><span class="short">Stars</span></th>
+                  <th class="num">Donated</th>
+                  <th class="num"><span class="long">Raid Attacks</span><span class="short">Raids</span></th>
+                </tr>
+              </thead>
+              <tbody id="member-rows"></tbody>
+            </table>
+          </div>
+          <button type="button" id="member-more" class="more-btn" aria-expanded="false" hidden></button>
         </div>
       </section>
 
-      <section id="history-section" hidden>
-        <h2 id="history-title">War History — This Month</h2>
-        <p id="history-status"></p>
-        <div class="table-scroll">
-          <table id="history-table" hidden>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Wars</th>
-                <th>Attacks</th>
-                <th>Total Stars</th>
-                <th>Avg / Attack</th>
-                <th title="How many attacks landed on the opponent sitting at the same map number vs. a different one">Same # / Diff #</th>
-                <th title="Attacked higher (↑), lower (↓), or equal (=) town hall vs. their own">TH Matchup</th>
-              </tr>
-            </thead>
-            <tbody id="history-rows"></tbody>
-          </table>
+      <!-- ===== Last Month ===== -->
+      <section id="panel-last" class="panel" role="tabpanel" aria-labelledby="tab-last" hidden>
+        <h3 id="last-title" class="panel-title"></h3>
+        <p id="last-status" class="panel-note"></p>
+        <div class="board">
+          <div class="table-scroll">
+            <table id="last-table" class="leaderboard" hidden>
+              <thead>
+                <tr>
+                  <th class="rank">#</th>
+                  <th>Member</th>
+                  <th class="num" title="Member Rating from recorded raid attacks (25 pts each), war stars (50 pts each, adjusted for town hall difference) and donations (1 pt each)">MR</th>
+                  <th class="num"><span class="long">War Stars</span><span class="short">Stars</span></th>
+                  <th class="num" title="Donations as they stood at the end of the month (0 if that month wasn't captured)">Donated</th>
+                  <th class="num"><span class="long">Raid Attacks</span><span class="short">Raids</span></th>
+                </tr>
+              </thead>
+              <tbody id="last-rows"></tbody>
+            </table>
+          </div>
+          <button type="button" id="last-more" class="more-btn" aria-expanded="false" hidden></button>
         </div>
       </section>
 
-      <section id="raid-archive-section" hidden>
-        <h2 id="raid-archive-title"></h2>
-        <p id="raid-archive-status"></p>
-        <div class="table-scroll">
-          <table id="raid-archive-table" hidden>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th title="Member Rating from recorded raid attacks (25 pts each), war stars (50 pts each, adjusted for town hall difference) and donations (1 pt each)">MR</th>
-                <th>War Stars</th>
-                <th title="Donations as they stood at the end of the month (0 if that month wasn't captured)">Donated</th>
-                <th>Raid Attacks</th>
-              </tr>
-            </thead>
-            <tbody id="raid-archive-rows"></tbody>
-          </table>
+      <!-- ===== War ===== -->
+      <section id="panel-war" class="panel" role="tabpanel" aria-labelledby="tab-war" hidden>
+        <div id="war-card" class="war-card">
+          <button type="button" id="war-toggle" class="war-head" aria-expanded="false" aria-controls="war-detail" disabled>
+            <span class="war-main">
+              <span id="war-badge" class="badge" hidden>CWL</span>
+              <span id="war-headline">Checking current war...</span>
+            </span>
+            <span class="chev" aria-hidden="true"></span>
+          </button>
+          <div id="war-detail" class="war-detail" hidden>
+            <div class="table-scroll flat">
+              <table id="war-table" hidden>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Attack</th>
+                    <th title="Who they hit: their opponent's map number, and 'mirror' if it's the opponent assigned to the same number as them">Target</th>
+                    <th title="Defender's town hall, and the difference vs. the attacker's own (+ = attacked higher, - = attacked lower)">TH</th>
+                    <th>Stars</th>
+                    <th>Destruction</th>
+                  </tr>
+                </thead>
+                <tbody id="war-rows"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
+        <p id="war-status" class="panel-note"></p>
+
+        <details id="history-card" class="fold" hidden>
+          <summary>
+            <span id="history-title">War History</span>
+            <span id="history-count" class="fold-meta"></span>
+            <span class="chev" aria-hidden="true"></span>
+          </summary>
+          <div class="fold-body">
+            <p id="history-status" class="panel-note"></p>
+            <div class="table-scroll flat">
+              <table id="history-table" hidden>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Wars</th>
+                    <th>Attacks</th>
+                    <th>Total Stars</th>
+                    <th>Avg / Attack</th>
+                    <th title="How many attacks landed on the opponent sitting at the same map number vs. a different one">Same # / Diff #</th>
+                    <th title="Attacked higher (↑), lower (↓), or equal (=) town hall vs. their own">TH Matchup</th>
+                  </tr>
+                </thead>
+                <tbody id="history-rows"></tbody>
+              </table>
+            </div>
+          </div>
+        </details>
       </section>
     </main>
+
+    <footer class="site-footer">
+      <p>Clash Ratings is a fan-made project for the clan <strong>meow</strong>.</p>
+      <p>This material is unofficial and is not endorsed by Supercell. For more information see Supercell's Fan Content Policy: <a href="https://www.supercell.com/fan-content-policy" target="_blank" rel="noopener">www.supercell.com/fan-content-policy</a></p>
+    </footer>
   </div>
 
   <script src="app.js"></script>
