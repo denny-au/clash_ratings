@@ -344,6 +344,11 @@
     if (c) c.focus({ preventScroll: true });
   });
 
+  // The viewport is only ever moved by the transform; if a browser scrolls it (focus / scroll-into-view), put it back.
+  viewportEl.addEventListener('scroll', function () {
+    if (viewportEl.scrollLeft) viewportEl.scrollLeft = 0;
+  });
+
   // swipe left / right
   var swipe = null;
   var swiped = false;

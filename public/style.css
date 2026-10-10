@@ -2984,13 +2984,15 @@ body.modal-open { overflow: hidden; }
 .th-sub { display: none; color: var(--muted); font-size: 0.78rem; }
 .th-item.is-center .th-sub { display: block; color: rgb(var(--t)); }
 
-.th-art { display: flex; align-items: center; justify-content: center; width: 100%; height: 74px; transition: height var(--slide) var(--slide-ease); }
+.th-art { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 74px; transition: height var(--slide) var(--slide-ease); }
 .th-item.is-center .th-art { height: 156px; }
+/* The picture fills the box exactly (absolutely placed) instead of relying on max-height percentages;
+   iPhone Safari drew it at full size on first load until something re-laid it out. */
 .th-art img {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.5));
 }

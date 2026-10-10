@@ -119,6 +119,6 @@ window.GUIDE_DATA = {
       ],
     },
     { level: 16, image: 'assets/th/th16.webp', soon: true, theme: [235, 72, 84] },
-    { level: 17, image: 'assets/th/th17.webp', soon: true, theme: [255, 120, 170] },
+    { level: 17, image: 'assets/th/th17.webp', soon: true, theme: [92, 120, 255] },
   ],
 };
