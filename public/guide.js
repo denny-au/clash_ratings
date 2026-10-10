@@ -80,13 +80,27 @@
   }
   // Army picture: `front` pictures in the foreground, `back` pictures behind them.
   function artHtml(art) {
-    var row = function (list, cls) {
-      var imgs = (list || [])
-        .map(function (u) { var s = safeImg(u); return s ? '<img src="' + esc(s) + '" alt="" loading="lazy" />' : ''; })
+    var inner = '';
+    if (art && art.layers) {
+      // Free placement: x = centre (% of the width), y = gap above the floor (% of the height),
+      // h = height (% of the height); dim / ghost / flip are optional looks.
+      var num = function (v, d) { v = Number(v); return isFinite(v) ? v : d; };
+      inner = art.layers
+        .map(function (l) {
+          var s = safeImg(l.src);
+          if (!s) return '';
+          return '<img class="art-layer' + (l.dim ? ' dim' : '') + (l.ghost ? ' ghost' : '') + (l.flip ? ' flip' : '') + '" src="' + esc(s) + '" alt="" loading="lazy" style="left:' + num(l.x, 50) + '%;bottom:' + num(l.y, 0) + '%;height:' + num(l.h, 80) + '%" />';
+        })
         .join('');
-      return imgs ? '<span class="art-row ' + cls + '">' + imgs + '</span>' : '';
-    };
-    var inner = art ? row(art.back, 'art-back') + row(art.front, 'art-front') : '';
+    } else if (art) {
+      var row = function (list, cls) {
+        var imgs = (list || [])
+          .map(function (u) { var s = safeImg(u); return s ? '<img src="' + esc(s) + '" alt="" loading="lazy" />' : ''; })
+          .join('');
+        return imgs ? '<span class="art-row ' + cls + '">' + imgs + '</span>' : '';
+      };
+      inner = row(art.back, 'art-back') + row(art.front, 'art-front');
+    }
     return '<span class="army-art' + (inner ? '' : ' army-art-empty') + '">' + (inner || '<span>Army picture coming soon</span>') + '</span>';
   }
   // If a picture file is missing, drop it quietly (and fall back to the placeholder if none are left).
@@ -105,7 +119,7 @@
         var img = e.target, art = img.closest('.army-art');
         var row = img.parentNode;
         img.remove();
-        if (row && !row.querySelector('img')) row.remove();
+        if (row && row.classList.contains('art-row') && !row.querySelector('img')) row.remove();
         if (art && !art.querySelector('img')) {
           art.classList.add('army-art-empty');
           art.innerHTML = '<span>Army picture coming soon</span>';
@@ -166,8 +180,7 @@
     var tips = general.concat(th.tips || []);
     var items = tips
       .map(function (t, i) {
-        var chip = i >= general.length ? '<em class="tip-chip">TH' + esc(th.level) + '</em>' : '';
-        return '<li class="tip" style="--i:' + i + '"><span class="tip-n">' + (i + 1) + '</span><span class="tip-body"><b>' + esc(t.title) + chip + '</b><span>' + esc(t.text) + '</span></span></li>';
+        return '<li class="tip" style="--i:' + i + '"><span class="tip-n">' + (i + 1) + '</span><span class="tip-body"><b>' + esc(t.title) + '</b><span>' + esc(t.text) + '</span></span></li>';
       })
       .join('');
     return '<section class="g-card">' + cardHead('tips', 'Tips', 'General habits, plus ones for this town hall') + '<ol class="tips">' + (items || '<li class="g-empty">Nothing here yet.</li>') + '</ol></section>';

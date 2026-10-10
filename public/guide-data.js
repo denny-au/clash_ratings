@@ -15,12 +15,17 @@
 //    `by` is the creator's name, `video` a YouTube link, and
 //    `link` is the game's "copy army" link. `troops` is a list like
 //    [{ name: "Electro Dragon", count: 8 }, ...] (leave [] until you know it).
-//  * Army pictures: give an army `art` to show a picture on its card, for example
-//      art: { front: ['assets/troops/royal-champion.webp'],
-//             back:  ['assets/troops/dragon.webp', 'assets/troops/dragon.webp'] }
-//    `front` pictures sit in the foreground, `back` pictures sit behind them. Use
-//    transparent PNGs saved in public/assets/troops/. With no `art` (or if a file
-//    is missing) the card shows an "Army picture coming soon" box.
+//  * Army pictures: give an army `art` to show a picture on its card. Each layer is
+//    placed freely; later layers sit in front of earlier ones:
+//      art: { layers: [
+//        { src: 'assets/troops/dragon.webp', x: 20, y: 24, h: 70, dim: true },
+//        { src: 'assets/troops/royal-champion.webp', x: 50, y: 0, h: 92 },
+//      ] }
+//    x = centre across the card (0-100), y = height above the floor (0-100),
+//    h = picture height (% of the card). Optional: dim (darker), ghost (see-through
+//    cloned look), flip (mirror it). Use transparent images from public/assets/troops/.
+//    (A simpler `{ front: [...], back: [...] }` form also works.) With no `art`, or
+//    if a file is missing, the card shows an "Army picture coming soon" box.
 //  * Tips: `generalTips` show on every town hall; a town hall's own `tips` are
 //    added after them.
 // ===========================================================================
@@ -64,9 +69,9 @@ window.GUIDE_DATA = {
         { name: 'Progress base', note: '', by: 'COC Bases', image: 'assets/bases/th14-progress.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH14%3AHV%3AAAAAHwAAAAKiS60K7p0yxeED25PQ6NEA' },
       ],
       armies: [
-        { kind: 'recommended', type: 'air', name: 'RC Charge Dragons', by: 'Sturge', art: { front: ['assets/troops/royal-champion.webp'], back: ['assets/troops/dragon.webp', 'assets/troops/dragon.webp'] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p1e20_17-6p0e42_43-2m1p2e4_34-4p3e6_40i9x5-1x62d1x2-1x5u9x8-3x65-7x5-1x23-3x62s8x35-1x10-1x53', video: 'https://www.youtube.com/watch?v=MqEyKk7kI9M' },
-        { kind: 'ground', name: 'Icy Witch Bat', by: 'Sturge', art: { front: ['assets/troops/ice-golem.webp', 'assets/troops/witch.webp'], back: ['assets/troops/bat.webp', 'assets/troops/bat.webp', 'assets/troops/bat.webp'] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p3e20_48-2p2e34_4-0p1e14_8-4p0e13_40i1x53-1x110-1x26-1x87-2x1d2x5-1x120u8x58-10x15-6x6-2x28-1x97-1x87-1x75-1x91s1x2-3x5-1x9-5x28', video: 'https://www.youtube.com/watch?v=MqEyKk7kI9M&t=165s' },
-        { kind: 'air', name: 'Clone Dragons', by: 'HookedToClash', art: { front: ['assets/troops/dragon.webp'], back: ['assets/troops/clone-spell.webp'] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p3e17_20-6e42_43-2m1p2e4_34-4p0e6_13i1x147-1x52d1x16u4x5-13x8-1x82-1x23-2x10-1x52s1x2-3x16', video: 'https://www.youtube.com/watch?v=6PZlG-Zx1qo' },
+        { kind: 'recommended', type: 'air', name: 'RC Charge Dragons', by: 'Sturge', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 20, y: 24, h: 70, dim: true }, { src: 'assets/troops/dragon.webp', x: 80, y: 24, h: 70, dim: true, flip: true }, { src: 'assets/troops/royal-champion.webp', x: 50, y: 0, h: 92 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p1e20_17-6p0e42_43-2m1p2e4_34-4p3e6_40i9x5-1x62d1x2-1x5u9x8-3x65-7x5-1x23-3x62s8x35-1x10-1x53', video: 'https://www.youtube.com/watch?v=MqEyKk7kI9M' },
+        { kind: 'ground', name: 'Icy Witch Bat', by: 'Sturge', art: { layers: [{ src: 'assets/troops/bat.webp', x: 76, y: 66, h: 17, dim: true }, { src: 'assets/troops/bat.webp', x: 87, y: 50, h: 14, dim: true }, { src: 'assets/troops/bat.webp', x: 66, y: 78, h: 12, dim: true }, { src: 'assets/troops/ice-golem.webp', x: 33, y: 0, h: 88 }, { src: 'assets/troops/witch.webp', x: 68, y: 0, h: 96 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p3e20_48-2p2e34_4-0p1e14_8-4p0e13_40i1x53-1x110-1x26-1x87-2x1d2x5-1x120u8x58-10x15-6x6-2x28-1x97-1x87-1x75-1x91s1x2-3x5-1x9-5x28', video: 'https://www.youtube.com/watch?v=MqEyKk7kI9M&t=165s' },
+        { kind: 'air', name: 'Clone Dragons', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 38, y: 24, h: 76, ghost: true }, { src: 'assets/troops/dragon.webp', x: 58, y: 14, h: 84 }, { src: 'assets/troops/clone-spell.webp', x: 11, y: 66, h: 28 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p3e17_20-6e42_43-2m1p2e4_34-4p0e6_13i1x147-1x52d1x16u4x5-13x8-1x82-1x23-2x10-1x52s1x2-3x16', video: 'https://www.youtube.com/watch?v=6PZlG-Zx1qo' },
       ],
       tips: [
         {
