@@ -365,6 +365,16 @@ async function loadProfile(tag) {
 
 const profileFor = (tag) => profileCache.get(tag) || profileErrors.get(tag) || null;
 
+// Little stars that float up off the podium block. Pure CSS; positions and
+// timings are fixed per slot so the cards never "re-roll" when redrawn.
+const SPARK_SLOTS = [
+  [12, 0, 3.4], [27, 1.3, 4.1], [41, 0.6, 3.7], [56, 2.1, 4.4], [70, 0.9, 3.5], [84, 1.8, 4.0], [93, 2.6, 3.8],
+];
+function sparksHtml(rank) {
+  const slots = rank === 1 ? SPARK_SLOTS : SPARK_SLOTS.filter((_, i) => i % 2 === 0);
+  return slots.map(([x, d, t]) => `<i style="--x:${x}%;--d:${d}s;--t:${t}s"></i>`).join('');
+}
+
 // ---------- Entrance animation + count-up ----------
 const reduceMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
@@ -472,7 +482,8 @@ function createLeaderboard(prefix, opts = {}) {
       <span class="pod-mr"><b data-count="${Number(r.mr) || 0}">${fmt(r.mr)}</b><i>MR</i></span>
       ${opts.trend ? `<span class="pod-move">${moveHtml(r.rankChange)}</span>` : ''}
       <span class="pod-stats"><span><b>${fmt(r.warStars)}</b>stars</span><span><b>${fmt(r.donated)}</b>donated</span><span><b>${fmt(r.raids)}</b>raids</span></span>
-      <span class="pod-base" aria-hidden="true"><b>${r.rank}</b></span>
+      <span class="pod-sparks" aria-hidden="true">${sparksHtml(r.rank)}</span>
+      <span class="pod-base" aria-hidden="true"></span>
     </${el}>`;
   }
 
@@ -831,6 +842,225 @@ function drawCrown(ctx, x, y, size, metal) {
   ctx.restore();
 }
 
+// Seeded random so the same leaderboard always makes the same picture.
+function mulberry32(seed) {
+  return function () {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// A crown with its place number on it.
+function drawRankCrown(ctx, x, y, size, rank, font) {
+  const metal = METALS[rank];
+  drawCrown(ctx, x, y, size, metal);
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = `${Math.round(size * 0.45)}px ${font}`;
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = Math.max(4, size * 0.092);
+  ctx.strokeStyle = rank === 1 ? '#8a5f12' : rank === 2 ? '#5f6880' : '#7d4519';
+  ctx.strokeText(String(rank), x + size / 2, y + size * 0.59);
+  ctx.fillStyle = rank === 2 ? '#ffffff' : rank === 1 ? '#fff8de' : '#fff0df';
+  ctx.fillText(String(rank), x + size / 2, y + size * 0.59);
+  ctx.restore();
+}
+
+function drawStar4(ctx, x, y, r, color, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = r * 1.4;
+  ctx.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const ang = (Math.PI / 4) * i - Math.PI / 2;
+    const rad = i % 2 === 0 ? r : r * 0.28;
+    ctx.lineTo(x + Math.cos(ang) * rad, y + Math.sin(ang) * rad);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawListRow(ctx, r, y, W, rowH, font) {
+  const x0 = 60;
+  const w = W - 120;
+  ctx.beginPath();
+  ctx.roundRect(x0, y + 6, w, rowH - 14, 22);
+  ctx.fillStyle = '#0e1017';
+  ctx.fill();
+  ctx.strokeStyle = '#272a38';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  const cy = y + rowH / 2 - 1;
+  ctx.textAlign = 'center';
+  ctx.font = `46px ${font}`;
+  ctx.fillStyle = '#9298ad';
+  ctx.fillText(String(r.rank), x0 + 64, cy + 16);
+  ctx.textAlign = 'left';
+  ctx.font = `50px ${font}`;
+  ctx.fillStyle = '#f4f1ea';
+  ctx.fillText(fitText(ctx, r.name || '', 560), x0 + 140, cy - (r.role ? 2 : -14));
+  const roleLabel = ROLE_LABELS[r.role];
+  if (roleLabel) {
+    ctx.font = `30px ${font}`;
+    ctx.fillStyle = '#a3adcf';
+    ctx.fillText(roleLabel, x0 + 142, cy + 38);
+  }
+  ctx.textAlign = 'right';
+  ctx.font = `58px ${font}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(fmt(r.mr), x0 + w - 36, cy + 14);
+  ctx.font = `26px ${font}`;
+  ctx.fillStyle = '#9298ad';
+  ctx.fillText('MR', x0 + w - 36, cy + 48);
+}
+
+// One podium place: metal-washed card, crown, name, big MR, three small stats,
+// and the lit block it stands on.
+function drawPodiumCard(ctx, r, rank, x, baseY, w, font) {
+  const metal = METALS[rank];
+  const dims = {
+    1: { h: 560, bh: 64, crown: 130, name: 58, mr: 112 },
+    2: { h: 490, bh: 46, crown: 100, name: 46, mr: 84 },
+    3: { h: 460, bh: 34, crown: 90, name: 46, mr: 84 },
+  }[rank];
+  const top = baseY - dims.h;
+  const cx = x + w / 2;
+  const rgb = rank === 1 ? '242,193,78' : rank === 2 ? '207,213,227' : '217,147,90';
+
+  // floor glow
+  const floor = ctx.createRadialGradient(cx, baseY + 6, 4, cx, baseY + 6, w * 0.62);
+  floor.addColorStop(0, `rgba(${rgb},0.55)`);
+  floor.addColorStop(1, `rgba(${rgb},0)`);
+  ctx.save();
+  ctx.translate(0, 0);
+  ctx.scale(1, 0.22);
+  ctx.fillStyle = floor;
+  ctx.beginPath();
+  ctx.arc(cx, (baseY + 6) / 0.22, w * 0.62, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // card
+  ctx.beginPath();
+  ctx.roundRect(x, top, w, dims.h, [28, 28, 6, 6]);
+  ctx.fillStyle = '#0e1017';
+  ctx.fill();
+  const wash = ctx.createLinearGradient(0, top, 0, baseY);
+  wash.addColorStop(0, `rgba(${rgb},0.30)`);
+  wash.addColorStop(0.65, `rgba(${rgb},0.06)`);
+  wash.addColorStop(1, `rgba(${rgb},0.02)`);
+  ctx.fillStyle = wash;
+  ctx.fill();
+  ctx.save();
+  ctx.clip();
+  const spot = ctx.createRadialGradient(cx, top, 10, cx, top, w * 0.9);
+  spot.addColorStop(0, `rgba(${rgb},0.38)`);
+  spot.addColorStop(1, `rgba(${rgb},0)`);
+  ctx.fillStyle = spot;
+  ctx.fillRect(x, top, w, dims.h);
+  ctx.restore();
+  ctx.beginPath();
+  ctx.roundRect(x, top, w, dims.h, [28, 28, 6, 6]);
+  ctx.strokeStyle = metal.b;
+  ctx.lineWidth = rank === 1 ? 4 : 3;
+  ctx.globalAlpha = rank === 1 ? 0.95 : 0.6;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // crown
+  if (rank === 1) {
+    ctx.save();
+    ctx.shadowColor = 'rgba(242,193,78,0.8)';
+    ctx.shadowBlur = 40;
+    drawRankCrown(ctx, cx - dims.crown / 2, top + 30, dims.crown, rank, font);
+    ctx.restore();
+  } else {
+    drawRankCrown(ctx, cx - dims.crown / 2, top + 30, dims.crown, rank, font);
+  }
+  const crownH = dims.crown * (26 / 32);
+
+  // name + role
+  ctx.textAlign = 'center';
+  ctx.fillStyle = metal.text;
+  ctx.font = `${dims.name}px ${font}`;
+  let y = top + 30 + crownH + dims.name + 8;
+  ctx.fillText(fitText(ctx, r.name || '', w - 36), cx, y);
+  const roleLabel = ROLE_LABELS[r.role];
+  y += 38;
+  if (roleLabel) {
+    ctx.font = `28px ${font}`;
+    ctx.fillStyle = '#a3adcf';
+    ctx.fillText(roleLabel, cx, y);
+  }
+
+  // MR
+  y += dims.mr * 0.95;
+  ctx.save();
+  ctx.shadowColor = `rgba(${rgb},0.6)`;
+  ctx.shadowBlur = 26;
+  ctx.font = `${dims.mr}px ${font}`;
+  ctx.fillStyle = metal.text;
+  ctx.fillText(fmt(r.mr), cx, y);
+  ctx.restore();
+  ctx.font = `30px ${font}`;
+  ctx.fillStyle = `rgba(${rgb},0.9)`;
+  ctx.fillText('MR', cx, y + 40);
+
+  // small stats
+  const sy = baseY - dims.bh - 56;
+  ctx.strokeStyle = `rgba(${rgb},0.25)`;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x + 28, sy - 44);
+  ctx.lineTo(x + w - 28, sy - 44);
+  ctx.stroke();
+  const stats = [[r.warStars, 'stars'], [r.donated, 'donated'], [r.raids, 'raids']];
+  stats.forEach(([v, label], i) => {
+    const sx = x + (w / 3) * (i + 0.5);
+    ctx.font = `${rank === 1 ? 38 : 32}px ${font}`;
+    ctx.fillStyle = '#f4f1ea';
+    ctx.fillText(fmt(v), sx, sy);
+    ctx.font = `20px ${font}`;
+    ctx.fillStyle = '#9298ad';
+    ctx.fillText(label.toUpperCase(), sx, sy + 26);
+  });
+
+  // lit block
+  const bg = ctx.createLinearGradient(0, baseY - dims.bh, 0, baseY);
+  bg.addColorStop(0, `rgba(${rgb},0.65)`);
+  bg.addColorStop(1, `rgba(${rgb},0.2)`);
+  ctx.beginPath();
+  ctx.roundRect(x, baseY - dims.bh, w, dims.bh, [0, 0, 6, 6]);
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.strokeStyle = metal.b;
+  ctx.globalAlpha = 0.7;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillRect(x + 2, baseY - dims.bh, w - 4, 2);
+  // diagonal glint across the block
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x, baseY - dims.bh, w, dims.bh, [0, 0, 6, 6]);
+  ctx.clip();
+  const glint = ctx.createLinearGradient(x + w * 0.2, 0, x + w * 0.5, 0);
+  glint.addColorStop(0, 'rgba(255,255,255,0)');
+  glint.addColorStop(0.5, 'rgba(255,255,255,0.22)');
+  glint.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = glint;
+  ctx.fillRect(x, baseY - dims.bh, w, dims.bh);
+  ctx.restore();
+}
+
 async function buildShareCanvas(info) {
   try {
     await Promise.all([document.fonts.load('64px "Titan One"'), document.fonts.load('40px "Lilita One"')]);
@@ -838,24 +1068,59 @@ async function buildShareCanvas(info) {
     /* fall back to system fonts */
   }
   const W = 1080;
-  const rowH = 148;
-  const top = 360;
   const rows = info.rows.slice(0, 5);
-  const H = top + rows.length * rowH + 190;
+  const podium = rows.length >= 3;
+  const top = 380;
+  const baseY = top + 560;
+  const listTop = baseY + 56;
+  const rowH = 130;
+  const lower = podium ? rows.slice(3) : rows;
+  const H = (podium ? listTop : top) + lower.length * rowH + 190;
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d');
   const display = '"Lilita One", "Titan One", "Segoe UI", sans-serif';
 
+  // Night + forge glow at the top, firelight along the bottom
   ctx.fillStyle = '#06070c';
   ctx.fillRect(0, 0, W, H);
-  const glow = ctx.createRadialGradient(W / 2, 0, 20, W / 2, 0, 520);
-  glow.addColorStop(0, 'rgba(56,128,255,0.38)');
-  glow.addColorStop(0.55, 'rgba(150,84,255,0.2)');
-  glow.addColorStop(1, 'rgba(150,84,255,0)');
+  const glow = ctx.createRadialGradient(W / 2, 0, 20, W / 2, 0, 620);
+  glow.addColorStop(0, 'rgba(255,176,62,0.42)');
+  glow.addColorStop(0.5, 'rgba(255,104,36,0.2)');
+  glow.addColorStop(1, 'rgba(255,104,36,0)');
   ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, W, 620);
+  ctx.fillRect(0, 0, W, 700);
+  const fire = ctx.createRadialGradient(W / 2, H + 60, 20, W / 2, H + 60, 720);
+  fire.addColorStop(0, 'rgba(242,193,78,0.22)');
+  fire.addColorStop(1, 'rgba(242,193,78,0)');
+  ctx.fillStyle = fire;
+  ctx.fillRect(0, H - 720, W, 720);
+  // stage light on the podium
+  if (podium) {
+    const beam = ctx.createRadialGradient(W / 2, top - 40, 10, W / 2, top - 40, 560);
+    beam.addColorStop(0, 'rgba(255,226,150,0.22)');
+    beam.addColorStop(1, 'rgba(255,226,150,0)');
+    ctx.fillStyle = beam;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Embers
+  const rnd = mulberry32(2026);
+  const emberColors = ['255,196,84', '255,150,48', '255,226,160', '255,120,60'];
+  for (let i = 0; i < 90; i++) {
+    const ex = rnd() * W;
+    const ey = rnd() * H;
+    const er = 1.5 + rnd() * 4;
+    const c = emberColors[Math.floor(rnd() * emberColors.length)];
+    const g = ctx.createRadialGradient(ex, ey, 0, ex, ey, er * 3.4);
+    g.addColorStop(0, `rgba(${c},${(0.35 + rnd() * 0.5).toFixed(2)})`);
+    g.addColorStop(1, `rgba(${c},0)`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(ex, ey, er * 3.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   // Title
   ctx.textAlign = 'center';
@@ -868,79 +1133,49 @@ async function buildShareCanvas(info) {
   ctx.lineJoin = 'round';
   ctx.lineWidth = 14;
   ctx.strokeStyle = '#5a2f00';
+  ctx.save();
+  ctx.shadowColor = 'rgba(255,150,28,0.55)';
+  ctx.shadowBlur = 36;
+  ctx.strokeText('Clash Ratings', W / 2, 200);
+  ctx.restore();
   ctx.strokeText('Clash Ratings', W / 2, 200);
   ctx.fillStyle = tg;
   ctx.fillText('Clash Ratings', W / 2, 200);
 
   ctx.font = `46px ${display}`;
-  ctx.fillStyle = '#e8e6f2';
+  ctx.fillStyle = '#f3ecd8';
   ctx.fillText(fitText(ctx, info.clanName || '', W - 160), W / 2, 275);
+  // month with little gold rules either side
   ctx.font = `36px ${display}`;
-  ctx.fillStyle = '#9298ad';
-  ctx.fillText(info.monthLabel || '', W / 2, 325);
+  ctx.fillStyle = '#ffe9a6';
+  const label = info.monthLabel || '';
+  ctx.fillText(label, W / 2, 330);
+  const lw = ctx.measureText(label).width / 2;
+  for (const dir of [-1, 1]) {
+    const lg = ctx.createLinearGradient(W / 2 + dir * (lw + 24), 0, W / 2 + dir * (lw + 24 + 150), 0);
+    lg.addColorStop(0, 'rgba(242,193,78,0.8)');
+    lg.addColorStop(1, 'rgba(242,193,78,0)');
+    ctx.fillStyle = lg;
+    ctx.fillRect(Math.min(W / 2 + dir * (lw + 24), W / 2 + dir * (lw + 174)), 318, 150, 2);
+  }
 
-  // Rows
-  rows.forEach((r, i) => {
-    const y = top + i * rowH;
-    const rank = r.rank <= 3 ? r.rank : null;
-    const metal = rank ? METALS[rank] : null;
-    const x0 = 60;
-    const w = W - 120;
-    ctx.beginPath();
-    ctx.roundRect(x0, y + 6, w, rowH - 14, 22);
-    ctx.fillStyle = '#0e1017';
-    ctx.fill();
-    if (metal) {
-      const wash = ctx.createLinearGradient(x0, 0, x0 + w, 0);
-      wash.addColorStop(0, metal.wash);
-      wash.addColorStop(0.7, 'rgba(255,255,255,0.02)');
-      wash.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.fillStyle = wash;
-      ctx.fill();
+  if (podium) {
+    const gap = 16;
+    const sw = 290;
+    const cw = 340;
+    const startX = (W - (sw * 2 + cw + gap * 2)) / 2;
+    drawPodiumCard(ctx, rows[1], 2, startX, baseY, sw, display);
+    drawPodiumCard(ctx, rows[2], 3, startX + sw + gap + cw + gap, baseY, sw, display);
+    drawPodiumCard(ctx, rows[0], 1, startX + sw + gap, baseY, cw, display);
+    // stars around the champion
+    const cx1 = startX + sw + gap + cw / 2;
+    for (const [dx, dy, r, a] of [[-190, -430, 16, 0.95], [196, -380, 12, 0.8], [-230, -250, 9, 0.7], [236, -520, 9, 0.75], [-120, -540, 8, 0.7], [140, -300, 7, 0.6]]) {
+      drawStar4(ctx, cx1 + dx, baseY + dy, r, '#ffe9a6', a);
     }
-    ctx.strokeStyle = metal ? metal.b : '#272a38';
-    ctx.globalAlpha = metal ? 0.55 : 1;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-
-    const cy = y + rowH / 2 - 1;
-    if (rank) {
-      drawCrown(ctx, x0 + 26, cy - 30, 76, metal);
-      ctx.textAlign = 'center';
-      ctx.font = `34px ${display}`;
-      ctx.lineJoin = 'round';
-      ctx.lineWidth = 7;
-      ctx.strokeStyle = rank === 1 ? '#8a5f12' : rank === 2 ? '#5f6880' : '#7d4519';
-      ctx.strokeText(String(rank), x0 + 26 + 38, cy + 15);
-      ctx.fillStyle = rank === 2 ? '#ffffff' : rank === 1 ? '#fff8de' : '#fff0df';
-      ctx.fillText(String(rank), x0 + 26 + 38, cy + 15);
-    } else {
-      ctx.textAlign = 'center';
-      ctx.font = `46px ${display}`;
-      ctx.fillStyle = '#9298ad';
-      ctx.fillText(String(r.rank), x0 + 64, cy + 16);
-    }
-
-    ctx.textAlign = 'left';
-    ctx.font = `${rank ? 56 : 50}px ${display}`;
-    ctx.fillStyle = metal ? metal.text : '#f4f1ea';
-    ctx.fillText(fitText(ctx, r.name || '', 560), x0 + 140, cy - (r.role ? 2 : -14));
-    const roleLabel = ROLE_LABELS[r.role];
-    if (roleLabel) {
-      ctx.font = `30px ${display}`;
-      ctx.fillStyle = '#a3adcf';
-      ctx.fillText(roleLabel, x0 + 142, cy + 38);
-    }
-
-    ctx.textAlign = 'right';
-    ctx.font = `${rank ? 66 : 58}px ${display}`;
-    ctx.fillStyle = metal ? metal.text : '#ffffff';
-    ctx.fillText(fmt(r.mr), x0 + w - 36, cy + 14);
-    ctx.font = `26px ${display}`;
-    ctx.fillStyle = '#9298ad';
-    ctx.fillText('MR', x0 + w - 36, cy + 48);
-  });
+    lower.forEach((r, i) => drawListRow(ctx, r, listTop + i * rowH, W, rowH, display));
+  } else {
+    lower.forEach((r, i) => drawListRow(ctx, r, top - 20 + i * rowH, W, rowH, display));
+  }
 
   // Footer
   ctx.textAlign = 'center';
@@ -953,41 +1188,87 @@ async function buildShareCanvas(info) {
   return canvas;
 }
 
+// ---- Preview sheet: shows the picture first, then Share / Save ----
+const shareModal = $('share-modal');
+const sharePreview = $('share-preview');
+const shareSend = $('share-send');
+const shareSave = $('share-save');
+const shareNote = $('share-note');
+let shareState = null; // { blob, file, url, opener }
+
+function closeShareModal() {
+  if (shareModal.hidden) return;
+  shareModal.hidden = true;
+  document.body.classList.remove('modal-open');
+  if (shareState) {
+    URL.revokeObjectURL(shareState.url);
+    if (shareState.opener && shareState.opener.focus) shareState.opener.focus();
+  }
+  sharePreview.removeAttribute('src');
+  shareState = null;
+}
+
+function downloadShare() {
+  if (!shareState) return;
+  const a = document.createElement('a');
+  a.href = shareState.url;
+  a.download = shareState.file.name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  shareNote.textContent = 'Saved! Check your downloads.';
+}
+
+shareModal.addEventListener('click', (e) => {
+  if (e.target.closest('[data-close]')) closeShareModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeShareModal();
+});
+shareSave.addEventListener('click', downloadShare);
+shareSend.addEventListener('click', async () => {
+  if (!shareState) return;
+  try {
+    await navigator.share({ files: [shareState.file], title: 'Clash Ratings' });
+  } catch (e) {
+    if (!e || e.name !== 'AbortError') downloadShare();
+  }
+});
+
 async function shareBoard(info, button) {
   if (!info || !info.rows.length) return;
-  const original = button.textContent;
+  const label = button.querySelector('.tb-label') || button;
+  const original = label.textContent;
   button.disabled = true;
-  button.textContent = 'Making picture…';
+  button.classList.add('is-busy');
+  label.textContent = 'Making…';
   try {
     const canvas = await buildShareCanvas(info);
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
     if (!blob) throw new Error('no image');
     const name = `clash-ratings-${(info.monthLabel || 'leaderboard').toLowerCase().replace(/\s+/g, '-')}.png`;
     const file = new File([blob], name, { type: 'image/png' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: `Clash Ratings · ${info.monthLabel}` });
-        return;
-      } catch (e) {
-        if (e && e.name === 'AbortError') return; // closed the share sheet on purpose
-      }
-    }
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    shareState = { blob, file, url, opener: button };
+    sharePreview.src = url;
+    const canShareFiles = !!(navigator.canShare && navigator.canShare({ files: [file] }));
+    shareSend.hidden = !canShareFiles;
+    shareSave.classList.toggle('btn-primary', !canShareFiles);
+    shareSave.classList.toggle('ghost-btn', canShareFiles);
+    shareNote.textContent = '';
+    shareModal.hidden = false;
+    document.body.classList.add('modal-open');
+    (canShareFiles ? shareSend : shareSave).focus({ preventScroll: true });
   } catch (err) {
     console.error('Share picture failed:', err);
-    button.textContent = "Couldn't make the picture";
-    setTimeout(() => (button.textContent = original), 2500);
+    label.textContent = "Couldn't make the picture";
+    setTimeout(() => (label.textContent = original), 2500);
+    button.classList.remove('is-busy');
     button.disabled = false;
     return;
   }
-  button.textContent = original;
+  label.textContent = original;
+  button.classList.remove('is-busy');
   button.disabled = false;
 }
 

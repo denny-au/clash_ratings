@@ -43,35 +43,60 @@
 
   <div id="drawer-overlay" class="drawer-overlay"></div>
   <nav id="side-drawer" class="side-drawer" aria-label="Site menu">
+    <div class="drawer-brand">
+      <span class="drawer-logo">Clash Ratings</span>
+      <span class="drawer-sub">How it all works</span>
+    </div>
     <div class="drawer-tabs">
       <button type="button" class="drawer-tab" data-panel="faq">FAQ</button>
       <button type="button" class="drawer-tab" data-panel="about">About</button>
     </div>
 
     <div id="drawer-panel-faq" class="drawer-panel" hidden>
-      <div class="faq-item">
-        <h3>How does this site fairly track a member's contribution?</h3>
-        <p>Three things, all pulled straight from the game and hard to fake: <strong>donations</strong> (troops given to clanmates), <strong>war attacks</strong> (stars earned in regular wars and Clan War League, adjusted for how much harder or easier the target was), and <strong>raid attacks</strong> (Capital Raid Weekend attacks used). These are the three things almost every active member does regularly, they're visible to the whole clan in-game, and none of them can really be gamed — an attack either landed stars or it didn't, a donation either happened or it didn't.</p>
-      </div>
-      <div class="faq-item">
-        <h3>Why doesn't this track Clan Games, Season Pass, or other events?</h3>
-        <p>Mainly because the Clash of Clans API simply doesn't expose that data — there's no endpoint for a member's Clan Games points or event participation, so there's nothing to pull. But even if there were, donations, war attacks, and raid attacks already cover the three things that matter most to a clan week in and week out, so this site keeps its focus there rather than chasing every possible stat.</p>
-      </div>
-      <div class="faq-item">
-        <h3>How is MR (Member Rating) calculated?</h3>
-        <p>MR is one score built from three things, added together:</p>
-        <ul>
-          <li><strong>1 MR per troop donated.</strong></li>
-          <li><strong>25 MR per raid attack</strong> used this month (stacks across every Capital Raid Weekend in the calendar month).</li>
-          <li><strong>50 MR per war star</strong> this month, from both regular wars and Clan War League — adjusted by how much harder or easier the target's town hall was: half value (25 MR) against a target 2+ town halls lower, up to 1.5x (75 MR) against a target 2+ town halls higher. Map position is ignored on purpose, since war matchmaking can assign unfair map numbers — only the actual town hall gap counts.</li>
-        </ul>
-      </div>
-      <p class="faq-footer">None of this is set in stone — if you think something should be weighted differently, <a href="https://docs.google.com/forms/d/e/1FAIpQLSe7No1cjFfZZqRWSplATSK_BcmaCoXj7EqLo5Hp1qiTbseJfg/viewform?usp=sharing" target="_blank" rel="noopener">tell us here</a>.</p>
+      <details class="faq-card" open style="--i:0">
+        <summary><span class="faq-ico" aria-hidden="true">1</span><span>How is MR worked out?</span><span class="chev" aria-hidden="true"></span></summary>
+        <div class="faq-body">
+          <p>MR (Member Rating) is one score that adds up three things from this month:</p>
+          <div class="mr-chips">
+            <div class="mr-chip"><b>1</b><span>per troop donated</span></div>
+            <div class="mr-chip"><b>25</b><span>per raid attack</span></div>
+            <div class="mr-chip"><b>50</b><span>per war star</span></div>
+          </div>
+          <p>War stars count from regular wars and Clan War League, and they scale with the target: <strong>half value (25)</strong> against a town hall 2+ levels lower, up to <strong>1.5&times; (75)</strong> against one 2+ levels higher. Map position is ignored on purpose because matchmaking can hand out unfair numbers.</p>
+        </div>
+      </details>
+
+      <details class="faq-card" style="--i:1">
+        <summary><span class="faq-ico" aria-hidden="true">2</span><span>Why just these three?</span><span class="chev" aria-hidden="true"></span></summary>
+        <div class="faq-body">
+          <p>They're what almost everyone does week in, week out, the whole clan can see them in-game, and they're hard to fake: an attack either landed stars or it didn't, a donation either happened or it didn't.</p>
+        </div>
+      </details>
+
+      <details class="faq-card" style="--i:2">
+        <summary><span class="faq-ico" aria-hidden="true">3</span><span>What about Clan Games and events?</span><span class="chev" aria-hidden="true"></span></summary>
+        <div class="faq-body">
+          <p>The game's API doesn't share them, so there's nothing to pull. The three above already cover what matters most to a clan.</p>
+        </div>
+      </details>
+
+      <a class="faq-cta" style="--i:3" href="https://docs.google.com/forms/d/e/1FAIpQLSe7No1cjFfZZqRWSplATSK_BcmaCoXj7EqLo5Hp1qiTbseJfg/viewform?usp=sharing" target="_blank" rel="noopener">
+        <span>Think something should be weighted differently?</span>
+        <b>Tell us &rarr;</b>
+      </a>
     </div>
 
     <div id="drawer-panel-about" class="drawer-panel" hidden>
-      <p>Clash Ratings was built by <strong>Arck</strong>.</p>
-      <p>The clan behind it is <strong>meow (#2RJPU9JY0)</strong> — if you're looking for a new clan, feel free to join.</p>
+      <div class="about-card" style="--i:0">
+        <span class="about-label">Built by</span>
+        <span class="about-name">Arck</span>
+      </div>
+      <div class="about-card about-clan" style="--i:1">
+        <span class="about-label">The clan behind it</span>
+        <span class="about-name">meow</span>
+        <span class="about-tag">#2RJPU9JY0</span>
+        <p>Looking for a new clan? Come say hi.</p>
+      </div>
     </div>
   </nav>
 
@@ -122,7 +147,7 @@
       <section id="panel-month" class="panel" role="tabpanel" aria-labelledby="tab-month" hidden>
         <div class="panel-head">
           <h3 id="month-title" class="panel-title"></h3>
-          <button type="button" id="share-month" class="tool-btn" title="Save a picture of the top 5 to share">Share</button>
+          <button type="button" id="share-month" class="tool-btn" title="Make a picture of the top 5 to share"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-label">Share</span></button>
         </div>
         <div id="member-podium" class="podium-wrap" hidden></div>
         <div class="board" id="member-board">
@@ -158,7 +183,7 @@
       <section id="panel-last" class="panel" role="tabpanel" aria-labelledby="tab-last" hidden>
         <div class="panel-head">
           <h3 id="last-title" class="panel-title"></h3>
-          <button type="button" id="share-last" class="tool-btn" title="Save a picture of the top 5 to share" hidden>Share</button>
+          <button type="button" id="share-last" class="tool-btn" title="Make a picture of the top 5 to share" hidden><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-label">Share</span></button>
         </div>
         <p id="last-status" class="panel-note"></p>
         <div id="last-awards-wrap" class="hof" hidden>
@@ -250,6 +275,23 @@
       <p>Clash Ratings is a fan-made project for the clan <strong>meow</strong>.</p>
       <p>This material is unofficial and is not endorsed by Supercell. For more information see Supercell's Fan Content Policy: <a href="https://www.supercell.com/fan-content-policy" target="_blank" rel="noopener">www.supercell.com/fan-content-policy</a></p>
     </footer>
+  </div>
+
+  <div id="share-modal" class="share-modal" hidden role="dialog" aria-modal="true" aria-label="Share picture">
+    <div class="share-backdrop" data-close></div>
+    <div class="share-sheet">
+      <button type="button" class="share-x" data-close aria-label="Close">&times;</button>
+      <div class="share-stage">
+        <img id="share-preview" alt="Preview of the leaderboard picture" />
+        <span class="share-shine" aria-hidden="true"></span>
+      </div>
+      <div class="share-actions">
+        <button type="button" id="share-send" class="btn-primary" hidden>Share</button>
+        <button type="button" id="share-save" class="btn-primary">Save picture</button>
+        <button type="button" class="ghost-btn" data-close>Close</button>
+      </div>
+      <p id="share-note" class="share-note" role="status"></p>
+    </div>
   </div>
 
   <script src="app.js"></script>
