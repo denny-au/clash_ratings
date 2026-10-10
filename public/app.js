@@ -86,6 +86,45 @@ const BACKEND_URL =
 // ---------- Tabs: This Month / Last Month / War ----------
 let activeTab = 'month';
 
+// The gold pill behind the selected tab. First placement is instant; after
+// that it slides + snaps (CSS does the spring, we just set x/width).
+const pillEl = $('tab-pill');
+let pillPlaced = false;
+let pillTimer = null;
+
+function positionPill(animate) {
+  const sel = tabButtons.find((b) => b.getAttribute('aria-selected') === 'true' && !b.hidden);
+  if (!pillEl || !sel || !sel.offsetWidth) return; // tabs not visible yet; the ResizeObserver retries
+  const x = sel.offsetLeft;
+  const w = sel.offsetWidth;
+  const changed = pillEl.style.getPropertyValue('--pill-x') !== x + 'px' || pillEl.style.getPropertyValue('--pill-w') !== w + 'px';
+  pillEl.style.setProperty('--pill-x', x + 'px');
+  pillEl.style.setProperty('--pill-w', w + 'px');
+  tabsEl.classList.add('has-pill');
+  if (!pillPlaced) {
+    pillPlaced = true;
+    // enable the transition only after the first (instant) placement has painted
+    requestAnimationFrame(() => requestAnimationFrame(() => tabsEl.classList.add('pill-ready')));
+    return;
+  }
+  if (animate && changed && tabsEl.classList.contains('pill-ready')) {
+    tabsEl.classList.remove('pill-moving');
+    void tabsEl.offsetWidth; // restart the squish animation
+    tabsEl.classList.add('pill-moving');
+    clearTimeout(pillTimer);
+    pillTimer = setTimeout(() => tabsEl.classList.remove('pill-moving'), 600);
+  }
+}
+
+if (window.ResizeObserver) {
+  const ro = new ResizeObserver(() => positionPill(false));
+  ro.observe(tabsEl);
+  for (const b of tabButtons) ro.observe(b);
+} else {
+  window.addEventListener('resize', () => positionPill(false));
+}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => positionPill(false));
+
 function activateTab(name, { updateHash = true } = {}) {
   const btn = tabButtons.find((b) => b.dataset.tab === name);
   if (!btn || btn.hidden) name = 'month'; // e.g. "#last" but there's no last-month data
@@ -96,6 +135,7 @@ function activateTab(name, { updateHash = true } = {}) {
     b.tabIndex = on ? 0 : -1;
   }
   for (const [key, el] of Object.entries(panels)) el.hidden = key !== name;
+  positionPill(true);
   if (updateHash) {
     try {
       history.replaceState(null, '', name === 'month' ? location.pathname + location.search : `#${name}`);

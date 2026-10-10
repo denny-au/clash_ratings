@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#07070b" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Titan+One&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -67,7 +67,7 @@
 
   <div class="page-content">
     <header class="hero">
-      <h1>Clash Ratings</h1>
+      <h1 data-text="Clash Ratings">Clash Ratings</h1>
       <p class="subtitle">Enter a clan tag.</p>
 
       <form id="search-form">
@@ -99,6 +99,7 @@
       </section>
 
       <div id="tabs" class="tabs" role="tablist" aria-label="Views" hidden>
+        <span id="tab-pill" class="tab-pill" aria-hidden="true"></span>
         <button type="button" role="tab" id="tab-month" class="tab" data-tab="month" aria-selected="true" aria-controls="panel-month">This Month</button>
         <button type="button" role="tab" id="tab-last" class="tab" data-tab="last" aria-selected="false" aria-controls="panel-last" tabindex="-1" hidden>Last Month</button>
         <button type="button" role="tab" id="tab-war" class="tab" data-tab="war" aria-selected="false" aria-controls="panel-war" tabindex="-1">War <span id="war-live-dot" class="live-dot" hidden title="A war is active right now" aria-hidden="true"></span></button>

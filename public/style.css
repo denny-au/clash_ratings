@@ -1,22 +1,42 @@
 :root {
   color-scheme: dark;
-  --bg: #07070b;
-  --panel: #0f1017;
-  --panel-2: #151622;
-  --border: #23253a;
-  --border-soft: #1a1c2c;
-  --text: #f5f2ec;
-  --muted: #9a98ad;
-  --role: #a4a8cc; /* lighter, softer tone for the role next to a name */
 
+  /* ---- Palette (default: Navy & Gold). Swap by overriding these on :root. ---- */
+  --bg: #070b17;
+  --panel: #0d1426;
+  --panel-2: #131c36;
+  --border: #212d50;
+  --border-soft: #182140;
+  --text: #f4f1ea;
+  --muted: #8f9bb9;
+  --role: #9fb1e0; /* lighter, softer tone for the role next to a name */
+
+  /* UI accent (title, buttons, bars, highlights) */
+  --accent: #f2c14e;
+  --accent-hi: #ffe08a;
+  --accent-pale: #fff6d0;
+  --accent-deep: #b8862b;
+  --accent-ink: #1d1404;
+  --accent-btn-hi: #ffd96e;
+  --accent-btn-lo: #d58f1f;
+  --btn-outline: #6a4306; /* dark edge behind white button text, like the game's buttons */
+  --accent-rgb: 242, 193, 78;
+  --title-shadow: rgba(96, 58, 0, 0.55);
+
+  /* Secondary tone (CWL badge) + the soft glow behind the title */
+  --second-rgb: 70, 120, 230;
+  --second-line-rgb: 120, 165, 255;
+  --glow-rgb: 52, 104, 214;
+
+  /* Podium metals: fixed, never change with the palette */
   --gold: #f2c14e;
   --gold-hi: #ffe08a;
   --gold-deep: #b8862b;
-  --gold-ink: #1d1404;
   --silver: #cfd5e3;
   --bronze: #d9935a;
 
   --font-display: "Lilita One", "Segoe UI", system-ui, -apple-system, "Noto Sans", sans-serif;
+  --font-title: "Titan One", "Lilita One", "Segoe UI", system-ui, sans-serif;
   --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", sans-serif;
   --radius: 16px;
 }
@@ -37,11 +57,11 @@ body {
   margin: 0;
   font-family: var(--font-body);
   color: var(--text);
-  /* A soft violet + warm gold glow behind the title, drawn in pure CSS (no
-     game artwork is altered or reused here). */
+  /* A soft glow behind the title, drawn in pure CSS (no game artwork is
+     altered or reused here). */
   background:
-    radial-gradient(900px 380px at 50% -70px, rgba(122, 72, 200, 0.32), transparent 70%),
-    radial-gradient(520px 260px at 50% -30px, rgba(242, 193, 78, 0.14), transparent 72%),
+    radial-gradient(900px 380px at 50% -70px, rgba(var(--glow-rgb), 0.30), transparent 70%),
+    radial-gradient(520px 260px at 50% -30px, rgba(var(--accent-rgb), 0.10), transparent 72%),
     var(--bg);
   background-repeat: no-repeat;
   min-height: 100vh;
@@ -58,18 +78,67 @@ body {
   text-align: center;
 }
 
+/* Liquid-glass title: a translucent gradient fill, a bright rim, and a specular
+   highlight across the top half. The glow blobs behind it (.hero::before) are
+   what the "glass" refracts. */
 h1 {
-  margin: 0 0 0.6rem;
-  font-family: var(--font-display);
+  position: relative;
+  margin: 0 0 0.5rem;
+  /* Descenders (the "g") sit below the line box; background-clip:text only
+     paints inside the box, so give the box room underneath. */
+  padding: 0.04em 0.05em 0.16em;
+  font-family: var(--font-title);
   font-weight: 400;
-  font-size: clamp(2.8rem, 11vw, 5rem);
-  letter-spacing: 0.01em;
-  line-height: 1;
-  background: linear-gradient(180deg, #fff6d0 10%, var(--gold) 85%);
+  font-size: clamp(2.6rem, 10.5vw, 4.75rem);
+  letter-spacing: -0.01em;
+  word-spacing: -0.04em;
+  line-height: 1.15;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(255, 246, 215, 0.62) 42%,
+    rgba(var(--accent-rgb), 0.66) 100%
+  );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 3px 0 rgba(96, 58, 0, 0.55));
+  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.8);
+  filter: drop-shadow(0 0 18px rgba(var(--accent-rgb), 0.42)) drop-shadow(0 6px 14px rgba(var(--accent-rgb), 0.22));
+}
+
+h1::after {
+  content: attr(data-text);
+  content: attr(data-text) / "";
+  position: absolute;
+  inset: 0;
+  padding: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 48%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-stroke: 0;
+  pointer-events: none;
+}
+
+.hero {
+  position: relative;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -10px;
+  left: 50%;
+  width: min(560px, 90vw);
+  height: 150px;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(closest-side at 28% 55%, rgba(var(--glow-rgb), 0.75), transparent),
+    radial-gradient(closest-side at 72% 45%, rgba(var(--accent-rgb), 0.55), transparent);
+  filter: blur(26px);
+  opacity: 0.85;
+  pointer-events: none;
 }
 
 .subtitle {
@@ -105,21 +174,27 @@ main {
 
 #clan-tag-input:focus {
   outline: none;
-  border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(242, 193, 78, 0.18);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.18);
 }
 
 .btn-primary {
   padding: 0.7rem 1.4rem;
   border-radius: 12px;
   border: none;
-  background: linear-gradient(180deg, #ffd96e, var(--gold) 55%, #d9a02f);
-  color: var(--gold-ink);
+  background: linear-gradient(180deg, var(--accent-btn-hi), var(--accent) 55%, var(--accent-btn-lo));
+  color: #fff;
+  text-shadow:
+    0 1px 0 var(--btn-outline),
+    0 -1px 0 var(--btn-outline),
+    1px 0 0 var(--btn-outline),
+    -1px 0 0 var(--btn-outline),
+    0 2px 3px rgba(0, 0, 0, 0.35);
   font-family: var(--font-display);
   font-size: 1.02rem;
   letter-spacing: 0.02em;
   cursor: pointer;
-  box-shadow: 0 2px 0 var(--gold-deep), 0 6px 16px rgba(242, 193, 78, 0.18);
+  box-shadow: 0 2px 0 var(--accent-deep), 0 6px 16px rgba(var(--accent-rgb), 0.18);
   transition: transform 0.1s ease, filter 0.15s ease;
 }
 
@@ -197,9 +272,9 @@ main {
   display: inline-block;
   padding: 0.35rem 0.9rem;
   border-radius: 999px;
-  border: 1px solid rgba(242, 193, 78, 0.45);
-  background: rgba(242, 193, 78, 0.08);
-  color: var(--gold-hi);
+  border: 1px solid rgba(var(--accent-rgb), 0.45);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--accent-hi);
   font-family: var(--font-display);
   font-size: 0.85rem;
   letter-spacing: 0.02em;
@@ -209,25 +284,35 @@ main {
 }
 
 .pill-button:hover {
-  background: rgba(242, 193, 78, 0.16);
-  border-color: var(--gold);
+  background: rgba(var(--accent-rgb), 0.16);
+  border-color: var(--accent);
 }
 
-/* ---------- Tabs ---------- */
+/* ---------- Tabs (glass track + a gold pill that slides and snaps) ---------- */
 .tabs {
+  position: relative;
+  isolation: isolate;
   display: flex;
   justify-content: center;
-  gap: 0.35rem;
+  gap: 0.2rem;
   width: fit-content;
   max-width: 100%;
   margin: 0 auto 1.25rem;
   padding: 0.3rem;
-  background: var(--panel);
-  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  backdrop-filter: blur(16px) saturate(1.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
 .tab {
+  position: relative;
+  z-index: 1;
   padding: 0.5rem 1.15rem;
   border: none;
   border-radius: 999px;
@@ -238,7 +323,7 @@ main {
   letter-spacing: 0.02em;
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.15s ease, background 0.15s ease;
+  transition: color 0.25s ease, text-shadow 0.25s ease;
 }
 
 .tab:hover {
@@ -246,9 +331,61 @@ main {
 }
 
 .tab[aria-selected="true"] {
-  background: linear-gradient(180deg, #ffd96e, var(--gold) 60%, #d9a02f);
-  color: var(--gold-ink);
-  box-shadow: 0 1px 0 var(--gold-deep);
+  color: #fff;
+  text-shadow:
+    0 1px 0 var(--btn-outline),
+    0 -1px 0 var(--btn-outline),
+    1px 0 0 var(--btn-outline),
+    -1px 0 0 var(--btn-outline),
+    0 2px 3px rgba(0, 0, 0, 0.35);
+}
+
+/* The sliding pill. Without JS (or before it measures) the selected tab paints
+   its own background instead, so nothing is ever left unstyled. */
+.tabs:not(.has-pill) .tab[aria-selected="true"] {
+  background: linear-gradient(180deg, var(--accent-btn-hi), var(--accent) 60%, var(--accent-btn-lo));
+  box-shadow: 0 1px 0 var(--accent-deep);
+}
+
+.tab-pill {
+  position: absolute;
+  z-index: 0;
+  top: 0.3rem;
+  bottom: 0.3rem;
+  left: 0;
+  width: var(--pill-w, 0px);
+  transform: translateX(var(--pill-x, 0px));
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--accent-btn-hi), var(--accent) 55%, var(--accent-btn-lo));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.12),
+    0 2px 0 var(--accent-deep),
+    0 6px 16px rgba(var(--accent-rgb), 0.28);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.tabs.has-pill .tab-pill {
+  opacity: 1;
+}
+
+/* Springy snap: overshoots a touch, then settles. */
+.tabs.pill-ready .tab-pill {
+  transition:
+    transform 0.55s cubic-bezier(0.3, 1.25, 0.5, 1),
+    width 0.55s cubic-bezier(0.3, 1.25, 0.5, 1);
+}
+
+.tabs.pill-moving .tab-pill {
+  animation: pill-squish 0.55s ease-out;
+}
+
+@keyframes pill-squish {
+  0% { scale: 1 1; }
+  30% { scale: 1.1 0.88; }
+  65% { scale: 0.97 1.05; }
+  100% { scale: 1 1; }
 }
 
 .tab:focus-visible,
@@ -257,7 +394,7 @@ main {
 .fold summary:focus-visible,
 .pill-button:focus-visible,
 .btn-primary:focus-visible {
-  outline: 2px solid var(--gold-hi);
+  outline: 2px solid var(--accent-hi);
   outline-offset: 2px;
 }
 
@@ -333,7 +470,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-  background: rgba(242, 193, 78, 0.05);
+  background: rgba(var(--accent-rgb), 0.05);
 }
 
 .short {
@@ -445,10 +582,11 @@ tbody tr:hover {
   display: block;
   height: 100%;
   border-radius: 3px;
-  background: linear-gradient(90deg, var(--gold-deep), var(--gold-hi));
+  background: linear-gradient(90deg, var(--accent-deep), var(--accent-hi));
 }
 
-/* Top three: a metal-tinted edge + crown; the leader's row gets a glow. */
+/* Top three: each place gets its own metal (edge, row wash, name, bar, crown).
+   Gold is the strongest and the only one that is taller + glowing. */
 .leaderboard tr.rank-1 td:first-child {
   box-shadow: inset 3px 0 0 var(--gold);
 }
@@ -460,12 +598,23 @@ tbody tr:hover {
 }
 
 .leaderboard tr.rank-1 {
-  background: linear-gradient(90deg, rgba(242, 193, 78, 0.16), rgba(242, 193, 78, 0.03) 60%, transparent);
+  background: linear-gradient(90deg, rgba(242, 193, 78, 0.18), rgba(242, 193, 78, 0.04) 60%, transparent);
+}
+.leaderboard tr.rank-2 {
+  background: linear-gradient(90deg, rgba(207, 213, 227, 0.15), rgba(207, 213, 227, 0.035) 60%, transparent);
+}
+.leaderboard tr.rank-3 {
+  background: linear-gradient(90deg, rgba(217, 147, 90, 0.16), rgba(217, 147, 90, 0.035) 60%, transparent);
 }
 
 .leaderboard tr.rank-1 td {
   padding-top: 1.05rem;
   padding-bottom: 1.05rem;
+}
+.leaderboard tr.rank-2 td,
+.leaderboard tr.rank-3 td {
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
 }
 
 .leaderboard tr.rank-1 .name {
@@ -473,18 +622,38 @@ tbody tr:hover {
   font-size: 1.15rem;
   text-shadow: 0 0 14px rgba(242, 193, 78, 0.35);
 }
+.leaderboard tr.rank-2 .name {
+  color: #eef1f8;
+  font-size: 1.08rem;
+  text-shadow: 0 0 12px rgba(207, 213, 227, 0.22);
+}
+.leaderboard tr.rank-3 .name {
+  color: #f7d6b8;
+  font-size: 1.08rem;
+  text-shadow: 0 0 12px rgba(217, 147, 90, 0.25);
+}
 
 .leaderboard tr.rank-1 .mr-val {
   color: var(--gold-hi);
   font-size: 1.2rem;
 }
-
-.leaderboard tr.rank-2 .name {
-  color: #e9edf6;
+.leaderboard tr.rank-2 .mr-val {
+  color: #eef1f8;
+  font-size: 1.12rem;
+}
+.leaderboard tr.rank-3 .mr-val {
+  color: #f7d6b8;
+  font-size: 1.12rem;
 }
 
-.leaderboard tr.rank-3 .name {
-  color: #f1d2b6;
+.leaderboard tr.rank-1 .mr-bar i {
+  background: linear-gradient(90deg, #b8862b, #ffe08a);
+}
+.leaderboard tr.rank-2 .mr-bar i {
+  background: linear-gradient(90deg, #8f98ad, #ffffff);
+}
+.leaderboard tr.rank-3 .mr-bar i {
+  background: linear-gradient(90deg, #a8622f, #f6c79d);
 }
 
 /* Crowns */
@@ -526,7 +695,16 @@ tbody tr:hover {
   font-weight: 400;
   font-size: 0.78rem;
   line-height: 1;
-  color: #2a1a02;
+  color: #fff8de;
+  text-shadow: 0 1px 0 #8a5f12, 0 0 3px rgba(138, 95, 18, 0.85);
+}
+.crown.silver b {
+  color: #ffffff;
+  text-shadow: 0 1px 0 #5f6880, 0 0 3px rgba(95, 104, 128, 0.85);
+}
+.crown.bronze b {
+  color: #fff0df;
+  text-shadow: 0 1px 0 #7d4519, 0 0 3px rgba(125, 69, 25, 0.85);
 }
 
 .crown.gold {
@@ -550,7 +728,7 @@ tbody tr:hover {
   border: none;
   border-top: 1px solid var(--border-soft);
   background: rgba(255, 255, 255, 0.015);
-  color: var(--gold-hi);
+  color: var(--accent-hi);
   font-family: var(--font-display);
   font-size: 0.95rem;
   letter-spacing: 0.03em;
@@ -559,7 +737,7 @@ tbody tr:hover {
 }
 
 .more-btn:hover {
-  background: rgba(242, 193, 78, 0.08);
+  background: rgba(var(--accent-rgb), 0.08);
 }
 
 /* ---------- War card ---------- */
@@ -595,7 +773,7 @@ tbody tr:hover {
 }
 
 .war-head:not(:disabled):hover {
-  background: rgba(242, 193, 78, 0.05);
+  background: rgba(var(--accent-rgb), 0.05);
 }
 
 .war-main {
@@ -609,8 +787,8 @@ tbody tr:hover {
 .badge {
   padding: 0.12rem 0.55rem;
   border-radius: 999px;
-  background: rgba(122, 72, 200, 0.28);
-  border: 1px solid rgba(160, 120, 235, 0.55);
+  background: rgba(var(--second-rgb), 0.28);
+  border: 1px solid rgba(var(--second-line-rgb), 0.55);
   color: #d8c6ff;
   font-size: 0.78rem;
   letter-spacing: 0.04em;
@@ -670,7 +848,7 @@ tbody tr:hover {
 }
 
 .fold summary:hover {
-  background: rgba(242, 193, 78, 0.05);
+  background: rgba(var(--accent-rgb), 0.05);
 }
 
 .fold summary .chev {
@@ -741,7 +919,7 @@ tbody tr:hover {
 }
 
 .site-footer a {
-  color: var(--gold-hi);
+  color: var(--accent-hi);
 }
 
 /* ---------- Hamburger menu ---------- */
@@ -838,9 +1016,15 @@ tbody tr:hover {
 }
 
 .drawer-tab.active {
-  background: linear-gradient(180deg, #ffd96e, var(--gold) 60%, #d9a02f);
-  border-color: var(--gold);
-  color: var(--gold-ink);
+  background: linear-gradient(180deg, var(--accent-btn-hi), var(--accent) 60%, var(--accent-btn-lo));
+  border-color: var(--accent);
+  color: #fff;
+  text-shadow:
+    0 1px 0 var(--btn-outline),
+    0 -1px 0 var(--btn-outline),
+    1px 0 0 var(--btn-outline),
+    -1px 0 0 var(--btn-outline),
+    0 2px 3px rgba(0, 0, 0, 0.35);
 }
 
 .drawer-panel h3 {
@@ -882,7 +1066,7 @@ tbody tr:hover {
 }
 
 .faq-footer a {
-  color: var(--gold-hi);
+  color: var(--accent-hi);
 }
 
 /* ---------- Small screens ---------- */
