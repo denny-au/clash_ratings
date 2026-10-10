@@ -2,7 +2,10 @@
 // GUIDE CONTENT — this is the only file you need to edit to fill in the guide.
 //
 //  * Add a town hall: copy one block in `townHalls`, change `level`, and put its
-//    picture at assets/th/th<level>.png. Set `soon: true` to show it greyed out.
+//    picture at assets/th/th<level>.webp. Set `soon: true` while it has no guide yet
+//    (it still slides into the middle and says "coming soon"). Leave `image: null`
+//    until you have its picture, then set it to 'assets/th/th<level>.webp'. Town halls are shown
+//    in level order. `theme` is an [r, g, b] colour for the floating lights.
 //  * Bases: give each one a `link` (the "copy base" link from the game, which
 //    starts with https://link.clashofclans.com/) and, optionally, an `image`
 //    (path like "assets/bases/th14-village.jpg", about 900px wide). With no link it shows "link coming soon".
@@ -13,8 +16,8 @@
 //    `link` is the game's "copy army" link. `troops` is a list like
 //    [{ name: "Electro Dragon", count: 8 }, ...] (leave [] until you know it).
 //  * Army pictures: give an army `art` to show a picture on its card, for example
-//      art: { front: ['assets/troops/royal-champion.png'],
-//             back:  ['assets/troops/dragon.png', 'assets/troops/dragon.png'] }
+//      art: { front: ['assets/troops/royal-champion.webp'],
+//             back:  ['assets/troops/dragon.webp', 'assets/troops/dragon.webp'] }
 //    `front` pictures sit in the foreground, `back` pictures sit behind them. Use
 //    transparent PNGs saved in public/assets/troops/. With no `art` (or if a file
 //    is missing) the card shows an "Army picture coming soon" box.
@@ -22,6 +25,9 @@
 //    added after them.
 // ===========================================================================
 window.GUIDE_DATA = {
+  // The town hall that is centred when the Guide opens.
+  defaultLevel: 14,
+
   // Shown next to the "Armies" heading (a town hall can override it with its own `armiesNote`).
   armiesNote: 'Guarantees you consistent 3 stars.',
 
@@ -45,18 +51,22 @@ window.GUIDE_DATA = {
   ],
 
   townHalls: [
+    { level: 11, image: 'assets/th/th11.webp', soon: true, theme: [255, 140, 56] },
+    { level: 12, image: 'assets/th/th12.webp', soon: true, theme: [64, 152, 255] },
+    { level: 13, image: 'assets/th/th13.webp', soon: true, theme: [60, 206, 206] },
     {
       level: 14,
-      image: 'assets/th/th14.png',
+      image: 'assets/th/th14.webp',
+      theme: [72, 214, 112], // colour of the floating lights while this town hall is centred (green)
       bases: [
         { name: 'Village base', note: '', by: 'COC Layouts', image: 'assets/bases/th14-village.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH14%3AHV%3AAAAAQAAAAAJaylAU8C9KEr_3IIxmptIW' },
         { name: 'War base', note: '', by: '-CRIMSON-', image: 'assets/bases/th14-war.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH14%3AWB%3AAAAAQAAAAAJeLOaSHi2NcHAiHclV7cCQ' },
         { name: 'Progress base', note: '', by: 'COC Bases', image: 'assets/bases/th14-progress.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH14%3AHV%3AAAAAHwAAAAKiS60K7p0yxeED25PQ6NEA' },
       ],
       armies: [
-        { kind: 'recommended', type: 'air', name: 'RC Charge Dragons', by: 'Sturge', summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p1e20_17-6p0e42_43-2m1p2e4_34-4p3e6_40i9x5-1x62d1x2-1x5u9x8-3x65-7x5-1x23-3x62s8x35-1x10-1x53', video: 'https://www.youtube.com/watch?v=MqEyKk7kI9M' },
-        { kind: 'ground', name: 'Icy Witch Bat', by: 'Sturge', summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p3e20_48-2p2e34_4-0p1e14_8-4p0e13_40i1x53-1x110-1x26-1x87-2x1d2x5-1x120u8x58-10x15-6x6-2x28-1x97-1x87-1x75-1x91s1x2-3x5-1x9-5x28', video: 'https://www.youtube.com/watch?v=MqEyKk7kI9M&t=165s' },
-        { kind: 'air', name: 'Clone Dragons', by: 'HookedToClash', summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p3e17_20-6e42_43-2m1p2e4_34-4p0e6_13i1x147-1x52d1x16u4x5-13x8-1x82-1x23-2x10-1x52s1x2-3x16', video: 'https://www.youtube.com/watch?v=6PZlG-Zx1qo' },
+        { kind: 'recommended', type: 'air', name: 'RC Charge Dragons', by: 'Sturge', art: { front: ['assets/troops/royal-champion.webp'], back: ['assets/troops/dragon.webp', 'assets/troops/dragon.webp'] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p1e20_17-6p0e42_43-2m1p2e4_34-4p3e6_40i9x5-1x62d1x2-1x5u9x8-3x65-7x5-1x23-3x62s8x35-1x10-1x53', video: 'https://www.youtube.com/watch?v=MqEyKk7kI9M' },
+        { kind: 'ground', name: 'Icy Witch Bat', by: 'Sturge', art: { front: ['assets/troops/ice-golem.webp', 'assets/troops/witch.webp'], back: ['assets/troops/bat.webp', 'assets/troops/bat.webp', 'assets/troops/bat.webp'] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p3e20_48-2p2e34_4-0p1e14_8-4p0e13_40i1x53-1x110-1x26-1x87-2x1d2x5-1x120u8x58-10x15-6x6-2x28-1x97-1x87-1x75-1x91s1x2-3x5-1x9-5x28', video: 'https://www.youtube.com/watch?v=MqEyKk7kI9M&t=165s' },
+        { kind: 'air', name: 'Clone Dragons', by: 'HookedToClash', art: { front: ['assets/troops/dragon.webp'], back: ['assets/troops/clone-spell.webp'] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p3e17_20-6e42_43-2m1p2e4_34-4p0e6_13i1x147-1x52d1x16u4x5-13x8-1x82-1x23-2x10-1x52s1x2-3x16', video: 'https://www.youtube.com/watch?v=6PZlG-Zx1qo' },
       ],
       tips: [
         {
@@ -71,7 +81,8 @@ window.GUIDE_DATA = {
     },
     {
       level: 15,
-      image: 'assets/th/th15.png',
+      image: 'assets/th/th15.webp',
+      theme: [176, 110, 255], // purple
       bases: [
         { name: 'Village base', note: '', by: '', image: null, link: null },
         { name: 'War base', note: '', by: '', image: null, link: null },
@@ -84,7 +95,7 @@ window.GUIDE_DATA = {
       ],
       tips: [],
     },
-    { level: 16, image: 'assets/th/th16.png', soon: true },
-    { level: 17, image: 'assets/th/th17.png', soon: true },
+    { level: 16, image: 'assets/th/th16.webp', soon: true, theme: [235, 72, 84] },
+    { level: 17, image: null, soon: true, theme: [255, 120, 170] },
   ],
 };

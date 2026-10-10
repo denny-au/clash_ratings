@@ -140,6 +140,10 @@ function activateTab(name, { updateHash = true } = {}) {
   }
   for (const [key, el] of Object.entries(panels)) el.hidden = key !== name;
   positionPill(true);
+  // the Guide tints the floating lights to the town hall in view; every other tab is back to amber
+  const theme = name === 'guide' && window.CR_GUIDE ? window.CR_GUIDE.themeRgb() : null;
+  window.CR_THEME_PENDING = theme;
+  if (window.CR_FX) window.CR_FX.setTheme(theme);
   if (boardReplays[name]) boardReplays[name]();
   syncSummary(); // the strip is this month's numbers, so it sits out the Last Month tab
   if (updateHash) {

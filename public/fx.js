@@ -20,25 +20,40 @@
     var acc = 0;
     var STEP = 1 / 30;
 
-    var COLORS = [
+    var DEFAULT_COLORS = [
       [255, 196, 84], // gold
       [255, 150, 48], // amber
       [255, 226, 160], // pale gold
       [255, 120, 60], // ember orange
     ];
     var SPRITE = 32;
-    var sprites = COLORS.map(function (c) {
-      var cv = document.createElement('canvas');
-      cv.width = cv.height = SPRITE;
-      var g = cv.getContext('2d');
-      var gr = g.createRadialGradient(SPRITE / 2, SPRITE / 2, 0, SPRITE / 2, SPRITE / 2, SPRITE / 2);
-      gr.addColorStop(0, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0.95)');
-      gr.addColorStop(0.35, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0.35)');
-      gr.addColorStop(1, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0)');
-      g.fillStyle = gr;
-      g.fillRect(0, 0, SPRITE, SPRITE);
-      return cv;
-    });
+    function makeSprites(colors) {
+      return colors.map(function (c) {
+        var cv = document.createElement('canvas');
+        cv.width = cv.height = SPRITE;
+        var g = cv.getContext('2d');
+        var gr = g.createRadialGradient(SPRITE / 2, SPRITE / 2, 0, SPRITE / 2, SPRITE / 2, SPRITE / 2);
+        gr.addColorStop(0, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0.95)');
+        gr.addColorStop(0.35, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0.35)');
+        gr.addColorStop(1, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0)');
+        g.fillStyle = gr;
+        g.fillRect(0, 0, SPRITE, SPRITE);
+        return cv;
+      });
+    }
+    // A town hall's colour becomes a small family of tints (same count as the default set).
+    function mix(c, to, t) {
+      return [Math.round(c[0] + (to[0] - c[0]) * t), Math.round(c[1] + (to[1] - c[1]) * t), Math.round(c[2] + (to[2] - c[2]) * t)];
+    }
+    function themeColors(rgb) {
+      return [rgb, mix(rgb, [255, 255, 255], 0.35), mix(rgb, [255, 255, 255], 0.65), mix(rgb, [0, 0, 0], 0.18)];
+    }
+    var sprites = makeSprites(DEFAULT_COLORS);
+    var prevSprites = null; // the old colours fading out during a theme change
+    var fade = 1; // 0 -> 1 over FADE_MS
+    var fadeStart = 0;
+    var FADE_MS = 700;
+    var themeKey = '';
 
     function resize() {
       w = window.innerWidth;
@@ -61,7 +76,7 @@
         speed: 0.4 + Math.random() * 0.9,
         life: 0,
         max: 9 + Math.random() * 12,
-        s: sprites[Math.floor(Math.random() * sprites.length)],
+        ci: Math.floor(Math.random() * DEFAULT_COLORS.length),
       };
     }
 
@@ -74,6 +89,8 @@
       if (document.body.classList.contains('menu-open')) { acc = 0; return; } // rest while the menu is open
       var dt = acc;
       acc = 0;
+      if (fade < 1) fade = Math.min(1, (now - fadeStart) / FADE_MS);
+      else prevSprites = null;
       ctx.clearRect(0, 0, w, h);
       for (var i = 0; i < sparks.length; i++) {
         var s = sparks[i];
@@ -87,11 +104,29 @@
         var t = s.life / s.max;
         var a = Math.min(1, t * 6) * Math.min(1, (1 - t) * 3) * (0.35 + 0.65 * Math.abs(Math.sin(s.life * 1.7 + s.phase)));
         var d = s.r * 4;
-        ctx.globalAlpha = a;
-        ctx.drawImage(s.s, x - d / 2, s.y - d / 2, d, d);
+        if (fade < 1 && prevSprites) {
+          ctx.globalAlpha = a * (1 - fade);
+          ctx.drawImage(prevSprites[s.ci], x - d / 2, s.y - d / 2, d, d);
+        }
+        ctx.globalAlpha = a * (fade < 1 && prevSprites ? fade : 1);
+        ctx.drawImage(sprites[s.ci], x - d / 2, s.y - d / 2, d, d);
       }
       ctx.globalAlpha = 1;
     }
+
+    // Guide tab: tint the lights to the town hall in view; null goes back to amber.
+    window.CR_FX = {
+      setTheme: function (rgb) {
+        var key = rgb ? rgb.join(',') : '';
+        if (key === themeKey) return;
+        themeKey = key;
+        window.CR_THEME_APPLIED = key;
+        prevSprites = sprites;
+        sprites = makeSprites(rgb ? themeColors(rgb) : DEFAULT_COLORS);
+        fade = 0;
+        fadeStart = performance.now();
+      },
+    };
 
     function start() {
       if (running) return;
@@ -102,6 +137,7 @@
     }
 
     resize();
+    if (window.CR_THEME_PENDING) window.CR_FX.setTheme(window.CR_THEME_PENDING);
     var resizeTimer = null;
     window.addEventListener('resize', function () {
       clearTimeout(resizeTimer);
@@ -113,6 +149,8 @@
     });
     start();
   }
+
+  if (!window.CR_FX) window.CR_FX = { setTheme: function () {} };
 
   // ---- Spotlight: the leaderboard panel catches the cursor ----
   // Coordinates are applied at most once per frame.

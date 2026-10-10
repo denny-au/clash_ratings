@@ -24,25 +24,35 @@
   function safeImg(u) {
     return typeof u === 'string' && /^[\w\-./]+\.(png|webp|jpe?g)$/i.test(u) ? u : null;
   }
+  var list = (data.townHalls || []).slice().sort(function (x, y) { return x.level - y.level; });
   function find(level) {
-    for (var i = 0; i < data.townHalls.length; i++) if (data.townHalls[i].level === level && !data.townHalls[i].soon) return data.townHalls[i];
+    for (var i = 0; i < list.length; i++) if (list[i].level === level) return list[i];
     return null;
+  }
+  function themeOf(th) {
+    var t = th && th.theme;
+    return t && t.length === 3 && t.every(function (n) { return typeof n === 'number'; }) ? t : null;
   }
 
   // ---- pieces ----
   function thArt(th, cls) {
-    var src = !th.soon && safeImg(th.image);
+    var src = safeImg(th.image);
     var fallback = '<span class="th-fallback" aria-hidden="true"><b>' + esc(th.level) + '</b></span>';
-    return '<span class="th-art ' + (cls || '') + '">' + (src ? '<img src="' + esc(src) + '" alt="" loading="lazy" />' : fallback) + '</span>';
+    return '<span class="th-art ' + (cls || '') + '">' + (src ? '<img src="' + esc(src) + '" alt="" decoding="async" />' : fallback) + '</span>';
   }
 
-  function pickerHtml() {
-    return data.townHalls
-      .map(function (th, i) {
-        if (th.soon) {
-          return '<div class="th-card th-soon" style="--i:' + i + '" aria-disabled="true">' + thArt(th) + '<span class="th-name">Town Hall ' + esc(th.level) + '</span><span class="th-sub">Coming soon</span></div>';
-        }
-        return '<button type="button" class="th-card" data-th="' + esc(th.level) + '" style="--i:' + i + '" aria-pressed="false">' + thArt(th) + '<span class="th-name">Town Hall ' + esc(th.level) + '</span><span class="th-sub">Bases · armies · tips</span></button>';
+  function carouselHtml() {
+    return list
+      .map(function (th) {
+        var t = themeOf(th);
+        return (
+          '<button type="button" class="th-item' + (th.soon ? ' th-soon' : '') + '" data-th="' + esc(th.level) + '"' +
+          (t ? ' style="--t:' + t.join(',') + '"' : '') + ' aria-label="Town Hall ' + esc(th.level) + (th.soon ? ' (coming soon)' : '') + '">' +
+          thArt(th) +
+          '<span class="th-name"><span class="th-name-long">Town Hall </span><span class="th-name-short">TH</span>' + esc(th.level) + '</span>' +
+          '<span class="th-sub">' + (th.soon ? 'Coming soon' : 'Bases · armies · tips') + '</span>' +
+          '</button>'
+        );
       })
       .join('');
   }
@@ -155,75 +165,151 @@
     return '<section class="g-card">' + cardHead('tips', 'Tips', 'General habits, plus ones for this town hall') + '<ol class="tips">' + (items || '<li class="g-empty">Nothing here yet.</li>') + '</ol></section>';
   }
 
+  function soonHtml(th) {
+    return '<section class="g-card g-soon"><p class="g-empty">The Town Hall ' + esc(th.level) + ' guide is still being written. Check back soon.</p></section>';
+  }
+
   function detailHtml(th) {
     return (
-      '<div class="g-detail-head">' + thArt(th, 'th-art-sm') + '<h4>Town Hall ' + esc(th.level) + ' guide</h4>' +
-      '<button type="button" class="g-close" data-guide-close aria-label="Close this guide">Close</button></div>' +
-      armiesHtml(th) + basesHtml(th) + tipsHtml(th)
+      '<div class="g-detail-head">' + thArt(th, 'th-art-sm') + '<h4>Town Hall ' + esc(th.level) + ' guide</h4></div>' +
+      (th.soon ? soonHtml(th) : armiesHtml(th) + basesHtml(th) + tipsHtml(th))
     );
   }
 
   // ---- render ----
   root.innerHTML =
-    '<div class="th-picker" role="group" aria-label="Choose a town hall">' + pickerHtml() + '</div>' +
-    '<div id="guide-detail" class="g-detail" aria-live="polite" hidden></div>';
+    '<div class="th-carousel" role="group" aria-label="Choose a town hall">' +
+    '<button type="button" class="th-nav th-prev" aria-label="Previous town hall"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
+    '<div class="th-viewport"><div class="th-track">' + carouselHtml() + '</div></div>' +
+    '<button type="button" class="th-nav th-next" aria-label="Next town hall"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
+    '</div>' +
+    '<div id="guide-detail" class="g-detail" aria-live="polite"></div>';
 
-  var pickerEl = root.querySelector('.th-picker');
+  var carouselEl = root.querySelector('.th-carousel');
+  var viewportEl = root.querySelector('.th-viewport');
+  var trackEl = root.querySelector('.th-track');
+  var itemEls = Array.prototype.slice.call(trackEl.querySelectorAll('.th-item'));
   var detailEl = document.getElementById('guide-detail');
+  var panelEl = document.getElementById('panel-guide');
+  var firstLayout = true;
 
   function hash() {
-    return selected ? '#guide/th' + selected : '#guide';
+    return '#guide/th' + selected;
   }
   function updateHash() {
     try { if (/^#guide/.test(location.hash) || !location.hash) history.replaceState(null, '', hash()); } catch (e) { /* file:// */ }
+  }
+  function themeRgb() {
+    return themeOf(find(selected));
+  }
+  function panelActive() {
+    return !!panelEl && !panelEl.hidden;
+  }
+  function pushTheme() {
+    if (!panelActive()) return;
+    window.CR_THEME_PENDING = themeRgb();
+    if (window.CR_FX) window.CR_FX.setTheme(themeRgb());
+  }
+
+  // Slide the track so the chosen town hall sits in the middle. The big and
+  // small widths come from CSS, so the maths follows the screen size.
+  function layout(animate) {
+    if (!viewportEl.clientWidth) return; // tab not visible yet; retried when it is
+    var cs = getComputedStyle(carouselEl);
+    var big = parseFloat(cs.getPropertyValue('--w-big')) || 200;
+    var small = parseFloat(cs.getPropertyValue('--w-small')) || 90;
+    var gap = parseFloat(cs.getPropertyValue('--gap')) || 8;
+    var x = 0, center = 0;
+    for (var i = 0; i < list.length; i++) {
+      var w = list[i].level === selected ? big : small;
+      if (list[i].level === selected) center = x + w / 2;
+      x += w + gap;
+    }
+    if (!animate || firstLayout) trackEl.classList.add('no-anim');
+    trackEl.style.setProperty('--tx', viewportEl.clientWidth / 2 - center + 'px');
+    if (!animate || firstLayout) {
+      void trackEl.offsetWidth;
+      requestAnimationFrame(function () { trackEl.classList.remove('no-anim'); });
+    }
+    firstLayout = false;
   }
 
   function select(level, opts) {
     opts = opts || {};
     var th = find(level);
-    if (!th) level = null;
-    selected = level && selected !== level ? level : opts.force ? level : null; // clicking the open one closes it
-    var buttons = pickerEl.querySelectorAll('.th-card[data-th]');
-    for (var i = 0; i < buttons.length; i++) {
-      var on = selected !== null && +buttons[i].getAttribute('data-th') === selected;
-      buttons[i].classList.toggle('is-open', on);
-      buttons[i].setAttribute('aria-pressed', on ? 'true' : 'false');
+    if (!th) return;
+    var changed = selected !== level;
+    selected = level;
+    for (var i = 0; i < itemEls.length; i++) {
+      var on = +itemEls[i].getAttribute('data-th') === selected;
+      itemEls[i].classList.toggle('is-center', on);
+      itemEls[i].setAttribute('aria-current', on ? 'true' : 'false');
+      itemEls[i].tabIndex = on ? 0 : -1;
     }
-    if (selected) {
-      detailEl.innerHTML = detailHtml(find(selected));
-      detailEl.hidden = false;
+    var t = themeOf(th);
+    if (t) carouselEl.style.setProperty('--t', t.join(','));
+    layout(opts.animate !== false);
+    if (changed || !detailEl.innerHTML) {
+      detailEl.innerHTML = detailHtml(th);
       wireArt(detailEl);
       detailEl.classList.remove('enter');
       void detailEl.offsetWidth; // replay the entrance
       detailEl.classList.add('enter');
-      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (opts.scroll !== false) detailEl.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-    } else {
-      detailEl.hidden = true;
-      detailEl.innerHTML = '';
     }
+    pushTheme();
     if (opts.updateHash !== false) updateHash();
   }
 
-  pickerEl.addEventListener('click', function (e) {
-    var b = e.target.closest('.th-card[data-th]');
-    if (b) select(+b.getAttribute('data-th'));
+  function step(dir) {
+    var i = list.findIndex(function (t) { return t.level === selected; });
+    var n = list[i + dir];
+    if (n) select(n.level);
+  }
+
+  carouselEl.addEventListener('click', function (e) {
+    if (swiped) { swiped = false; return; }
+    var item = e.target.closest('.th-item');
+    if (item) { select(+item.getAttribute('data-th')); return; }
+    if (e.target.closest('.th-prev')) step(-1);
+    else if (e.target.closest('.th-next')) step(1);
   });
-  detailEl.addEventListener('click', function (e) {
-    if (e.target.closest("[data-guide-close]")) {
-      select(selected);
-      var open = pickerEl.querySelector('.th-card[data-th]');
-      if (open) open.focus({ preventScroll: true });
-    }
+  carouselEl.addEventListener('keydown', function (e) {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    step(e.key === 'ArrowRight' ? 1 : -1);
+    var c = trackEl.querySelector('.th-item.is-center');
+    if (c) c.focus({ preventScroll: true });
   });
 
+  // swipe left / right
+  var swipe = null;
+  var swiped = false;
+  viewportEl.addEventListener('pointerdown', function (e) { swipe = { x: e.clientX, y: e.clientY }; });
+  viewportEl.addEventListener('pointerup', function (e) {
+    if (!swipe) return;
+    var dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
+    swipe = null;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      swiped = true; // the click that follows a drag must not undo it
+      setTimeout(function () { swiped = false; }, 60);
+      step(dx < 0 ? 1 : -1);
+    }
+  });
+  viewportEl.addEventListener('pointercancel', function () { swipe = null; });
+
+  // re-centre when the size changes or the tab becomes visible
+  if (window.ResizeObserver) new ResizeObserver(function () { layout(false); }).observe(viewportEl);
+  else window.addEventListener('resize', function () { layout(false); });
+
   // Open straight to a town hall from a link like  #guide/th14
+  var startLevel = data.defaultLevel && find(data.defaultLevel) ? data.defaultLevel : (list[0] && list[0].level);
   function fromHash() {
     var m = /^#guide\/th(\d+)$/.exec(location.hash);
-    if (m && find(+m[1])) select(+m[1], { force: true, scroll: false, updateHash: false });
+    if (m && find(+m[1])) select(+m[1], { updateHash: false, animate: false });
   }
+  select(startLevel, { updateHash: false, animate: false });
   fromHash();
   window.addEventListener('hashchange', fromHash);
 
-  window.CR_GUIDE = { hash: hash };
+  window.CR_GUIDE = { hash: hash, themeRgb: themeRgb };
 })();
