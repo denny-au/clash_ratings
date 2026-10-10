@@ -27,7 +27,7 @@
 //    (A simpler `{ front: [...], back: [...] }` form also works.) With no `art`, or
 //    if a file is missing, the card shows an "Army picture coming soon" box.
 //  * Tips: `generalTips` show on every town hall; a town hall's own `tips` are
-//    added after them.
+//    added after them (set `onlyOwnTips: true` on a town hall to show only its own).
 // ===========================================================================
 window.GUIDE_DATA = {
   // The town hall that is centred when the Guide opens.
@@ -88,17 +88,35 @@ window.GUIDE_DATA = {
       level: 15,
       image: 'assets/th/th15.webp',
       theme: [176, 110, 255], // purple
+      onlyOwnTips: true, // skip the general tips; this town hall has its own full list
       bases: [
-        { name: 'Village base', note: '', by: '', image: null, link: null },
-        { name: 'War base', note: '', by: '', image: null, link: null },
-        { name: 'Progress base', note: '', by: '', image: null, link: null },
+        { name: 'Village base', note: '', by: 'COC Layout', image: 'assets/bases/th15-village.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH15%3AHV%3AAAAARQAAAAIzAIceWmGs0k4Y9mcp5GF7' },
+        { name: 'War base', note: '', by: '-CRIMSON-', image: 'assets/bases/th15-war.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH15%3AWB%3AAAAARQAAAAJP4fzvJ45DA-F8C747NQmj' },
+        { name: 'Progress base', note: '', by: 'COC Bases', image: 'assets/bases/th15-progress.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH15%3AHV%3AAAAAMAAAAAJi3-4akhEouEXtoACzZn-6' },
       ],
       armies: [
-        { kind: 'recommended', type: null, name: 'Recommended army', by: '', summary: '', troops: [], link: null, video: null },
-        { kind: 'ground', name: 'Ground army', by: '', summary: '', troops: [], link: null, video: null },
-        { kind: 'air', name: 'Air army', by: '', summary: '', troops: [], link: null, video: null },
+        { kind: 'recommended', type: 'air', name: 'Dragon Super Yeti Clone (Basic)', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 36, y: 20, h: 72 }, { src: 'assets/troops/super-yeti.webp', x: 70, y: 0, h: 86 }, { src: 'assets/troops/clone-spell.webp', x: 10, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p9e17_48-6p2e49_43-2m1e4_34-7p4e52_60i1x52-1x147d1x16u14x8-1x23-4x5-1x82-2x10s3x16-1x2', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=9s' },
+        { kind: 'ground', name: 'Root Riders with Backpack Arrow', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/root-rider.webp', x: 24, y: 0, h: 100 }, { src: 'assets/troops/rocket-backpack.webp', x: 58, y: 46, h: 42 }, { src: 'assets/troops/giant-arrow.webp', x: 82, y: 2, h: 52 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h7p4e57_53-1p9e17_48-2p7e4_24-4p3e40_13i3x63-1x5-1x188d1x120-1x53u5x7-3x5-1x97-4x110-5x12-2x58-4x57-2x1-5x26-1x82-1x75s5x35-1x5-3x10-1x70', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=986s' },
+        { kind: 'air', name: 'Dragon Super Yeti Clone (Advance)', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 27, y: 20, h: 70 }, { src: 'assets/troops/super-yeti.webp', x: 76, y: 0, h: 86 }, { src: 'assets/troops/dragon-duke.webp', x: 52, y: 14, h: 56 }, { src: 'assets/troops/clone-spell.webp', x: 9, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p9e17_48-6p2e49_43-2m1e4_34-7p4e52_60i1x52-1x147d1x109-2x120u14x8-1x23-4x5-1x82-2x10s3x16-1x2', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=224s' },
       ],
-      tips: [],
+      tips: [
+        {
+          title: 'Upgrade the Dragon Duke ASAP',
+          text: 'He replaces the Minion Prince and the Barbarian King in your attacks.',
+        },
+        {
+          title: 'Offence over defence',
+          text: 'Upgrade offensive buildings before defences, with the exception of the Spell Towers and the Monolith, which are extremely strong.',
+        },
+        {
+          title: 'Phoenix is really strong',
+          text: 'Upgrade that pet immediately if you get the chance. Other pets to consider are the Unicorn, Frosty and Diggy.',
+        },
+        {
+          title: 'Similar to TH14 attacks',
+          text: "Most attacks at TH15 are pretty similar to TH14. If you don't like to deviate much, you don't have to.",
+        },
+      ],
     },
     { level: 16, image: 'assets/th/th16.webp', soon: true, theme: [235, 72, 84] },
     { level: 17, image: null, soon: true, theme: [255, 120, 170] },

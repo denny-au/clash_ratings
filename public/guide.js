@@ -175,7 +175,7 @@
   }
 
   function tipsHtml(th) {
-    var general = data.generalTips || [];
+    var general = th.onlyOwnTips ? [] : data.generalTips || [];
     var tips = general.concat(th.tips || []);
     var items = tips
       .map(function (t, i) {
