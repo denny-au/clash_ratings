@@ -70,9 +70,9 @@ window.GUIDE_DATA = {
         { name: 'Progress base', note: '', by: 'COC Bases', image: 'assets/bases/th11-progress.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH11%3AHV%3AAAAAVwAAAAFO02hA0btQhGtd-DTszHoZ' },
       ],
       armies: [
-        { kind: 'recommended', type: 'air', name: 'Super Yeti Clone Dragons', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 33, y: 16, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 72, y: 0, h: 88 }, { src: 'assets/troops/clone-spell.webp', x: 10, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en/?action=CopyArmy&army=h1e48_17-6e42_43-2m1e4_24i1x147-1x52d1x120-1x9u11x8-2x23-4x5s3x16-1x2', video: 'https://www.youtube.com/watch?v=zRYwi0rFkd0&t=10s' },
+        { kind: 'recommended', type: 'air', name: 'Super Yeti Clone Dragons', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 33, y: 10, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 72, y: 0, h: 88 }, { src: 'assets/troops/clone-spell.webp', x: 10, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en/?action=CopyArmy&army=h1e48_17-6e42_43-2m1e4_24i1x147-1x52d1x120-1x9u11x8-2x23-4x5s3x16-1x2', video: 'https://www.youtube.com/watch?v=zRYwi0rFkd0&t=10s' },
         { kind: 'ground', name: 'Queen Charge Hybrid', by: 'Sturge', art: { layers: [{ src: 'assets/troops/miner.webp', x: 20, y: 0, h: 66 }, { src: 'assets/troops/hog-rider.webp', x: 80, y: 0, h: 82 }, { src: 'assets/troops/archer-queen.webp', x: 50, y: 0, h: 100 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en/?action=CopyArmy&army=h0e14_8-1e15_48-2e4_5i7x11-1x75d2x5u5x7-1x5-1x23-11x11-13x24-3x1-1x10-1x6-3x55-3x28s2x2-2x1-2x5-1x9', video: 'https://www.youtube.com/watch?v=ufQ-VwmAdmI&t=488s' },
-        { kind: 'air', name: 'Modified Dragons', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 24, y: 16, h: 78, dim: true }, { src: 'assets/troops/dragon.webp', x: 44, y: 18, h: 92 }, { src: 'assets/troops/archer.webp', x: 78, y: 0, h: 80 }] }, summary: 'Only for attacking stronger town halls. Against the same town hall or lower, use the recommended army.', troops: [], link: 'https://link.clashofclans.com/en/?action=CopyArmy&army=h0e14_32-1e48_16-2e24_5i1x52-1x1-2x4-3x83d2x120u2x5-1x23-3x28-9x27-5x7-1x6-4x1-1x17s1x2-5x35-1x9-3x5', video: 'https://www.youtube.com/watch?v=zRYwi0rFkd0&t=486s' },
+        { kind: 'air', name: 'Modified Dragons', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 24, y: 16, h: 78, dim: true }, { src: 'assets/troops/dragon.webp', x: 44, y: 8, h: 92 }, { src: 'assets/troops/archer.webp', x: 78, y: 0, h: 80 }] }, summary: 'Only for attacking stronger town halls. Against the same town hall or lower, use the recommended army.', troops: [], link: 'https://link.clashofclans.com/en/?action=CopyArmy&army=h0e14_32-1e48_16-2e24_5i1x52-1x1-2x4-3x83d2x120u2x5-1x23-3x28-9x27-5x7-1x6-4x1-1x17s1x2-5x35-1x9-3x5', video: 'https://www.youtube.com/watch?v=zRYwi0rFkd0&t=486s' },
       ],
       tips: [
         {
@@ -100,7 +100,7 @@ window.GUIDE_DATA = {
         { name: 'Progress base', note: '', by: 'COC Bases', image: 'assets/bases/th12-progress.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH12%3AHV%3AAAAAPwAAAAIVnLZ6AlUiIBNsYcve-Rzk' },
       ],
       armies: [
-        { kind: 'recommended', type: 'air', name: 'Super Yeti Clone Dragons', by: '', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 33, y: 16, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 72, y: 0, h: 88 }, { src: 'assets/troops/clone-spell.webp', x: 10, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1e17_20-6e42_43-2m1e4_24i1x52-1x147d1x9-1x120u13x8-2x5-1x23-1x52-1x62s3x16-1x2', video: 'https://www.youtube.com/watch?v=_oh6bWIrqmE&t=10s' },
+        { kind: 'recommended', type: 'air', name: 'Super Yeti Clone Dragons', by: '', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 33, y: 10, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 72, y: 0, h: 88 }, { src: 'assets/troops/clone-spell.webp', x: 10, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1e17_20-6e42_43-2m1e4_24i1x52-1x147d1x9-1x120u13x8-2x5-1x23-1x52-1x62s3x16-1x2', video: 'https://www.youtube.com/watch?v=_oh6bWIrqmE&t=10s' },
         { kind: 'ground', name: 'Blizzard Super Archers', by: '', art: { layers: [{ src: 'assets/troops/super-archer.webp', x: 35, y: 0, h: 96 }, { src: 'assets/troops/super-archer.webp', x: 64, y: 0, h: 96 }, { src: 'assets/troops/freeze-spell.webp', x: 10, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h0e32_14-1e16_48-2e24_5i4x83-1x52d2x120u5x7-2x5-10x27-2x1-1x23-2x6-1x82-3x28-1x17-1x62s5x35-1x2-1x9-3x5', video: 'https://www.youtube.com/watch?v=_oh6bWIrqmE&t=524s' },
         { kind: 'air', name: 'Super Dragon', by: '', art: { layers: [{ src: 'assets/troops/super-dragon.webp', x: 30, y: 4, h: 64, flip: true }, { src: 'assets/troops/super-dragon.webp', x: 70, y: 30, h: 64 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en/?action=CopyArmy&army=h1e20_17-2m1e41_4-6e49_43i2x53-2x4-1x62d1x98u7x81-1x62-1x52-1x51s3x16-1x2', video: 'https://www.youtube.com/watch?v=DuC3Ti9qukw&t=146s' },
       ],
@@ -119,7 +119,27 @@ window.GUIDE_DATA = {
         },
       ],
     },
-    { level: 13, image: 'assets/th/th13.webp', soon: true, theme: [60, 206, 206] },
+    {
+      level: 13,
+      image: 'assets/th/th13.webp',
+      theme: [60, 206, 206], // teal
+      bases: [
+        { name: 'Village base', note: '', by: 'COC Layouts', image: 'assets/bases/th13-village.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH13%3AHV%3AAAAADgAAAALGbaLn3M33DZpUtp8uoqyg' },
+        { name: 'War base', note: '', by: 'COC Layouts', image: 'assets/bases/th13-war.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH13%3AWB%3AAAAADgAAAALkEa20eLZkXFtnhO9vrzn3' },
+        { name: 'Progress base', note: '', by: 'COC Bases', image: 'assets/bases/th13-progress.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH13%3AHV%3AAAAAHwAAAAJz7eq4erqDPv5sM32oy3sR' },
+      ],
+      armies: [
+        { kind: 'recommended', type: 'air', name: 'Super Yeti Clone Dragons', by: '', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 33, y: 10, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 72, y: 0, h: 88 }, { src: 'assets/troops/clone-spell.webp', x: 10, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1e17_20-6e43_49-2m1e4_34-4e6_13i1x52-1x147d1x9-1x120u4x5-1x23-2x10-1x82-13x8-1x52s3x16-1x2', video: 'https://www.youtube.com/watch?v=Asl9WtPygIc&t=10s' },
+        { kind: 'ground', name: 'Super Witch Smash', by: '', art: { layers: [{ src: 'assets/troops/super-witch.webp', x: 32, y: 0, h: 96 }, { src: 'assets/troops/ice-golem.webp', x: 68, y: 0, h: 88 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h0e14_8-1e48_39-2e22_24-4e6_13i1x1-1x10-2x84-1x91-1x150d1x109-1x120u1x0-4x1-2x28-3x5-2x6-5x7-1x23-3x66-2x58-1x82-1x97-1x62-1x75-1x87s1x2-2x5-3x35-1x9-3x10', video: 'https://www.youtube.com/watch?v=Asl9WtPygIc&t=1031s' },
+        { kind: 'air', name: 'RC Charge Dragons', by: '', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 20, y: 24, h: 70, dim: true }, { src: 'assets/troops/dragon.webp', x: 80, y: 24, h: 70, dim: true, flip: true }, { src: 'assets/troops/royal-champion.webp', x: 50, y: 0, h: 92 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h4e40_13-1e17_20-0e14_32-2e4_24i3x84-1x57-1x1-1x75d2x120u15x8s7x35-1x53-1x9-1x5', video: 'https://www.youtube.com/watch?v=YWRKyjuJa-A&t=466s' },
+      ],
+      tips: [
+        {
+          title: 'Upgrade the Royal Champion first',
+          text: 'Upgrade her before all your other heroes. She is pretty decent with her starting hero equipment.',
+        },
+      ],
+    },
     {
       level: 14,
       image: 'assets/th/th14.webp',
@@ -132,7 +152,7 @@ window.GUIDE_DATA = {
       armies: [
         { kind: 'recommended', type: 'air', name: 'RC Charge Dragons', by: 'Sturge', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 20, y: 24, h: 70, dim: true }, { src: 'assets/troops/dragon.webp', x: 80, y: 24, h: 70, dim: true, flip: true }, { src: 'assets/troops/royal-champion.webp', x: 50, y: 0, h: 92 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p1e20_17-6p0e42_43-2m1p2e4_34-4p3e6_40i9x5-1x62d1x2-1x5u9x8-3x65-7x5-1x23-3x62s8x35-1x10-1x53', video: 'https://www.youtube.com/watch?v=MqEyKk7kI9M' },
         { kind: 'ground', name: 'Icy Witch Bat', by: 'Sturge', art: { layers: [{ src: 'assets/troops/bat.webp', x: 76, y: 66, h: 17, dim: true }, { src: 'assets/troops/bat.webp', x: 87, y: 50, h: 14, dim: true }, { src: 'assets/troops/bat.webp', x: 66, y: 78, h: 12, dim: true }, { src: 'assets/troops/ice-golem.webp', x: 33, y: 0, h: 88 }, { src: 'assets/troops/witch.webp', x: 68, y: 0, h: 96 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p3e20_48-2p2e34_4-0p1e14_8-4p0e13_40i1x53-1x110-1x26-1x87-2x1d2x5-1x120u8x58-10x15-6x6-2x28-1x97-1x87-1x75-1x91s1x2-3x5-1x9-5x28', video: 'https://www.youtube.com/watch?v=MqEyKk7kI9M&t=165s' },
-        { kind: 'air', name: 'Clone Dragons', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 38, y: 24, h: 76, ghost: true }, { src: 'assets/troops/dragon.webp', x: 58, y: 14, h: 84 }, { src: 'assets/troops/clone-spell.webp', x: 11, y: 66, h: 28 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p3e17_20-6e42_43-2m1p2e4_34-4p0e6_13i1x147-1x52d1x16u4x5-13x8-1x82-1x23-2x10-1x52s1x2-3x16', video: 'https://www.youtube.com/watch?v=6PZlG-Zx1qo' },
+        { kind: 'air', name: 'Super Yeti Clone Dragons', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 33, y: 10, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 72, y: 0, h: 88 }, { src: 'assets/troops/clone-spell.webp', x: 10, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p3e17_20-6e42_43-2m1p2e4_34-4p0e6_13i1x147-1x52d1x16u4x5-13x8-1x82-1x23-2x10-1x52s1x2-3x16', video: 'https://www.youtube.com/watch?v=6PZlG-Zx1qo' },
       ],
       tips: [
         {
@@ -156,9 +176,9 @@ window.GUIDE_DATA = {
         { name: 'Progress base', note: '', by: 'COC Bases', image: 'assets/bases/th15-progress.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH15%3AHV%3AAAAAMAAAAAJi3-4akhEouEXtoACzZn-6' },
       ],
       armies: [
-        { kind: 'recommended', type: 'air', name: 'Super Yeti Clone Dragons', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 33, y: 16, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 72, y: 0, h: 88 }, { src: 'assets/troops/clone-spell.webp', x: 10, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p9e17_48-6p2e49_43-2m1e4_34-7p4e52_60i1x52-1x147d1x16u14x8-1x23-4x5-1x82-2x10s3x16-1x2', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=9s' },
+        { kind: 'recommended', type: 'air', name: 'Super Yeti Clone Dragons (Basic)', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 33, y: 10, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 72, y: 0, h: 88 }, { src: 'assets/troops/clone-spell.webp', x: 10, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p9e17_48-6p2e49_43-2m1e4_34-7p4e52_60i1x52-1x147d1x16u14x8-1x23-4x5-1x82-2x10s3x16-1x2', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=9s' },
         { kind: 'ground', name: 'Root Riders with Backpack Arrow', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/root-rider.webp', x: 24, y: 0, h: 100 }, { src: 'assets/troops/rocket-backpack.webp', x: 53, y: 40, h: 56 }, { src: 'assets/troops/giant-arrow.webp', x: 75, y: 14, h: 56 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h7p4e57_53-1p9e17_48-2p7e4_24-4p3e40_13i3x63-1x5-1x188d1x120-1x53u5x7-3x5-1x97-4x110-5x12-2x58-4x57-2x1-5x26-1x82-1x75s5x35-1x5-3x10-1x70', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=986s' },
-        { kind: 'air', name: 'Super Yeti Clone Dragons', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 25, y: 16, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 79, y: 0, h: 88 }, { src: 'assets/troops/dragon-duke.webp', x: 52, y: 6, h: 104 }, { src: 'assets/troops/clone-spell.webp', x: 9, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p9e17_48-6p2e49_43-2m1e4_34-7p4e52_60i1x52-1x147d1x109-2x120u14x8-1x23-4x5-1x82-2x10s3x16-1x2', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=224s' },
+        { kind: 'air', name: 'Super Yeti Clone Dragons (Advance)', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 25, y: 10, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 79, y: 0, h: 88 }, { src: 'assets/troops/dragon-duke.webp', x: 52, y: 0, h: 100 }, { src: 'assets/troops/clone-spell.webp', x: 9, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p9e17_48-6p2e49_43-2m1e4_34-7p4e52_60i1x52-1x147d1x109-2x120u14x8-1x23-4x5-1x82-2x10s3x16-1x2', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=224s' },
       ],
       tips: [
         {
