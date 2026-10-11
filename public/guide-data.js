@@ -123,6 +123,7 @@ window.GUIDE_DATA = {
       level: 13,
       image: 'assets/th/th13.webp',
       theme: [60, 206, 206], // teal
+      onlyOwnTips: true,
       bases: [
         { name: 'Village base', note: '', by: 'COC Layouts', image: 'assets/bases/th13-village.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH13%3AHV%3AAAAADgAAAALGbaLn3M33DZpUtp8uoqyg' },
         { name: 'War base', note: '', by: 'COC Layouts', image: 'assets/bases/th13-war.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH13%3AWB%3AAAAADgAAAALkEa20eLZkXFtnhO9vrzn3' },
@@ -137,6 +138,22 @@ window.GUIDE_DATA = {
         {
           title: 'Upgrade the Royal Champion first',
           text: 'Upgrade her before all your other heroes. She is pretty decent with her starting hero equipment.',
+        },
+        {
+          title: 'Prioritize offense over defense',
+          text: 'Upgrade your offensive buildings (Army Camps, Laboratory and the like) before defensive ones.',
+        },
+        {
+          title: 'Upgrades are long here',
+          text: 'Everything needs to be upgraded twice. Most players around this town hall either rush to TH16 strategically or do half upgrades before moving on.',
+        },
+        {
+          title: 'The ground army can go far',
+          text: 'It could possibly 3-star any town hall below TH16.',
+        },
+        {
+          title: 'Do not completely max TH13',
+          text: "If you don't know how pets work in TH14, they get their own separate timer for upgrades (much like the Laboratory). The longer you stay in this town hall maxing, the more time you spend in the next town hall upgrading pets.",
         },
       ],
     },
@@ -162,6 +179,10 @@ window.GUIDE_DATA = {
         {
           title: 'Do not sleep on these equipment',
           text: "The Archer Queen's Giant Arrow and the Royal Champion's Royal Gem and Seeking Shield are the best common equipment of all the hero equipment. Prioritise them when upgrading equipment at TH14.",
+        },
+        {
+          title: 'Place your town hall wisely',
+          text: 'From this town hall onwards, the town hall itself becomes too deadly to ignore. It can sometimes prevent attacks from achieving 3 stars because of its poison effect after it is destroyed.',
         },
       ],
     },
