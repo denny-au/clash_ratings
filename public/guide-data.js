@@ -224,7 +224,56 @@ window.GUIDE_DATA = {
         },
       ],
     },
-    { level: 16, image: 'assets/th/th16.webp', soon: true, theme: [235, 72, 84] },
+    {
+      level: 16,
+      image: 'assets/th/th16.webp',
+      theme: [235, 72, 84], // red
+      onlyOwnTips: true,
+      bases: [
+        { name: 'Village base', note: '', by: 'COC Layouts', image: 'assets/bases/th16-village.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH16%3AHV%3AAAAAEAAAAAK48xKaQHG8JKQ3G48gdnYJ' },
+        { name: 'War base', note: '', by: 'GXD', image: 'assets/bases/th16-war.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH16%3AWB%3AAAAAEAAAAALe-fUBf4QAmyjlXXoj21FY' },
+        { name: 'Progress base', note: '', by: 'COC Bases', image: 'assets/bases/th16-progress.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH16%3AHV%3AAAAASgAAAAISI09P-WtcDcX_tKxrXg7m' },
+      ],
+      armies: [
+        { kind: 'recommended', type: 'ground', name: 'Thrower Smash', by: 'CorruptYT', art: { layers: [{ src: 'assets/troops/thrower.webp', x: 27, y: 10, h: 68 }, { src: 'assets/troops/thrower.webp', x: 73, y: 10, h: 68 }, { src: 'assets/troops/thrower.webp', x: 50, y: 0, h: 96 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p11e48_16-0p10e32_14-2p7e4_19-7p4e60_52i1x188-1x135-1x147-1x58d2x120-1x9u5x7-1x109-5x80-2x28-1x58-1x97-2x5-1x23-3x1s2x2-3x35-1x53-1x98', video: 'https://www.youtube.com/watch?v=TY0OnEhIuQY&t=525s' },
+        { kind: 'ground', name: 'RC Charge Root Rider with Jetpack Arrow', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/royal-champion.webp', x: 16, y: 4, h: 70 }, { src: 'assets/troops/root-rider.webp', x: 38, y: 0, h: 100 }, { src: 'assets/troops/rocket-backpack.webp', x: 62, y: 42, h: 48 }, { src: 'assets/troops/giant-arrow.webp', x: 84, y: 14, h: 50 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h7p4e52_53-1p9e17_48-2p8e4_24-4p10e40_13i3x63-1x5-1x188d1x120-1x53u5x7-3x5-1x97-4x110-5x12-2x58-4x57-2x1-5x26-1x82-1x75s5x35-1x5-3x10-1x70', video: 'https://www.youtube.com/watch?v=JEM-kTBTmz4&t=985s' },
+        { kind: 'air', name: 'Dragon Spam', by: 'CorruptYT', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 23, y: 14, h: 80 }, { src: 'assets/troops/dragon.webp', x: 77, y: 14, h: 80, flip: true }, { src: 'assets/troops/dragon-duke.webp', x: 50, y: 0, h: 100 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h7p4e60_52-4p10e12_40-6p11e49_43-2m1p2e4_34i2x188-2x65d1x98-1x9u1x1-2x10-1x76-1x23-6x63-7x65s5x35-2x70-1x2', video: 'https://www.youtube.com/watch?v=TY0OnEhIuQY&t=420s' },
+      ],
+      tips: [
+        {
+          title: 'Level up the Dragon Duke',
+          text: 'He is used in every single army, so it is extremely important to level him up. You cannot go wrong picking the Revenge Deck or the Rocket Backpack for him, as the Dragon Duke pairs so well with everything.',
+        },
+        {
+          title: 'Prioritize offense over defense',
+          text: 'Upgrade your offensive buildings (Army Camps, Laboratory and the like) before defensive ones.',
+        },
+        {
+          title: 'Clan Castle bait',
+          text: 'Upgrading the Clan Castle from level 11 to level 12 is useless. Upgrade it near the end of your time at TH16.',
+        },
+        {
+          title: 'Angry Jelly benched',
+          text: 'Angry Jelly is not all that good. Upgrading your Pet House to only level 9 instead of 10 is generally a good idea. You can upgrade the Pet House later.',
+        },
+        {
+          title: 'Spirit Fox is a great pet',
+          text: 'Keep this pet on your Royal Champion to conduct a deep attack that can destroy core defenses and create openings for your armies.',
+        },
+        {
+          title: 'No epic equipment?',
+          text: "If you haven't been getting any epic equipment so far, you will most likely have to run the Dragon Duke, Royal Champion and Grand Warden with any flexible hero. This composition is strong, but make sure you gather some epic equipment from here on out.",
+        },
+        {
+          title: 'NO RUSHING',
+          text: 'After TH16, your base will become significantly weaker, so make sure your defensive buildings are being upgraded. The only exception is special events like Hammer Jam or Summer Jam, where strategic rushing is worth considering.',
+        },
+        {
+          title: 'One eye on the Eagle, one eye on the Monolith',
+          text: "These two defensive buildings can easily stop your attack if they aren't dealt with early. If they aren't taken out yet, approach them with caution and always have a plan ready.",
+        },
+      ],
+    },
     { level: 17, image: 'assets/th/th17.webp', soon: true, theme: [92, 120, 255] },
   ],
 };
