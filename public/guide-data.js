@@ -44,8 +44,8 @@ window.GUIDE_DATA = {
       text: "Upgrade the newer, stronger pet instead. Upgrades on the starter pet are mostly wasted once you can move on.",
     },
     {
-      title: 'Offense before defense',
-      text: 'Prioritise offensive buildings (Army Camps, Barracks, Laboratory and the like) over defensive upgrades. Stronger attacks win you far more than slightly tougher walls and towers.',
+      title: 'Prioritize offense over defense',
+      text: 'Upgrade your offensive buildings (Army Camps, Laboratory and the like) before defensive ones.',
     },
     {
       title: 'Upgrade the Blacksmith over defenses',
@@ -72,7 +72,7 @@ window.GUIDE_DATA = {
       armies: [
         { kind: 'recommended', type: 'air', name: 'Super Yeti Clone Dragons', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 33, y: 16, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 72, y: 0, h: 88 }, { src: 'assets/troops/clone-spell.webp', x: 10, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en/?action=CopyArmy&army=h1e48_17-6e42_43-2m1e4_24i1x147-1x52d1x120-1x9u11x8-2x23-4x5s3x16-1x2', video: 'https://www.youtube.com/watch?v=zRYwi0rFkd0&t=10s' },
         { kind: 'ground', name: 'Queen Charge Hybrid', by: 'Sturge', art: { layers: [{ src: 'assets/troops/miner.webp', x: 20, y: 0, h: 66 }, { src: 'assets/troops/hog-rider.webp', x: 80, y: 0, h: 82 }, { src: 'assets/troops/archer-queen.webp', x: 50, y: 0, h: 100 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en/?action=CopyArmy&army=h0e14_8-1e15_48-2e4_5i7x11-1x75d2x5u5x7-1x5-1x23-11x11-13x24-3x1-1x10-1x6-3x55-3x28s2x2-2x1-2x5-1x9', video: 'https://www.youtube.com/watch?v=ufQ-VwmAdmI&t=488s' },
-        { kind: 'air', name: 'Modified Dragons', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 24, y: 16, h: 78, dim: true }, { src: 'assets/troops/dragon.webp', x: 44, y: 18, h: 92 }, { src: 'assets/troops/archer.webp', x: 78, y: 0, h: 80 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en/?action=CopyArmy&army=h0e14_32-1e48_16-2e24_5i1x52-1x1-2x4-3x83d2x120u2x5-1x23-3x28-9x27-5x7-1x6-4x1-1x17s1x2-5x35-1x9-3x5', video: 'https://www.youtube.com/watch?v=zRYwi0rFkd0&t=486s' },
+        { kind: 'air', name: 'Modified Dragons', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 24, y: 16, h: 78, dim: true }, { src: 'assets/troops/dragon.webp', x: 44, y: 18, h: 92 }, { src: 'assets/troops/archer.webp', x: 78, y: 0, h: 80 }] }, summary: 'Only for attacking stronger town halls. Against the same town hall or lower, use the recommended army.', troops: [], link: 'https://link.clashofclans.com/en/?action=CopyArmy&army=h0e14_32-1e48_16-2e24_5i1x52-1x1-2x4-3x83d2x120u2x5-1x23-3x28-9x27-5x7-1x6-4x1-1x17s1x2-5x35-1x9-3x5', video: 'https://www.youtube.com/watch?v=zRYwi0rFkd0&t=486s' },
       ],
       tips: [
         {
@@ -80,7 +80,7 @@ window.GUIDE_DATA = {
           text: 'Prioritise him and his common equipment, the Eternal Tome and the Rage Gem.',
         },
         {
-          title: 'Offensive buildings over defensive buildings',
+          title: 'Prioritize offense over defense',
           text: 'Upgrade your offensive buildings (Army Camps, Laboratory and the like) before defensive ones.',
         },
         {
@@ -89,7 +89,36 @@ window.GUIDE_DATA = {
         },
       ],
     },
-    { level: 12, image: 'assets/th/th12.webp', soon: true, theme: [64, 152, 255] },
+    {
+      level: 12,
+      image: 'assets/th/th12.webp',
+      theme: [64, 152, 255], // blue
+      onlyOwnTips: true,
+      bases: [
+        { name: 'Village base', note: '', by: 'Kane', image: 'assets/bases/th12-village.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH12%3AHV%3AAAAAMQAAAAJ1KNQ-5GE2tH382TNz_8u0' },
+        { name: 'War base', note: '', by: 'COC Layouts', image: 'assets/bases/th12-war.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH12%3AWB%3AAAAAMQAAAAJ1J46kBC-XrN1TQw39MaB_' },
+        { name: 'Progress base', note: '', by: 'COC Bases', image: 'assets/bases/th12-progress.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH12%3AHV%3AAAAAPwAAAAIVnLZ6AlUiIBNsYcve-Rzk' },
+      ],
+      armies: [
+        { kind: 'recommended', type: 'air', name: 'Super Yeti Clone Dragons', by: '', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 33, y: 16, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 72, y: 0, h: 88 }, { src: 'assets/troops/clone-spell.webp', x: 10, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1e17_20-6e42_43-2m1e4_24i1x52-1x147d1x9-1x120u13x8-2x5-1x23-1x52-1x62s3x16-1x2', video: 'https://www.youtube.com/watch?v=_oh6bWIrqmE&t=10s' },
+        { kind: 'ground', name: 'Blizzard Super Archers', by: '', art: { layers: [{ src: 'assets/troops/super-archer.webp', x: 35, y: 0, h: 96 }, { src: 'assets/troops/super-archer.webp', x: 64, y: 0, h: 96 }, { src: 'assets/troops/freeze-spell.webp', x: 10, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h0e32_14-1e16_48-2e24_5i4x83-1x52d2x120u5x7-2x5-10x27-2x1-1x23-2x6-1x82-3x28-1x17-1x62s5x35-1x2-1x9-3x5', video: 'https://www.youtube.com/watch?v=_oh6bWIrqmE&t=524s' },
+        { kind: 'air', name: 'Super Dragon', by: '', art: { layers: [{ src: 'assets/troops/super-dragon.webp', x: 30, y: 4, h: 64, flip: true }, { src: 'assets/troops/super-dragon.webp', x: 70, y: 30, h: 64 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en/?action=CopyArmy&army=h1e20_17-2m1e41_4-6e49_43i2x53-2x4-1x62d1x98u7x81-1x62-1x52-1x51s3x16-1x2', video: 'https://www.youtube.com/watch?v=DuC3Ti9qukw&t=146s' },
+      ],
+      tips: [
+        {
+          title: 'Use the ground army',
+          text: 'Use it if you are looking to destroy anything below TH16.',
+        },
+        {
+          title: 'Prioritize offense over defense',
+          text: 'Upgrade your offensive buildings (Army Camps, Laboratory and the like) before defensive ones.',
+        },
+        {
+          title: 'You can delay the Workshop',
+          text: 'If your clan is active with donations, you can delay building the Workshop.',
+        },
+      ],
+    },
     { level: 13, image: 'assets/th/th13.webp', soon: true, theme: [60, 206, 206] },
     {
       level: 14,
@@ -127,9 +156,9 @@ window.GUIDE_DATA = {
         { name: 'Progress base', note: '', by: 'COC Bases', image: 'assets/bases/th15-progress.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH15%3AHV%3AAAAAMAAAAAJi3-4akhEouEXtoACzZn-6' },
       ],
       armies: [
-        { kind: 'recommended', type: 'air', name: 'Dragon Super Yeti Clone (Basic)', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 33, y: 16, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 72, y: 0, h: 88 }, { src: 'assets/troops/clone-spell.webp', x: 10, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p9e17_48-6p2e49_43-2m1e4_34-7p4e52_60i1x52-1x147d1x16u14x8-1x23-4x5-1x82-2x10s3x16-1x2', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=9s' },
+        { kind: 'recommended', type: 'air', name: 'Super Yeti Clone Dragons', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 33, y: 16, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 72, y: 0, h: 88 }, { src: 'assets/troops/clone-spell.webp', x: 10, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p9e17_48-6p2e49_43-2m1e4_34-7p4e52_60i1x52-1x147d1x16u14x8-1x23-4x5-1x82-2x10s3x16-1x2', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=9s' },
         { kind: 'ground', name: 'Root Riders with Backpack Arrow', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/root-rider.webp', x: 24, y: 0, h: 100 }, { src: 'assets/troops/rocket-backpack.webp', x: 53, y: 40, h: 56 }, { src: 'assets/troops/giant-arrow.webp', x: 75, y: 14, h: 56 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h7p4e57_53-1p9e17_48-2p7e4_24-4p3e40_13i3x63-1x5-1x188d1x120-1x53u5x7-3x5-1x97-4x110-5x12-2x58-4x57-2x1-5x26-1x82-1x75s5x35-1x5-3x10-1x70', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=986s' },
-        { kind: 'air', name: 'Dragon Super Yeti Clone (Advance)', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 25, y: 16, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 79, y: 0, h: 88 }, { src: 'assets/troops/dragon-duke.webp', x: 52, y: 6, h: 104 }, { src: 'assets/troops/clone-spell.webp', x: 9, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p9e17_48-6p2e49_43-2m1e4_34-7p4e52_60i1x52-1x147d1x109-2x120u14x8-1x23-4x5-1x82-2x10s3x16-1x2', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=224s' },
+        { kind: 'air', name: 'Super Yeti Clone Dragons', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 25, y: 16, h: 90 }, { src: 'assets/troops/super-yeti.webp', x: 79, y: 0, h: 88 }, { src: 'assets/troops/dragon-duke.webp', x: 52, y: 6, h: 104 }, { src: 'assets/troops/clone-spell.webp', x: 9, y: 64, h: 30 }] }, summary: '', troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p9e17_48-6p2e49_43-2m1e4_34-7p4e52_60i1x52-1x147d1x109-2x120u14x8-1x23-4x5-1x82-2x10s3x16-1x2', video: 'https://www.youtube.com/watch?v=eR4dtyQ3PJ0&t=224s' },
       ],
       tips: [
         {
@@ -137,8 +166,8 @@ window.GUIDE_DATA = {
           text: 'He replaces the Minion Prince and the Barbarian King in your attacks.',
         },
         {
-          title: 'Offence over defence',
-          text: 'Upgrade offensive buildings before defences, with the exception of the Spell Towers and the Monolith, which are extremely strong.',
+          title: 'Prioritize offense over defense',
+          text: 'Upgrade your offensive buildings (Army Camps, Laboratory and the like) before defensive ones. The exceptions are the Spell Towers and the Monolith, which are extremely strong.',
         },
         {
           title: 'Phoenix is really strong',
