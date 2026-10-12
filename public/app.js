@@ -229,7 +229,16 @@ function champHtml(label) {
 // Written label beside the trophy, so it is clear what the trophy means.
 const CHAMP_TAG = '<span class="champ-tag">Previous month\'s champion</span>';
 
-function memberCellHtml(row, reserveIcon) {
+// Wraps the part of a name the member search matched in <mark>.
+function highlightHtml(name, q) {
+  const text = String(name || '');
+  const lower = text.toLowerCase();
+  const at = q && lower.length === text.length ? lower.indexOf(q) : -1;
+  if (at < 0) return escapeHtml(text);
+  return `${escapeHtml(text.slice(0, at))}<mark class="hit">${escapeHtml(text.slice(at, at + q.length))}</mark>${escapeHtml(text.slice(at + q.length))}`;
+}
+
+function memberCellHtml(row, reserveIcon, hl) {
   const iconUrl = safeIconUrl(row.leagueIcon);
   const icon = iconUrl
     ? `<img class="league" src="${iconUrl}" alt="" width="26" height="26" loading="lazy" referrerpolicy="no-referrer" />`
@@ -241,7 +250,7 @@ function memberCellHtml(row, reserveIcon) {
     ? `<span class="sep" aria-hidden="true">|</span><span class="role role-${escapeHtml(row.role)}">${label}</span>`
     : '';
   const champ = row.champLabel ? champHtml(row.champLabel) : '';
-  const nameLine = `<span class="name-line"><span class="name">${escapeHtml(row.name)}</span>${champ}</span>`;
+  const nameLine = `<span class="name-line"><span class="name">${hl ? highlightHtml(row.name, hl) : escapeHtml(row.name)}</span>${champ}</span>`;
   // Last month's champion gets a written label under the name, beside the role.
   const nameBlock = row.champLabel ? `<span class="name-col">${nameLine}${CHAMP_TAG}</span>` : nameLine;
   return `<td class="member"><div class="who">${icon}<span class="who-text">${nameBlock}${roleHtml}</span></div></td>`;
@@ -444,6 +453,17 @@ function createLeaderboard(prefix, opts = {}) {
   let expanded = false;
   const open = new Set();
   let baselineLabel = 'the last check';
+  let filter = ''; // member search text
+  let pickMode = false; // compare mode: tapping a member picks them instead of opening their card
+  let picks = []; // tags picked for the comparison, in order (A, then B)
+  const pickAttr = (tag) => {
+    const i = picks.indexOf(tag);
+    return i < 0 ? '' : ` data-pick="${i ? 'B' : 'A'}"`;
+  };
+  const pickClass = (tag) => {
+    const i = picks.indexOf(tag);
+    return i < 0 ? '' : i ? ' is-pick-b' : ' is-pick-a';
+  };
 
   // Columns actually showing (some columns hide on phones). A colspan
   // bigger than that would add a phantom column and squash the member names.
@@ -452,8 +472,11 @@ function createLeaderboard(prefix, opts = {}) {
   function draw() {
     const maxMr = Math.max(1, ...rows.map((r) => r.mr || 0));
     const reserveIcon = rows.some((r) => safeIconUrl(r.leagueIcon));
-    const start = hasPodium() ? 3 : 0; // the top three live on the podium
-    const visible = expanded ? rows.slice(start) : rows.slice(start, Math.max(start, TOP_N));
+    const q = filter.trim().toLowerCase();
+    const searching = q.length > 0;
+    const matches = searching ? rows.filter((r) => String(r.name || '').toLowerCase().includes(q)) : [];
+    const start = hasPodium() && !searching ? 3 : 0; // the top three live on the podium (unless searching)
+    const visible = searching ? matches : expanded ? rows.slice(start) : rows.slice(start, Math.max(start, TOP_N));
 
     body.innerHTML = visible
       .map((r, idx) => {
@@ -462,9 +485,9 @@ function createLeaderboard(prefix, opts = {}) {
         const rankCell = r.rank <= 3 ? `${crownHtml(r.rank)}${move}` : `<span class="rank-num">${r.rank}</span>${move}`;
         const isOpen = opts.details && open.has(r.tag);
         const attrs = opts.details ? ` data-tag="${escapeHtml(r.tag)}" tabindex="0" aria-expanded="${isOpen}"` : '';
-        const main = `<tr class="${r.rank <= 3 ? `rank-${r.rank}` : ''}${opts.details ? ' expandable' : ''}${isOpen ? ' is-open' : ''}" style="--i:${idx}"${attrs}>
+        const main = `<tr class="${r.rank <= 3 ? `rank-${r.rank}` : ''}${opts.details ? ' expandable' : ''}${isOpen ? ' is-open' : ''}${pickClass(r.tag)}" style="--i:${idx}"${attrs}${pickAttr(r.tag)}>
           <td class="rank">${rankCell}</td>
-          ${memberCellHtml(r, reserveIcon)}
+          ${memberCellHtml(r, reserveIcon, searching ? q : '')}
           <td class="num mr"><span class="mr-val">${fmt(r.mr)}</span><span class="mr-bar"><i style="width:${pct}%"></i></span></td>
           <td class="num">${fmt(r.warStars)}</td>
           <td class="num">${fmt(r.donated)}</td>
@@ -475,12 +498,14 @@ function createLeaderboard(prefix, opts = {}) {
       })
       .join('');
 
-    const hasMore = rows.length > TOP_N;
+    const hasMore = rows.length > TOP_N && !searching;
     moreBtn.hidden = !hasMore;
     moreBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
     moreBtn.textContent = expanded ? `Show top ${TOP_N}` : `Show all ${rows.length}`;
     table.hidden = visible.length === 0;
     if (boardEl) boardEl.hidden = visible.length === 0;
+    if (podiumEl) podiumEl.hidden = searching || !hasPodium();
+    if (opts.onFilter) opts.onFilter({ q: filter.trim(), count: matches.length, total: rows.length });
   }
 
   // ---- Podium: the top three as big cards (2nd | 1st | 3rd) ----
@@ -493,7 +518,7 @@ function createLeaderboard(prefix, opts = {}) {
     const isOpen = opts.details && open.has(r.tag);
     const el = opts.details ? 'button' : 'div';
     const attrs = opts.details ? ` type="button" data-tag="${escapeHtml(r.tag)}" aria-expanded="${isOpen}"` : '';
-    return `<${el} class="pod pod-${r.rank}${isOpen ? ' is-open' : ''}"${attrs}>
+    return `<${el} class="pod pod-${r.rank}${isOpen ? ' is-open' : ''}${pickClass(r.tag)}"${attrs}${pickAttr(r.tag)}>
       <span class="pod-glow" aria-hidden="true"></span>
       ${r.rank === 1 ? '<span class="pod-ring" aria-hidden="true"><i></i></span>' : ''}
       <span class="pod-crown">${crownHtml(r.rank)}</span>
@@ -532,7 +557,7 @@ function createLeaderboard(prefix, opts = {}) {
     }
     const [a, b, c] = rows;
     podiumEl.innerHTML = `<div class="podium">${podHtml(b)}${podHtml(a)}${podHtml(c)}</div><div class="pod-detail-slot">${podiumDetailHtml()}</div>`;
-    podiumEl.hidden = false;
+    podiumEl.hidden = filter.trim().length > 0;
   }
 
   function drawPodiumDetail() {
@@ -571,17 +596,34 @@ function createLeaderboard(prefix, opts = {}) {
     }
   }
 
+  // A tap opens the player card, or (in compare mode) picks the member for the head-to-head.
+  function activate(tag) {
+    if (pickMode && opts.onPick) opts.onPick(tag);
+    else toggle(tag);
+  }
+
+  function refreshPicks() {
+    for (const el of [...body.querySelectorAll('tr[data-tag]'), ...(podiumEl ? podiumEl.querySelectorAll('.pod[data-tag]') : [])]) {
+      const i = picks.indexOf(el.dataset.tag);
+      el.classList.toggle('is-pick-a', i === 0);
+      el.classList.toggle('is-pick-b', i === 1);
+      if (i < 0) el.removeAttribute('data-pick');
+      else el.setAttribute('data-pick', i ? 'B' : 'A');
+    }
+    for (const el of [boardEl, podiumEl]) if (el) el.classList.toggle('pick-mode', pickMode);
+  }
+
   if (opts.details) {
     body.addEventListener('click', (e) => {
       const tr = e.target.closest('tr.expandable');
-      if (tr) toggle(tr.dataset.tag);
+      if (tr) activate(tr.dataset.tag);
     });
     body.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter' && e.key !== ' ') return;
       const tr = e.target.closest('tr.expandable');
       if (!tr || e.target !== tr) return;
       e.preventDefault();
-      toggle(tr.dataset.tag);
+      activate(tr.dataset.tag);
     });
   }
 
@@ -593,7 +635,7 @@ function createLeaderboard(prefix, opts = {}) {
         return;
       }
       const pod = e.target.closest('.pod[data-tag]');
-      if (pod) toggle(pod.dataset.tag);
+      if (pod) activate(pod.dataset.tag);
     });
   }
 
@@ -624,6 +666,16 @@ function createLeaderboard(prefix, opts = {}) {
       playEntrance(boardEl, podiumEl);
     },
     rows: () => rows,
+    setFilter(text) {
+      filter = String(text || '');
+      if (boardEl) boardEl.classList.remove('enter'); // don't replay the row entrance on every keystroke
+      draw();
+    },
+    setPick(on, list = []) {
+      pickMode = !!on;
+      picks = pickMode ? list.slice(0, 2) : [];
+      refreshPicks();
+    },
     clear() {
       rows = [];
       expanded = false;
@@ -639,10 +691,260 @@ function createLeaderboard(prefix, opts = {}) {
   };
 }
 
-const monthBoard = createLeaderboard('member', { trend: true, details: true, podium: true });
+const monthBoard = createLeaderboard('member', { trend: true, details: true, podium: true, onFilter: onFindResults, onPick: onComparePick });
 const lastBoard = createLeaderboard('last', { podium: true });
 boardReplays.month = () => monthBoard.replay();
 boardReplays.last = () => lastBoard.replay();
+
+// ---------- Member search ("Find") ----------
+const findBtn = $('find-btn');
+const findBar = $('find-bar');
+const findInput = $('find-input');
+const findCount = $('find-count');
+const findClear = $('find-clear');
+const findEmpty = $('find-empty');
+
+function setFind(open, { focus = true } = {}) {
+  findBar.hidden = !open;
+  findBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  findBtn.classList.toggle('is-on', open);
+  if (open) {
+    if (focus) findInput.focus();
+  } else if (findInput.value) {
+    findInput.value = '';
+    monthBoard.setFilter('');
+  }
+}
+
+function onFindResults({ q, count, total }) {
+  findCount.textContent = q ? `${count} of ${total}` : '';
+  findClear.hidden = !q;
+  const none = q && count === 0;
+  findEmpty.hidden = !none;
+  if (none) findEmpty.textContent = `No member matches “${q}”.`;
+}
+
+findBtn.addEventListener('click', () => setFind(findBar.hidden));
+findInput.addEventListener('input', () => monthBoard.setFilter(findInput.value));
+findInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    setFind(false);
+    findBtn.focus();
+  }
+});
+findClear.addEventListener('click', () => {
+  findInput.value = '';
+  monthBoard.setFilter('');
+  findInput.focus();
+});
+
+// ---------- Compare two members (head to head) ----------
+const cmpBtn = $('compare-btn');
+const cmpBar = $('compare-bar');
+const cmpHint = $('cmp-hint');
+const cmpSlots = { a: $('cmp-a'), b: $('cmp-b') };
+const vsModal = $('vs-modal');
+const vsSheet = $('vs-sheet');
+let cmpPicks = []; // tags
+let vsOpener = null;
+let lastTrendDates = [];
+
+function compareRow(tag) {
+  return monthBoard.rows().find((r) => r.tag === tag);
+}
+
+function updateCompareBar() {
+  const [a, b] = cmpPicks.map(compareRow);
+  const fill = (el, row) => {
+    el.classList.toggle('is-set', !!row);
+    el.querySelector('b').textContent = row ? row.name : '?';
+  };
+  fill(cmpSlots.a, a);
+  fill(cmpSlots.b, b);
+  cmpHint.textContent = cmpPicks.length === 0 ? 'Tap two members to compare' : cmpPicks.length === 1 ? 'Now tap the second member' : 'Opening head to head…';
+}
+
+function setCompare(on) {
+  cmpPicks = [];
+  cmpBar.hidden = !on;
+  cmpBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  cmpBtn.classList.toggle('is-on', on);
+  monthBoard.setPick(on, cmpPicks);
+  updateCompareBar();
+}
+
+function onComparePick(tag) {
+  const at = cmpPicks.indexOf(tag);
+  if (at >= 0) cmpPicks.splice(at, 1);
+  else {
+    if (cmpPicks.length === 2) cmpPicks.shift();
+    cmpPicks.push(tag);
+  }
+  monthBoard.setPick(true, cmpPicks);
+  updateCompareBar();
+  if (cmpPicks.length === 2) setTimeout(() => cmpPicks.length === 2 && openVs(), reduceMotion() ? 0 : 320);
+}
+
+cmpBtn.addEventListener('click', () => setCompare(cmpBar.hidden));
+$('cmp-cancel').addEventListener('click', () => setCompare(false));
+
+// A dual line chart of both members' MR, day by day.
+function vsChartSvg(ta, tb, w, h) {
+  const series = [ta || [], tb || []];
+  const all = series.flat().filter((v) => v != null);
+  if (series.some((t) => t.filter((v) => v != null).length < 2) || all.length < 4) return '';
+  const n = Math.max(...series.map((t) => t.length)) - 1 || 1;
+  const min = Math.min(...all);
+  const max = Math.max(...all);
+  const span = max - min || 1;
+  const pad = 6;
+  const pt = (i, v) => [pad + (i / n) * (w - pad * 2), h - pad - ((v - min) / span) * (h - pad * 2 - 6)];
+  const draw = (t, cls, gid) => {
+    const xy = [];
+    t.forEach((v, i) => {
+      if (v != null) xy.push(pt(i, v));
+    });
+    const d = xy.map(([x, y], k) => `${k ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
+    const last = xy[xy.length - 1];
+    const area = `${d} L${last[0].toFixed(1)} ${h} L${xy[0][0].toFixed(1)} ${h} Z`;
+    return `<path class="vs-area ${cls}" d="${area}" fill="url(#${gid})" /><path class="vs-line ${cls}" d="${d}" pathLength="1" /><circle class="vs-dot ${cls}" cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="3.4" />`;
+  };
+  return `<svg class="vs-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="vsga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgb(var(--ca))" stop-opacity=".38"/><stop offset="1" stop-color="rgb(var(--ca))" stop-opacity="0"/></linearGradient>
+      <linearGradient id="vsgb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgb(var(--cb))" stop-opacity=".38"/><stop offset="1" stop-color="rgb(var(--cb))" stop-opacity="0"/></linearGradient>
+    </defs>
+    ${draw(series[0], 'a', 'vsga')}${draw(series[1], 'b', 'vsgb')}
+  </svg>`;
+}
+
+function vsFighterHtml(r, side, wins) {
+  const iconUrl = safeIconUrl(r.leagueIcon);
+  const icon = iconUrl ? `<img class="vs-icon" src="${iconUrl}" alt="" width="44" height="44" referrerpolicy="no-referrer" />` : `<span class="vs-icon vs-icon-empty">${escapeHtml((r.name || '?').trim().charAt(0).toUpperCase())}</span>`;
+  return `<div class="vs-fighter ${side}${wins ? ' is-lead' : ''}">
+    ${wins ? '<span class="vs-lead-crown" aria-hidden="true"><svg viewBox="0 0 32 24"><path d="M3 20 1.5 6.5l8 5.5L16 3l6.5 9 8-5.5L29 20Z" /><rect x="3" y="21" width="26" height="3" rx="1.2" /></svg></span>' : ''}
+    <span class="vs-icon-wrap">${icon}</span>
+    <span class="vs-name">${escapeHtml(r.name)}</span>
+    <span class="vs-meta"><span class="vs-rank">#${r.rank}</span>${escapeHtml(ROLE_LABELS[r.role] || '')}</span>
+    <span class="vs-mr"><b data-count="${Number(r.mr) || 0}">${fmt(r.mr)}</b><i>MR</i></span>
+  </div>`;
+}
+
+function vsRowHtml(label, a, b, i) {
+  const max = Math.max(1, a, b);
+  const lead = a === b ? '' : a > b ? 'a' : 'b';
+  return `<div class="vs-row${lead ? ` lead-${lead}` : ''}" style="--i:${i}">
+    <span class="vs-val a">${fmt(a)}</span>
+    <span class="vs-label">${label}</span>
+    <span class="vs-val b">${fmt(b)}</span>
+    <span class="vs-bars"><span class="vs-half a"><i style="--w:${((a / max) * 100).toFixed(1)}%"></i></span><span class="vs-half b"><i style="--w:${((b / max) * 100).toFixed(1)}%"></i></span></span>
+  </div>`;
+}
+
+function vsMixHtml(r, side) {
+  const b = r.breakdown || {};
+  const total = Math.max(1, (b.donations || 0) + (b.raids || 0) + (b.wars || 0));
+  const seg = (cls, v) => (v > 0 ? `<i class="${cls}" style="width:${((v / total) * 100).toFixed(2)}%"></i>` : '');
+  return `<div class="vs-mix ${side}"><span class="vs-mix-name">${escapeHtml(r.name)}</span><span class="mr-split">${seg('s-don', b.donations)}${seg('s-raid', b.raids)}${seg('s-war', b.wars)}</span></div>`;
+}
+
+function vsHtml(a, b) {
+  const cats = [
+    ['MR', a.mr || 0, b.mr || 0],
+    ['War stars', a.warStars || 0, b.warStars || 0],
+    ['Donated', a.donated || 0, b.donated || 0],
+    ['Raid attacks', a.raids || 0, b.raids || 0],
+  ];
+  const winsA = cats.filter(([, x, y]) => x > y).length;
+  const winsB = cats.filter(([, x, y]) => y > x).length;
+  const leadA = winsA > winsB;
+  const leadB = winsB > winsA;
+  const share = (a.mr || 0) + (b.mr || 0) > 0 ? ((a.mr || 0) / ((a.mr || 0) + (b.mr || 0))) * 100 : 50;
+  const verdict = leadA || leadB
+    ? `<b>${escapeHtml((leadA ? a : b).name)}</b> leads in ${Math.max(winsA, winsB)} of ${cats.length} categories`
+    : winsA === 0 ? 'Dead even, nothing separates them' : 'All square, two categories each';
+  const chart = vsChartSvg(a.trend, b.trend, 320, 84);
+  const dates = lastTrendDates.length > 1 ? `<span>${escapeHtml(shortDateLabel(lastTrendDates[0]))}</span><span>${escapeHtml(shortDateLabel(lastTrendDates[lastTrendDates.length - 1]))}</span>` : '';
+  return `<button type="button" class="vs-x" data-close aria-label="Close">&times;</button>
+    <p class="vs-kicker">Head to head</p>
+    <div class="vs-top">
+      ${vsFighterHtml(a, 'a', leadA)}
+      <div class="vs-mid"><span class="vs-badge"><i></i><b>VS</b></span><span class="vs-tally"><b class="a">${winsA}</b>&ndash;<b class="b">${winsB}</b></span></div>
+      ${vsFighterHtml(b, 'b', leadB)}
+    </div>
+    <div class="vs-tug" role="img" aria-label="MR share"><i class="a" style="--w:${share.toFixed(1)}%"></i><i class="b" style="--w:${(100 - share).toFixed(1)}%"></i><span class="vs-spark" style="--at:${share.toFixed(1)}%"></span></div>
+    <div class="vs-rows">${cats.slice(1).map(([label, x, y], i) => vsRowHtml(label, x, y, i)).join('')}</div>
+    <div class="vs-block"><h5>Where their MR comes from</h5>${vsMixHtml(a, 'a')}${vsMixHtml(b, 'b')}
+      <ul class="mr-legend"><li><span class="dot s-don"></span>Donations</li><li><span class="dot s-raid"></span>Raids</li><li><span class="dot s-war"></span>Wars</li></ul></div>
+    ${chart ? `<div class="vs-block"><h5>MR day by day</h5><div class="vs-chartbox">${chart}</div><div class="vs-dates">${dates}</div></div>` : ''}
+    <p class="vs-verdict">${verdict}</p>
+    <div class="vs-actions"><button type="button" class="ghost-btn" id="vs-swap">Swap sides</button><button type="button" class="ghost-btn" id="vs-again">Pick others</button></div>`;
+}
+
+function openVs() {
+  const [a, b] = cmpPicks.map(compareRow);
+  if (!a || !b) return;
+  vsOpener = document.activeElement;
+  vsSheet.innerHTML = vsHtml(a, b);
+  vsModal.hidden = false;
+  document.body.classList.add('modal-open');
+  vsSheet.scrollTop = 0;
+  vsSheet.querySelectorAll('[data-count]').forEach((n) => countUp(n, 1000));
+  const x = vsSheet.querySelector('.vs-x');
+  if (x) x.focus({ preventScroll: true });
+}
+
+function closeVs() {
+  if (vsModal.hidden) return;
+  vsModal.hidden = true;
+  document.body.classList.remove('modal-open');
+  vsSheet.innerHTML = '';
+  if (vsOpener && vsOpener.focus) vsOpener.focus({ preventScroll: true });
+}
+
+vsModal.addEventListener('click', (e) => {
+  if (e.target.closest('[data-close]')) return closeVs();
+  if (e.target.closest('#vs-swap')) {
+    cmpPicks.reverse();
+    monthBoard.setPick(true, cmpPicks);
+    updateCompareBar();
+    const [a, b] = cmpPicks.map(compareRow);
+    vsSheet.innerHTML = vsHtml(a, b);
+    vsSheet.querySelectorAll('[data-count]').forEach((n) => countUp(n, 800));
+    const x = vsSheet.querySelector('.vs-x');
+    if (x) x.focus({ preventScroll: true });
+    return;
+  }
+  if (e.target.closest('#vs-again')) {
+    closeVs();
+    setCompare(true);
+  }
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !vsModal.hidden) closeVs();
+});
+
+// ---------- Hall of Champions (stays empty until the server reveals it) ----------
+async function fetchHall(tag) {
+  const hall = $('hall');
+  hall.hidden = true;
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/hall-of-champions?tag=${encodeURIComponent(tag)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.revealed || !data.champions || !data.champions.length || tag !== currentClanTag) return;
+    const latest = data.champions.length - 1;
+    $('hall-list').innerHTML = data.champions
+      .map((c, i) => {
+        const when = new Date(c.year, c.month - 1, 1).toLocaleDateString(undefined, { month: 'short', year: i === 0 || c.month === 1 ? 'numeric' : undefined });
+        return `<div class="hall-chip${i === latest ? ' is-latest' : ''}" style="--i:${i}"><span class="hall-when">${escapeHtml(when)}</span><span class="hall-name">${escapeHtml(c.name)}</span>${c.mr != null ? `<span class="hall-mr">${fmt(c.mr)} MR</span>` : ''}</div>`;
+      })
+      .join('');
+    hall.hidden = false;
+  } catch {
+    /* the hall is a bonus: never let it break the page */
+  }
+}
 
 // ---------- Search ----------
 form.addEventListener('submit', (e) => {
@@ -689,6 +991,7 @@ async function searchClan(tag) {
     fetchCurrentWar(data.tag);
     fetchWarHistory(data.tag);
     fetchPreviousMonth(data.tag);
+    fetchHall(data.tag);
   } catch (err) {
     setStatus('Could not reach the server. Is it running?', true);
   }
@@ -730,6 +1033,9 @@ function renderClan(data) {
   }
 
   membersByTag = new Map(data.members.map((m) => [m.tag, m]));
+  lastTrendDates = data.trendDates || [];
+  setFind(false);
+  setCompare(false);
 
   const champTag = data.lastChampion ? data.lastChampion.tag : null;
   const champLabel = data.lastChampion ? `Champion of ${data.lastChampion.monthLabel}` : '';

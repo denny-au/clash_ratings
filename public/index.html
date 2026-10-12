@@ -4,8 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Clash Ratings</title>
-  <meta name="description" content="Clan leaderboard for Clash of Clans: donations, war stars and raid attacks rolled into one Member Rating." />
+  <meta name="description" content="Clan leaderboard for Clash of Clans: donations, war stars and raid attacks rolled into a Member Rating." />
   <meta name="theme-color" content="#06070c" />
+  <!-- Link preview (Discord, WhatsApp, iMessage, Twitter/X...) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Clash Ratings" />
+  <meta property="og:title" content="Clash Ratings" />
+  <meta property="og:description" content="Clan leaderboard, war history and attack guides. Donations + war stars + raids = Member Rating." />
+  <meta property="og:url" content="https://clashratings.lol/" />
+  <meta property="og:image" content="https://clashratings.lol/assets/site/og-card.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Clash Ratings: clan leaderboard, war history and attack guides" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Clash Ratings" />
+  <meta name="twitter:description" content="Clan leaderboard, war history and attack guides." />
+  <meta name="twitter:image" content="https://clashratings.lol/assets/site/og-card.jpg" />
   <link rel="icon" href="favicon.ico" sizes="48x48 32x32 16x16" />
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
@@ -102,7 +116,7 @@
 
   <div class="page-content">
     <header class="hero">
-      <img class="hero-shield" src="assets/shield.png" alt="" width="281" height="247" />
+      <img class="hero-shield" src="assets/site/shield.png" alt="" width="281" height="247" />
       <h1 data-text="Clash Ratings">Clash Ratings</h1>
       <p class="subtitle">Enter a clan tag.</p>
 
@@ -148,9 +162,25 @@
       <section id="panel-month" class="panel" role="tabpanel" aria-labelledby="tab-month" hidden>
         <div class="panel-head">
           <h3 id="month-title" class="panel-title"></h3>
-          <button type="button" id="share-month" class="tool-btn" title="Make a picture of the top 5 to share"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-ring" aria-hidden="true"><i></i></span><span class="tb-label">Share</span></button>
+          <div class="tool-group">
+            <button type="button" id="find-btn" class="tool-btn tb-compact" aria-expanded="false" aria-controls="find-bar" title="Find a member"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m15 15 5 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><span class="tb-label">Find</span></button>
+            <button type="button" id="compare-btn" class="tool-btn tb-compact" aria-pressed="false" title="Compare two members head to head"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v16M16 4v16M4.5 8 8 4l3.5 4M12.5 16 16 20l3.5-4" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-label">Compare</span></button>
+            <button type="button" id="share-month" class="tool-btn" title="Make a picture of the top 5 to share"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-ring" aria-hidden="true"><i></i></span><span class="tb-label">Share</span></button>
+          </div>
+        </div>
+        <div id="find-bar" class="find-bar" hidden>
+          <svg class="find-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m15 15 5 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+          <input id="find-input" type="search" placeholder="Find a member" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Find a member" />
+          <span id="find-count" class="find-count" aria-live="polite"></span>
+          <button type="button" id="find-clear" class="find-clear" aria-label="Clear search">&times;</button>
+        </div>
+        <div id="compare-bar" class="compare-bar" hidden>
+          <span class="cmp-hint" id="cmp-hint">Tap two members to compare</span>
+          <span class="cmp-slots"><span class="cmp-slot a" id="cmp-a"><i>A</i><b>?</b></span><span class="cmp-vs">vs</span><span class="cmp-slot b" id="cmp-b"><i>B</i><b>?</b></span></span>
+          <button type="button" id="cmp-cancel" class="cmp-cancel">Cancel</button>
         </div>
         <div id="member-podium" class="podium-wrap" hidden></div>
+        <p id="find-empty" class="find-empty" hidden></p>
         <div class="board" id="member-board">
           <div class="table-scroll">
             <table id="member-table" class="leaderboard" hidden>
@@ -178,6 +208,11 @@
           </summary>
           <div class="fold-body"><div id="month-awards-body" class="awards"></div></div>
         </details>
+
+        <section id="hall" class="hall" aria-label="Hall of Champions" hidden>
+          <h4 class="hall-title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v4a5 5 0 0 1-10 0V3Z" /><path d="M7 4H3.5v1.5A3.5 3.5 0 0 0 7 9M17 4h3.5v1.5A3.5 3.5 0 0 1 17 9" fill="none" stroke-width="1.6" /><rect x="10.5" y="12" width="3" height="4" /><rect x="7.5" y="17" width="9" height="3" rx="1" /></svg>Hall of Champions</h4>
+          <div id="hall-list" class="hall-list"></div>
+        </section>
       </section>
 
       <!-- ===== Last Month ===== -->
@@ -300,6 +335,11 @@
       <p>Clash Ratings is a fan-made project for the clan <strong>meow</strong>.</p>
       <p>This material is unofficial and is not endorsed by Supercell. For more information see Supercell's Fan Content Policy: <a href="https://www.supercell.com/fan-content-policy" target="_blank" rel="noopener">www.supercell.com/fan-content-policy</a></p>
     </footer>
+  </div>
+
+  <div id="vs-modal" class="vs-modal" hidden role="dialog" aria-modal="true" aria-label="Head to head">
+    <div class="vs-backdrop" data-close></div>
+    <div id="vs-sheet" class="vs-sheet"></div>
   </div>
 
   <div id="share-modal" class="share-modal" hidden role="dialog" aria-modal="true" aria-label="Share picture">

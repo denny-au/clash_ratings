@@ -712,6 +712,60 @@ function summarizeRaidByMember(seasons) {
   return Array.from(byTag.values()).sort((a, b) => b.attacks - a.attacks);
 }
 
+
+// ---------- Hall of Champions (a secret until the reveal date) ----------
+// Each month's Champion is saved once the month is over. The list is kept for one
+// "season": it is wiped in February, keeping only January's champion as the first entry
+// of the next season. Nothing here is exposed by the API before HALL_REVEAL_DATE.
+const HALL_FILE = 'hall-of-champions.json';
+const HALL_REVEAL_DATE = process.env.HALL_REVEAL_DATE || '2027-01-01'; // YYYY-MM-DD, server local time
+
+const monthIndex = (year, month) => year * 12 + (month - 1);
+
+// Oldest month still kept at `now`: the most recent January that has already ended
+// or is the one just finished (so January itself still shows the earlier champions).
+function hallCutoffIndex(now = new Date()) {
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;
+  return monthIndex(m >= 2 ? y : y - 1, 1);
+}
+
+function pruneHall(entries, now = new Date()) {
+  const cutoff = hallCutoffIndex(now);
+  return entries
+    .filter((e) => monthIndex(e.year, e.month) >= cutoff)
+    .sort((a, b) => monthIndex(a.year, a.month) - monthIndex(b.year, b.month));
+}
+
+async function recordHallChampion({ year, month, monthLabel: label, tag, name, mr }, now = new Date()) {
+  if (!year || !month || !tag || !name) return false;
+  const stored = await loadData(HALL_FILE, { entries: [] });
+  const entries = Array.isArray(stored.entries) ? stored.entries : [];
+  const already = entries.some((e) => e.year === year && e.month === month);
+  const next = pruneHall(already ? entries : [...entries, { year, month, monthLabel: label, tag, name, mr: mr ?? null }], now);
+  if (already && next.length === entries.length) return false;
+  if (!already && !next.some((e) => e.year === year && e.month === month)) return false; // too old to keep
+  await saveData(HALL_FILE, { entries: next }, 'Update hall of champions');
+  return !already;
+}
+
+// What the public endpoint may show: nothing at all until the reveal date.
+async function getHallPublic(now = new Date()) {
+  const [y, m, d] = HALL_REVEAL_DATE.split('-').map(Number);
+  const revealAt = new Date(y, (m || 1) - 1, d || 1);
+  if (!(now >= revealAt)) return { revealed: false, champions: [] };
+  const stored = await loadData(HALL_FILE, { entries: [] });
+  const champions = pruneHall(Array.isArray(stored.entries) ? stored.entries : [], now).map((e) => ({
+    year: e.year,
+    month: e.month,
+    monthLabel: e.monthLabel,
+    tag: e.tag,
+    name: e.name,
+    mr: e.mr,
+  }));
+  return { revealed: true, champions };
+}
+
 module.exports = {
   getTrackedTag,
   setTrackedTag,
@@ -732,4 +786,7 @@ module.exports = {
   recordRaidSeasonIfNew,
   getRaidHistoryForClanInMonth,
   summarizeRaidByMember,
+  recordHallChampion,
+  getHallPublic,
+  pruneHall,
 };

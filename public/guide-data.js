@@ -7,7 +7,8 @@
 //    until you have its picture, then set it to 'assets/th/th<level>.webp'. Town halls are shown
 //    in level order. `theme` is an [r, g, b] colour for the floating lights.
 //  * Bases: give each one a `link` (the "copy base" link from the game, which
-//    starts with https://link.clashofclans.com/) and, optionally, an `image`
+//    starts with https://link.clashofclans.com/, or a base page on https://cocbases.com/ which
+//    shows a "View base" button) and, optionally, an `image`
 //    (path like "assets/bases/th14-village.jpg", about 900px wide). With no link it shows "link coming soon".
 //  * Armies: at most 3 per town hall: one `ground`, one `air`, one `recommended`.
 //    `type` on the recommended army is "air" or "ground" (shows a blue AIR or
@@ -75,6 +76,10 @@ window.GUIDE_DATA = {
         { kind: 'air', name: 'Modified Dragons', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/dragon.webp', x: 24, y: 16, h: 78, dim: true }, { src: 'assets/troops/dragon.webp', x: 44, y: 8, h: 92 }, { src: 'assets/troops/archer.webp', x: 78, y: 0, h: 80 }] }, summary: 'Only for attacking stronger town halls. Against the same town hall or lower, use the recommended army.', troops: [], link: 'https://link.clashofclans.com/en/?action=CopyArmy&army=h0e14_32-1e48_16-2e24_5i1x52-1x1-2x4-3x83d2x120u2x5-1x23-3x28-9x27-5x7-1x6-4x1-1x17s1x2-5x35-1x9-3x5', video: 'https://www.youtube.com/watch?v=zRYwi0rFkd0&t=486s' },
       ],
       tips: [
+        {
+          title: 'Welcome to the middle game',
+          text: 'Town Hall 11 is where the middle game of Clash of Clans begins. The easy early upgrades are behind you, so the choices you make from here start to matter.',
+        },
         {
           title: 'Upgrade the Grand Warden',
           text: 'Prioritise him and his common equipment, the Eternal Tome and the Rage Gem.',
@@ -237,6 +242,10 @@ window.GUIDE_DATA = {
       ],
       tips: [
         {
+          title: 'Welcome to the end game',
+          text: 'Town Hall 16 is where the end game of Clash of Clans begins. Most of the big decisions are behind you, so now it is all about getting the most out of your heroes, equipment and pets.',
+        },
+        {
           title: 'Level up the Dragon Duke',
           text: 'He is used in every single army, so it is extremely important to level him up. You cannot go wrong picking the Revenge Deck or the Rocket Backpack for him, as the Dragon Duke pairs so well with everything.',
         },
@@ -274,6 +283,44 @@ window.GUIDE_DATA = {
         },
       ],
     },
-    { level: 17, image: 'assets/th/th17.webp', soon: true, theme: [92, 120, 255] },
+    {
+      level: 17,
+      image: 'assets/th/th17.webp',
+      theme: [92, 120, 255], // royal blue
+      onlyOwnTips: true,
+      // Shows a gold * beside "TH17" in the picker and this note under the guide. Put `star: true` on any
+      // army, base or tip you are still unsure about and it gets its own * too.
+      footnote: "I'm a TH17 player, but I'm still learning everything about it, so this guide may change as I learn more.",
+      bases: [
+        { name: 'Village base', note: '', by: 'COC Layouts', image: 'assets/bases/th17-village.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH17%3AHV%3AAAAAVwAAAAHXtOcMJ1KXJEqkkaMTNO1s' },
+        { name: 'War base', note: '', by: 'Call Me Smoker', image: 'assets/bases/th17-war.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH17%3AWB%3AAAAAWAAAAAH2s5fzvyn8MG3sy_CB-NhC' },
+        // This one is a COC Bases page (it has the in-game copy link on it), so its button reads "View base".
+        { name: 'Progress base', note: '', by: 'COC Bases', image: 'assets/bases/th17-progress.jpg', link: 'https://cocbases.com/town-hall-17/base-id-p9hyn/' },
+      ],
+      armies: [
+        // TODO: no Hydra picture yet, so this one and the air army show "Army picture coming soon".
+        { kind: 'recommended', type: 'air', name: 'Mass Hydra', by: 'HookedToClash', summary: "Extremely flexible to use with or without epic equipment. Watch the video to find the non-epic equipment army in the description.", troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p9e17_48-6p4e43_49-2m1p16e4_34-7p11e52_60i2x188-2x5-3x63d1x98-1x9u8x8-5x65-4x57-2x23-1x10-1x1s2x120-2x5-1x70-3x109-1x2', video: 'https://www.youtube.com/watch?v=pFhlymPi6z4&t=10s' },
+        { kind: 'ground', name: 'Mass Throwers', by: 'HookedToClash', art: { layers: [{ src: 'assets/troops/thrower.webp', x: 27, y: 10, h: 68 }, { src: 'assets/troops/thrower.webp', x: 73, y: 10, h: 68 }, { src: 'assets/troops/thrower.webp', x: 50, y: 0, h: 96 }] }, summary: "If you use mass Throwers in TH16, it is highly recommended to use them in TH17 too. It is even more insane than the recommended army, but be cautious of a potential nerf to Throwers (this troop is seriously that broken).", troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h0p9e14_32-1p3e39_48-2p16e24_5-7p4e52_60i4x5-2x87-1x147d1x98-1x9u5x7-11x132-3x28-1x58-1x82-4x5-2x23-2x6-1x1-2x135-1x188s3x120-2x5-1x17-1x70-3x109', video: 'https://www.youtube.com/watch?v=pFhlymPi6z4&t=772s' },
+        { kind: 'air', name: 'Simplified Mass Hydra', by: 'CorruptYT', summary: "If you don't want to research a lot of troops like the ones in the recommended army, run this simplified version of the Dragon spam. The only downside is that you will have to run something other than the Lavaloon for the Grand Warden, because I'm pretty sure no one is going to buy that equipment. You can replace it with any common equipment and get by, or replace one of your troops with another Ice Hound.", troops: [], link: 'https://link.clashofclans.com/en?action=CopyArmy&army=h1p9e17_20-6p2e49_43-2m1p16e4_34-7p4e60_53i2x188-1x81-1x63d2x5-1x120u1x76-8x8-5x65-1x23-1x5s1x98-2x120-1x5-1x2-2x70', video: 'https://www.youtube.com/watch?v=KlUrC4fhcNw&t=331s' },
+      ],
+      tips: [
+        {
+          title: 'Prioritize offense over defense',
+          text: 'Upgrade your offensive buildings (Army Camps, Laboratory and the like) before defensive ones.',
+        },
+        {
+          title: 'Not every defense upgrade is worth it',
+          text: "From this town hall onwards, you need to tell the amazing defense upgrades from the bad ones. More likely than not, the merged defensive buildings are way better than the non-merged ones. The only exceptions are the Monolith and the Inferno Towers, which are still beasts at this town hall.",
+        },
+        {
+          title: 'Dragon Duke before every other hero',
+          text: 'Your Dragon Duke is still overpowered, so always prioritize him over your other heroes. He is just too strong.',
+        },
+        {
+          title: 'Focus on Frosty, Diggy and the Unicorn',
+          text: 'The new Sneezy is a decent pet, but other than that, put all of your time and investment into Frosty, Diggy and the Unicorn.',
+        },
+      ],
+    },
   ],
 };

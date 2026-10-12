@@ -21,6 +21,9 @@ app.use(cors());
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+// The Hall of Champions belongs to one clan only (searching other clans must never touch it).
+const HALL_CLAN_TAG = (process.env.HALL_CLAN_TAG || '#2RJPU9JY0').toUpperCase();
+
 // Turns "2y8v0ylq", "#2y8v0ylq", " #2Y8V0YLQ " into a clean "#2Y8V0YLQ"
 function normalizeTag(raw) {
   if (!raw) return null;
@@ -557,6 +560,17 @@ app.get('/api/clan', async (req, res) => {
       const prevMonth = await buildPreviousMonth(tag);
       const champ = prevMonth.awards.find((a) => a.key === 'champion');
       if (champ) lastChampion = { tag: champ.tag, name: champ.name, monthLabel: prevMonth.monthLabel };
+      if (champ && tag === HALL_CLAN_TAG) {
+        // Quietly keep each month's champion for the (secret) Hall of Champions.
+        await warTracker.recordHallChampion({
+          year: prevMonth.year,
+          month: prevMonth.month,
+          monthLabel: prevMonth.monthLabel,
+          tag: champ.tag,
+          name: champ.name,
+          mr: champ.value,
+        });
+      }
     } catch (champErr) {
       console.error('Last champion lookup failed:', champErr.message);
     }
@@ -741,6 +755,17 @@ app.get('/api/war-history', async (req, res) => {
       })),
     members,
   });
+});
+
+// Hall of Champions: empty and "not revealed" until the reveal date (see warTracker.js).
+app.get('/api/hall-of-champions', async (req, res) => {
+  try {
+    if (normalizeTag(req.query.tag) !== HALL_CLAN_TAG) return res.json({ revealed: false, champions: [] });
+    res.json(await warTracker.getHallPublic());
+  } catch (err) {
+    console.error('Hall of champions failed:', err.message);
+    res.json({ revealed: false, champions: [] });
+  }
 });
 
 // Last calendar month's leaderboard. This is
