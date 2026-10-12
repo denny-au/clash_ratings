@@ -2610,6 +2610,14 @@ body.modal-open { overflow: hidden; }
 .award-rare .award-medal { width: 52px; height: 52px; }
 .award-rare .award-medal svg { width: 28px; height: 28px; }
 .award-rare .award-name { font-size: 1.3rem; }
+/* On wide screens the six awards fill a tidy 3 + 2 + 1 grid (no gap in the second row). */
+@media (min-width: 700px) {
+  .awards:has(> .award:nth-child(6):last-child) { grid-template-columns: repeat(6, 1fr); }
+  .awards:has(> .award:nth-child(6):last-child) > .award { grid-column: span 2; }
+  .awards:has(> .award:nth-child(6):last-child) > .award:nth-child(4),
+  .awards:has(> .award:nth-child(6):last-child) > .award:nth-child(5) { grid-column: span 3; }
+  .awards:has(> .award:nth-child(6):last-child) > .award:nth-child(6) { grid-column: 1 / -1; }
+}
 .award-rare::after {
   content: "";
   position: absolute;
@@ -2944,6 +2952,40 @@ body.modal-open { overflow: hidden; }
 .ww-lose { border-color: rgba(255, 110, 110, 0.35); }
 .ww-lose .ww-res { background: linear-gradient(180deg, #ff7a7a, #c94545); }
 .ww-tie .ww-res { background: linear-gradient(180deg, #9aa3bd, #6b7390); }
+/* The most recent war: brighter, glowing in its result colour, with a "Latest" ribbon and a slow sheen. */
+.ww { position: relative; overflow: visible; --wc: 154, 163, 189; }
+.ww-win { --wc: 80, 200, 130; }
+.ww-lose { --wc: 255, 110, 110; }
+.ww-latest {
+  border-color: rgba(var(--wc), 0.85);
+  background:
+    linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, 0.12) 50%, transparent 58%) 160% 0 / 250% 100% no-repeat,
+    linear-gradient(135deg, rgba(var(--wc), 0.22), rgba(var(--wc), 0.05) 60%, transparent),
+    var(--panel);
+  box-shadow: 0 0 0 1px rgba(var(--wc), 0.25), 0 0 22px rgba(var(--wc), 0.28);
+  animation: ww-sheen 6s ease-in-out infinite;
+}
+@keyframes ww-sheen {
+  0% { background-position: 160% 0, 0 0, 0 0; }
+  45%, 100% { background-position: -60% 0, 0 0, 0 0; }
+}
+.ww-latest .ww-res { width: 34px; height: 34px; box-shadow: 0 0 16px rgba(var(--wc), 0.55); }
+.ww-latest .ww-text b { font-size: 1.02rem; }
+.ww-new {
+  position: absolute;
+  top: -8px;
+  right: 10px;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1a1304;
+  background: linear-gradient(180deg, var(--gold-hi), var(--gold));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+@media (prefers-reduced-motion: reduce) { .ww-latest { animation: none; } }
 .ww-text { display: grid; min-width: 0; }
 .ww-text b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-display); font-weight: 400; font-size: 0.95rem; }
 .ww-text em { font-style: normal; color: var(--muted); font-size: 0.74rem; }

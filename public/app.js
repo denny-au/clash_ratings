@@ -501,7 +501,7 @@ function createLeaderboard(prefix, opts = {}) {
       <span class="pod-role">${escapeHtml(label)}</span>
       ${r.champLabel ? '<span class="pod-champ">Previous month\'s champion</span>' : ''}
       <span class="pod-mr"><b data-count="${Number(r.mr) || 0}">${fmt(r.mr)}</b><i>MR</i></span>
-      ${opts.trend ? `<span class="pod-move">${moveHtml(r.rankChange)}</span>` : ''}
+      ${opts.trend && r.rankChange ? `<span class="pod-move">${moveHtml(r.rankChange)}</span>` : ''}
       <span class="pod-stats"><span><b>${fmt(r.warStars)}</b>stars</span><span><b>${fmt(r.donated)}</b>donated</span><span><b>${fmt(r.raids)}</b>raids</span></span>
       <span class="pod-sparks" aria-hidden="true">${sparksHtml(r.rank)}</span>
       <span class="pod-base" aria-hidden="true"></span>
@@ -1533,12 +1533,13 @@ async function fetchCurrentWar(tag) {
 // ---------- War tab: War History board ----------
 const RESULT_LABEL = { win: 'W', lose: 'L', tie: 'T' };
 
-function warChipHtml(w) {
+function warChipHtml(w, latest) {
   const res = RESULT_LABEL[w.result] || '?';
   const when = parseCocTime(w.endTime);
   const date = when ? when.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
   const score = w.clanStars != null && w.opponentStars != null ? ` · ${w.clanStars}★–${w.opponentStars}★` : '';
-  return `<div class="ww ww-${w.result || 'unknown'}"><span class="ww-res">${res}</span><span class="ww-text"><b>vs ${escapeHtml(w.opponentName || 'Unknown')}</b><em>${escapeHtml(date)}${score}</em></span></div>`;
+  const tag = latest ? '<span class="ww-new">Latest</span>' : '';
+  return `<div class="ww ww-${w.result || 'unknown'}${latest ? ' ww-latest' : ''}"><span class="ww-res">${res}</span><span class="ww-text"><b>vs ${escapeHtml(w.opponentName || 'Unknown')}</b><em>${escapeHtml(date)}${score}</em></span>${tag}</div>`;
 }
 
 function renderHistoryRows(tbody, members) {
@@ -1631,7 +1632,9 @@ async function fetchWarHistory(tag) {
     count.textContent = `${data.warsRecorded} war${data.warsRecorded === 1 ? '' : 's'}`;
     renderHistorySummary(data);
     if (data.wars && data.wars.length) {
-      warsEl.innerHTML = data.wars.slice(0, 8).map(warChipHtml).join('');
+      // Newest first, so the latest war is the highlighted one in the top left.
+      const byNewest = data.wars.slice().sort((a, b) => (parseCocTime(b.endTime) || 0) - (parseCocTime(a.endTime) || 0));
+      warsEl.innerHTML = byNewest.slice(0, 8).map((w, i) => warChipHtml(w, i === 0)).join('');
       warsEl.hidden = false;
     }
     renderHistoryRows(historyRows, data.members);

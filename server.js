@@ -730,7 +730,7 @@ app.get('/api/war-history', async (req, res) => {
     warsRecorded: wars.length,
     wars: wars
       .slice()
-      .sort((a, b) => new Date(b.endTime) - new Date(a.endTime))
+      .sort((a, b) => (warTracker.parseClashTimestamp(b.endTime) || 0) - (warTracker.parseClashTimestamp(a.endTime) || 0))
       .map((w) => ({
         opponentName: w.opponentName,
         result: w.result,

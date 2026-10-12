@@ -203,6 +203,10 @@ window.GUIDE_DATA = {
           text: 'Upgrade your offensive buildings (Army Camps, Laboratory and the like) before defensive ones. The exceptions are the Spell Towers and the Monolith, which are extremely strong.',
         },
         {
+          title: 'Skip the Blacksmith',
+          text: "If you have strong epic equipment for your Royal Champion and Dragon Duke, it is highly recommended not to invest in your Blacksmith. It gives you bad common equipment, so it should be the lowest priority on your list. Bonus: if you want your epic equipment to reach level 27, you should upgrade it, but it is highly unlikely you will have enough ore to get past level 26.",
+        },
+        {
           title: 'Phoenix is really strong',
           text: 'Upgrade that pet immediately if you get the chance. Other pets to consider are the Unicorn, Frosty and Diggy.',
         },
@@ -239,6 +243,10 @@ window.GUIDE_DATA = {
         {
           title: 'Prioritize offense over defense',
           text: 'Upgrade your offensive buildings (Army Camps, Laboratory and the like) before defensive ones.',
+        },
+        {
+          title: 'Skip the Blacksmith',
+          text: "If you have strong epic equipment for your Royal Champion and Dragon Duke, it is highly recommended not to invest in your Blacksmith. It gives you bad common equipment, so it should be the lowest priority on your list.",
         },
         {
           title: 'Clan Castle bait',
