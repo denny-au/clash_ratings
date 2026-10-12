@@ -226,6 +226,9 @@ function champHtml(label) {
   </svg>`;
 }
 
+// Written label beside the trophy, so it is clear what the trophy means.
+const CHAMP_TAG = '<span class="champ-tag">Previous month\'s champion</span>';
+
 function memberCellHtml(row, reserveIcon) {
   const iconUrl = safeIconUrl(row.leagueIcon);
   const icon = iconUrl
@@ -238,7 +241,10 @@ function memberCellHtml(row, reserveIcon) {
     ? `<span class="sep" aria-hidden="true">|</span><span class="role role-${escapeHtml(row.role)}">${label}</span>`
     : '';
   const champ = row.champLabel ? champHtml(row.champLabel) : '';
-  return `<td class="member"><div class="who">${icon}<span class="who-text"><span class="name-line"><span class="name">${escapeHtml(row.name)}</span>${champ}</span>${roleHtml}</span></div></td>`;
+  const nameLine = `<span class="name-line"><span class="name">${escapeHtml(row.name)}</span>${champ}</span>`;
+  // Last month's champion gets a written label under the name, beside the role.
+  const nameBlock = row.champLabel ? `<span class="name-col">${nameLine}${CHAMP_TAG}</span>` : nameLine;
+  return `<td class="member"><div class="who">${icon}<span class="who-text">${nameBlock}${roleHtml}</span></div></td>`;
 }
 
 // ---------- Rank movement + sparkline ----------
@@ -493,6 +499,7 @@ function createLeaderboard(prefix, opts = {}) {
       <span class="pod-crown">${crownHtml(r.rank)}</span>
       <span class="pod-who">${icon}<span class="pod-name">${escapeHtml(r.name)}</span>${r.champLabel ? champHtml(r.champLabel) : ''}</span>
       <span class="pod-role">${escapeHtml(label)}</span>
+      ${r.champLabel ? '<span class="pod-champ">Previous month\'s champion</span>' : ''}
       <span class="pod-mr"><b data-count="${Number(r.mr) || 0}">${fmt(r.mr)}</b><i>MR</i></span>
       ${opts.trend ? `<span class="pod-move">${moveHtml(r.rankChange)}</span>` : ''}
       <span class="pod-stats"><span><b>${fmt(r.warStars)}</b>stars</span><span><b>${fmt(r.donated)}</b>donated</span><span><b>${fmt(r.raids)}</b>raids</span></span>
