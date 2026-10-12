@@ -691,12 +691,21 @@ async function searchClan(tag) {
 function renderClan(data) {
   clanName.textContent = data.name;
   clanTagEl.textContent = data.tag;
-  let meta = `Level ${data.level} · ${data.memberCount} members`;
-  if (data.raidWeekend) {
-    const label = data.raidWeekend.state === 'ongoing' ? 'ongoing' : `ended ${data.raidWeekend.endLabel}`;
-    meta += ` · Raid Weekend: ${label}`;
+  const meta = `Level ${data.level} · ${data.memberCount} members`;
+  const raid = data.raidWeekend;
+  const raidLive = !!(raid && raid.state === 'ongoing');
+  clanMeta.textContent = raid && !raidLive ? `${meta} · Raid Weekend: ended ${raid.endLabel}` : meta;
+  if (raidLive) {
+    // A glowing pill so a live Raid Weekend is hard to miss.
+    const pill = document.createElement('span');
+    pill.className = 'raid-pill';
+    const dot = document.createElement('i');
+    dot.className = 'live-dot';
+    pill.append(dot, 'Raid Weekend live');
+    clanMeta.append(' ', pill);
   }
-  clanMeta.textContent = meta;
+  // While a Raid Weekend is live, the clan card shows the raid art and glows.
+  clanInfo.classList.toggle('raid-live', raidLive);
   if (data.badgeUrl) {
     clanBadge.src = data.badgeUrl;
     clanBadge.alt = `${data.name} badge`;

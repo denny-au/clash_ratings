@@ -1697,8 +1697,42 @@ h1 {
 @keyframes clan-art-in { from { opacity: 0; } to { opacity: var(--art-o); } }
 @media (max-width: 560px) {
   .clan-card::after { width: 62%; --art-o: 0.7; }
-  .clan-card.raid-live::after { width: 70%; --art-o: 0.6; }
+  .clan-card.raid-live::after { width: 70%; --art-o: 0.8; }
 }
+/* Live Raid Weekend: orange glow on the card and a pulsing pill. */
+.clan-card.raid-live {
+  border-color: rgba(255, 128, 56, 0.55);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 26px rgba(255, 110, 40, 0.22);
+}
+.clan-card.raid-live::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 150, 70, 0.95), transparent);
+}
+.clan-card.raid-live::after { --art-o: 1; }
+@media (max-width: 560px) { .clan-card.raid-live::after { --art-o: 0.8; } }
+.raid-pill {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.35rem;
+  padding: 0.12rem 0.65rem 0.12rem 0.55rem;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #ffd9b8;
+  border: 1px solid rgba(255, 128, 56, 0.7);
+  background: rgba(255, 110, 40, 0.22);
+  text-shadow: none;
+  vertical-align: middle;
+}
+.raid-pill .live-dot { margin: 0 0.45rem 0 0; width: 8px; height: 8px; background: #ff8a3d; animation-name: raid-dot-pulse; }
+@keyframes raid-dot-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 138, 61, 0.6); }
+  70% { box-shadow: 0 0 0 8px rgba(255, 138, 61, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 138, 61, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .raid-pill .live-dot { animation: none; } }
 .tabs { animation: rise 0.6s 0.1s both; }
 .panel:not([hidden]) { animation: rise 0.4s both; }
 .summary .stat {
