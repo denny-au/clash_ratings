@@ -270,9 +270,25 @@
     trackEl.style.setProperty('--tx', viewportEl.clientWidth / 2 - center + 'px');
     if (!animate || firstLayout) {
       void trackEl.offsetWidth;
+      lockHeight();
       requestAnimationFrame(function () { trackEl.classList.remove('no-anim'); });
     }
     firstLayout = false;
+  }
+
+  // While the pictures swap size (one grows, one shrinks) the row briefly gets shorter and then
+  // taller again, which pushed the whole guide up and down. Keep the row at its settled height.
+  function lockHeight() {
+    trackEl.style.minHeight = '';
+    var h = trackEl.offsetHeight;
+    if (h) trackEl.style.minHeight = h + 'px';
+  }
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () {
+      if (!trackEl.getAnimations || !trackEl.getAnimations({ subtree: true }).length) {
+        trackEl.classList.add('no-anim'); lockHeight(); void trackEl.offsetWidth; trackEl.classList.remove('no-anim');
+      }
+    });
   }
 
   // The guide underneath slides out the way you're heading and the next one slides in,
@@ -372,6 +388,25 @@
     }
   });
   viewportEl.addEventListener('pointercancel', function () { swipe = null; });
+
+  // Phones: swipe left / right anywhere on the guide (not just on the picker) to flip between town halls.
+  // Touch events only, so a mouse drag on a computer never does this. Ignores swipes that start at the very
+  // screen edge (the phone's own back gesture), multi-finger gestures and mostly-vertical scrolling.
+  var gSwipe = null;
+  detailEl.addEventListener('touchstart', function (e) {
+    var t = e.touches[0];
+    var edge = 24;
+    if (e.touches.length !== 1 || t.clientX < edge || t.clientX > window.innerWidth - edge) { gSwipe = null; return; }
+    gSwipe = { x: t.clientX, y: t.clientY, at: Date.now() };
+  }, { passive: true });
+  detailEl.addEventListener('touchend', function (e) {
+    if (!gSwipe) return;
+    var t = e.changedTouches[0];
+    var dx = t.clientX - gSwipe.x, dy = t.clientY - gSwipe.y, quick = Date.now() - gSwipe.at < 900;
+    gSwipe = null;
+    if (quick && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.8) step(dx < 0 ? 1 : -1);
+  }, { passive: true });
+  detailEl.addEventListener('touchcancel', function () { gSwipe = null; }, { passive: true });
 
   // re-centre when the size changes or the tab becomes visible
   // Only a change of WIDTH needs a re-centre. (The viewport's height changes while a picture grows,
