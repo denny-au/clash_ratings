@@ -3146,35 +3146,12 @@ body.modal-open { overflow: hidden; }
 .th-item.is-center .th-fallback b { font-size: 2.5rem; }
 .th-soon:not(.is-center) .th-art { filter: grayscale(0.7); }
 
-.th-nav {
-  position: absolute;
-  top: 38%;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  padding: 0;
-  color: var(--text);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  cursor: pointer;
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
-}
-.th-nav svg { width: 18px; height: 18px; }
-.th-nav:hover { background: rgba(var(--t), 0.22); border-color: rgba(var(--t), 0.7); }
-.th-nav:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 2px; }
-.th-prev { left: 0; }
-.th-next { right: 0; }
 
 .g-soon { text-align: center; padding: 1.6rem 1rem; }
 
 /* the opened guide */
 .g-detail { margin-top: 0.9rem; scroll-margin-top: 0.8rem; display: grid; gap: 0.9rem; }
-.g-detail.enter > * { animation: rise 0.45s both; }
+.g-detail.enter > * { animation: fade-in 0.45s both; } /* fade only: the sections no longer slide up and down */
 .g-detail.enter > :nth-child(2) { animation-delay: 70ms; }
 .g-detail.enter > :nth-child(3) { animation-delay: 140ms; }
 .g-detail.enter > :nth-child(4) { animation-delay: 210ms; }
@@ -3259,7 +3236,6 @@ a.g-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
   .th-item.is-center .th-art { height: 124px; }
   .th-art { height: 58px; }
   .th-item.is-center .th-name { font-size: 1.12rem; }
-  .th-nav { display: none; } /* phones: swipe, or tap a neighbour */
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -16,7 +16,8 @@
   }
   // Only the game's own share links are ever turned into clickable links.
   function safeLink(u) {
-    return typeof u === 'string' && /^https:\/\/link\.clashofclans\.com\//.test(u) ? u : null;
+    // In-game links, plus pages on cocbases.com (a base page that holds the in-game copy link).
+    return typeof u === 'string' && /^https:\/\/(link\.clashofclans\.com|cocbases\.com)\//.test(u) ? u : null;
   }
   function safeVideo(u) {
     return typeof u === 'string' && /^https:\/\/(www\.youtube\.com\/watch\?[\w=&\-%.]+|youtu\.be\/[\w\-]+(\?[\w=&\-%.]+)?)$/.test(u) ? u : null;
@@ -49,7 +50,7 @@
           '<button type="button" class="th-item' + (th.soon ? ' th-soon' : '') + '" data-th="' + esc(th.level) + '"' +
           (t ? ' style="--t:' + t.join(',') + '"' : '') + ' aria-label="Town Hall ' + esc(th.level) + (th.soon ? ' (coming soon)' : '') + '">' +
           thArt(th) +
-          '<span class="th-name"><span class="th-name-long">Town Hall </span><span class="th-name-short">TH</span>' + esc(th.level) + '</span>' +
+          '<span class="th-name"><span class="th-name-long">Town Hall </span><span class="th-name-short">TH</span>' + esc(th.level) + (th.footnote ? '<span class="th-star" aria-hidden="true">*</span>' : '') + '</span>' +
           '</button>'
         );
       })
@@ -68,6 +69,7 @@
 
   function actionHtml(link, label, soon) {
     var l = safeLink(link);
+    if (l && /^https:\/\/cocbases\.com\//.test(l)) label = 'View base';
     return l
       ? '<a class="g-btn" href="' + esc(l) + '" target="_blank" rel="noopener noreferrer">' + esc(label) + '</a>'
       : '<span class="g-btn g-btn-off">' + esc(soon) + '</span>';
@@ -127,6 +129,11 @@
     }
   }
 
+  // A small gold asterisk for anything the guide's author is still unsure about (item.star = true).
+  function starHtml(item) {
+    return item && item.star ? '<sup class="g-star" title="Still learning this one, it may change">*</sup>' : '';
+  }
+
   function byHtml(by) {
     return by ? '<span class="g-by">by ' + esc(by) + '</span>' : '';
   }
@@ -138,7 +145,7 @@
         return (
           '<div class="g-item base" style="--i:' + i + '">' +
           '<span class="base-shot">' + (img ? '<img src="' + esc(img) + '" alt="" loading="lazy" />' : '<span>Base picture<br>coming soon</span>') + '</span>' +
-          '<span class="g-item-name">' + esc(b.name) + '</span>' + byHtml(b.by) +
+          '<span class="g-item-name">' + esc(b.name) + starHtml(b) + '</span>' + byHtml(b.by) +
           (b.note ? '<span class="g-item-note">' + esc(b.note) + '</span>' : '') +
           '<span class="g-actions">' + actionHtml(b.link, 'Copy base', 'Link coming soon') + '</span>' +
           '</div>'
@@ -163,7 +170,7 @@
           '<div class="g-item army army-' + esc(a.kind) + '" style="--i:' + i + '">' +
           artHtml(a.art) +
           '<span class="army-tags"><span class="army-tag">' + esc(KIND[a.kind] || a.kind) + '</span>' + typeTag + '</span>' +
-          '<span class="g-item-name">' + esc(a.name) + '</span>' + byHtml(a.by) +
+          '<span class="g-item-name">' + esc(a.name) + starHtml(a) + '</span>' + byHtml(a.by) +
           (a.summary ? '<span class="g-item-note">' + esc(a.summary) + '</span>' : '') +
           (troops ? '<ul class="army-troops">' + troops + '</ul>' : hasContent ? '' : '<span class="g-item-note army-todo">Army details coming soon.</span>') +
           '<span class="g-actions">' + actionHtml(a.link, 'Copy army', 'Link coming soon') + videoHtml(a.video) + '</span>' +
@@ -179,7 +186,7 @@
     var tips = general.concat(th.tips || []);
     var items = tips
       .map(function (t, i) {
-        return '<li class="tip" style="--i:' + i + '"><span class="tip-n">' + (i + 1) + '</span><span class="tip-body"><b>' + esc(t.title) + '</b><span>' + esc(t.text) + '</span></span></li>';
+        return '<li class="tip" style="--i:' + i + '"><span class="tip-n">' + (i + 1) + '</span><span class="tip-body"><b>' + esc(t.title) + starHtml(t) + '</b><span>' + esc(t.text) + '</span></span></li>';
       })
       .join('');
     return '<section class="g-card">' + cardHead('tips', 'Tips', 'General habits, plus ones for this town hall') + '<ol class="tips">' + (items || '<li class="g-empty">Nothing here yet.</li>') + '</ol></section>';
@@ -189,16 +196,19 @@
     return '<section class="g-card g-soon"><p class="g-empty">The Town Hall ' + esc(th.level) + ' guide is still being written. Check back soon.</p></section>';
   }
 
+  // The note under a town hall that has asterisks (th.footnote).
+  function footnoteHtml(th) {
+    return th.footnote ? '<p class="g-footnote"><span class="g-star">*</span> ' + esc(th.footnote) + '</p>' : '';
+  }
+
   function detailHtml(th) {
-    return th.soon ? soonHtml(th) : armiesHtml(th) + basesHtml(th) + tipsHtml(th);
+    return (th.soon ? soonHtml(th) : armiesHtml(th) + basesHtml(th) + tipsHtml(th)) + footnoteHtml(th);
   }
 
   // ---- render ----
   root.innerHTML =
     '<div class="th-carousel" role="group" aria-label="Choose a town hall">' +
-    '<button type="button" class="th-nav th-prev" aria-label="Previous town hall"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
     '<div class="th-viewport"><div class="th-track">' + carouselHtml() + '</div></div>' +
-    '<button type="button" class="th-nav th-next" aria-label="Next town hall"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>' +
     '</div>' +
     '<div id="guide-detail" class="g-detail" aria-live="polite"></div>';
 
@@ -332,9 +342,7 @@
   carouselEl.addEventListener('click', function (e) {
     if (swiped) { swiped = false; return; }
     var item = e.target.closest('.th-item');
-    if (item) { select(+item.getAttribute('data-th')); return; }
-    if (e.target.closest('.th-prev')) step(-1);
-    else if (e.target.closest('.th-next')) step(1);
+    if (item) select(+item.getAttribute('data-th'));
   });
   carouselEl.addEventListener('keydown', function (e) {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
