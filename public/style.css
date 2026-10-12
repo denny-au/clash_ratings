@@ -1668,6 +1668,37 @@ h1 {
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.8), transparent);
 }
+/* Clan card art, on the right, fading out towards the clan info on the left.
+   Quiet banner normally; the Raid Weekend picture while a raid weekend is live. */
+.clan-card > * { position: relative; z-index: 1; }
+.clan-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 46%;
+  z-index: 0;
+  pointer-events: none;
+  background: url("assets/clan-card/banner.webp") 0% 50% / cover no-repeat;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.45) 35%, #000 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.45) 35%, #000 100%);
+  --art-o: 0.9;
+  opacity: var(--art-o);
+  animation: clan-art-in 0.9s 0.2s both;
+}
+.clan-card.raid-live::after {
+  width: 62%;
+  background: url("assets/clan-card/raid-weekend.webp") 0% 16% / cover no-repeat;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.35) 40%, #000 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.35) 40%, #000 100%);
+}
+.clan-card .clan-info-text { text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85); }
+@keyframes clan-art-in { from { opacity: 0; } to { opacity: var(--art-o); } }
+@media (max-width: 560px) {
+  .clan-card::after { width: 62%; --art-o: 0.7; }
+  .clan-card.raid-live::after { width: 70%; --art-o: 0.6; }
+}
 .tabs { animation: rise 0.6s 0.1s both; }
 .panel:not([hidden]) { animation: rise 0.4s both; }
 .summary .stat {
@@ -3133,6 +3164,8 @@ a.g-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
 
 /* guide: credits, secondary buttons, army type tag, town-hall tip chip */
 .g-by { color: var(--role); font-size: 0.8rem; }
+.g-item.army { display: flex; flex-direction: column; }
+.army .g-actions { margin-top: auto; padding-top: 0.2rem; } /* buttons line up along the bottom of the three cards */
 .g-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.2rem; }
 .g-actions .g-btn { margin-top: 0; }
 .g-btn-ghost { color: var(--text); background: transparent; border: 1px solid rgba(var(--g-rgb), 0.45); }
