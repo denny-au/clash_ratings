@@ -3675,3 +3675,138 @@ tr[data-pick="A"] .name::before, tr[data-pick="B"] .name::before,
 .hall-name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-display); font-size: 1.05rem; color: var(--text); }
 .hall-mr { color: var(--gold); font-size: 0.78rem; }
 .hall-chip.is-latest { border-color: var(--accent); box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.28); background: rgba(var(--accent-rgb), 0.1); }
+
+/* ======================================================================
+   Round 6: Leaderboard / War toolbar, Last month dropdown, Warboard
+   ====================================================================== */
+
+/* ---- Toolbar: Find / Compare / Share on their own tidy row ---- */
+.toolbar {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0 0 0.95rem;
+}
+.toolbar .tool-btn {
+  position: relative;
+  right: auto;
+  top: auto;
+  margin: 0;
+  flex: 0 1 138px;
+  justify-content: center;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.92rem;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.13), rgba(var(--accent-rgb), 0.04));
+}
+.toolbar .tool-btn .tb-label { display: inline; }
+.toolbar .tool-btn .tb-icon { width: 16px; height: 16px; }
+.toolbar .tool-btn.is-on {
+  background: rgba(var(--accent-rgb), 0.24);
+  border-color: var(--accent);
+  box-shadow: 0 0 16px rgba(var(--accent-rgb), 0.3);
+}
+@media (max-width: 640px) {
+  .toolbar { gap: 0.4rem; margin: 0 0 0.8rem; }
+  .toolbar .tool-btn { flex: 1 1 0; min-width: 0; padding: 0.6rem 0.3rem; font-size: 0.88rem; gap: 0.35rem; }
+}
+
+/* ---- Last month: a dropdown under the leaderboard ---- */
+.last-fold .fold-body { display: grid; gap: 0.9rem; padding: 0.9rem 1rem 1rem; }
+.last-fold .fold-body .panel-note { padding: 0; margin: 0; }
+.last-fold .hof { margin: 0; }
+.last-fold .podium-wrap { margin: 0; }
+.last-actions { display: flex; justify-content: center; }
+.last-actions .tool-btn { position: relative; right: auto; top: auto; }
+.last-actions .tool-btn[hidden] { display: none; }
+@media (max-width: 640px) {
+  .last-fold .fold-body { padding: 0.8rem 0.6rem 0.9rem; }
+}
+
+/* ---- Warboard ---- */
+#war-tools { display: grid; gap: 0; margin-top: 0.1rem; }
+#war-tools[hidden] { display: none; }
+#war-tools .toolbar { margin-bottom: 0.75rem; }
+#war-tools .find-bar, #war-tools .compare-bar { margin: 0 0 0.75rem; }
+#war-tools .find-empty { margin: 0.2rem 0 0.4rem; }
+.wh-note { margin: 0.1rem 0 0; text-align: center; color: var(--muted); font-size: 0.8rem; }
+.wh-note[hidden] { display: none; }
+.wh-table tbody.is-still tr { animation: none; }
+.wh-board.pick-mode tr[data-tag] { cursor: pointer; }
+.wh-board.pick-mode tr[data-tag]:hover td { background: rgba(var(--accent-rgb), 0.07); }
+mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radius: 3px; padding: 0 1px; }
+
+/* A more serious, ember-toned top three: slow flames lick along the bottom of each row. */
+.wh.fold { border-color: rgba(255, 106, 32, 0.3); }
+.wh-table tr.rank-1 { background: linear-gradient(90deg, rgba(255, 112, 36, 0.2), rgba(255, 112, 36, 0.05) 55%, transparent 82%); }
+.wh-table tr.rank-2 { background: linear-gradient(90deg, rgba(255, 98, 40, 0.15), rgba(255, 98, 40, 0.04) 55%, transparent 80%); }
+.wh-table tr.rank-3 { background: linear-gradient(90deg, rgba(235, 84, 40, 0.12), rgba(235, 84, 40, 0.03) 55%, transparent 78%); }
+.wh-table tr.rank-1 td:first-child { box-shadow: inset 3px 0 0 #ff9a2e; }
+.wh-table tr.rank-2 td:first-child { box-shadow: inset 3px 0 0 #ff6a2a; }
+.wh-table tr.rank-3 td:first-child { box-shadow: inset 3px 0 0 #e0482a; }
+.wh-table tr.is-pick-a td:first-child, .wh-table tr.is-pick-b td:first-child { box-shadow: inset 3px 0 0 rgb(var(--c)); }
+.wh-table tr.rank-1 td.wh-rank, .wh-table tr.rank-2 td.wh-rank, .wh-table tr.rank-3 td.wh-rank { position: relative; overflow: hidden; }
+.wh-table tr.rank-1 td.wh-rank::before, .wh-table tr.rank-2 td.wh-rank::before, .wh-table tr.rank-3 td.wh-rank::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 90%, rgba(255, 120, 40, var(--glow, 0.3)), transparent 70%);
+  pointer-events: none;
+}
+.wh-table tr.rank-1 { --fo: 0.62; --glow: 0.34; }
+.wh-table tr.rank-2 { --fo: 0.46; --glow: 0.26; }
+.wh-table tr.rank-3 { --fo: 0.34; --glow: 0.2; }
+.wh-table td.wh-name { position: relative; }
+.wh-name > .name, .wh-name > .wh-meta { position: relative; z-index: 1; }
+.wh-fire {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* the flames fade out toward the right instead of stopping at the column edge */
+  -webkit-mask-image: linear-gradient(90deg, #000 40%, transparent 100%);
+  mask-image: linear-gradient(90deg, #000 40%, transparent 100%);
+}
+.wh-fire i {
+  position: absolute;
+  bottom: -8px;
+  left: var(--x, 0%);
+  width: 30px;
+  height: 78%;
+  border-radius: 50% 50% 42% 42% / 78% 78% 22% 22%;
+  background: radial-gradient(ellipse at 50% 100%, rgba(255, 206, 110, 0.9) 0%, rgba(255, 122, 36, 0.55) 36%, rgba(255, 64, 20, 0) 74%);
+  transform-origin: 50% 100%;
+  opacity: 0;
+  animation: wh-flick 2.9s ease-in-out infinite;
+  animation-delay: var(--d, 0s);
+}
+.wh-fire i:nth-child(1) { --x: 1%;  --d: -0.2s; }
+.wh-fire i:nth-child(2) { --x: 13%; --d: -1.7s; animation-duration: 2.4s; }
+.wh-fire i:nth-child(3) { --x: 26%; --d: -0.9s; animation-duration: 3.3s; }
+.wh-fire i:nth-child(4) { --x: 39%; --d: -2.2s; animation-duration: 2.6s; }
+.wh-fire i:nth-child(5) { --x: 51%; --d: -1.1s; animation-duration: 3.1s; }
+.wh-fire i:nth-child(6) { --x: 63%; --d: -2.6s; animation-duration: 2.5s; }
+.wh-fire i:nth-child(7) { --x: 75%; --d: -0.6s; animation-duration: 3.4s; }
+.wh-fire i:nth-child(8) { --x: 88%; --d: -1.9s; animation-duration: 2.8s; }
+@keyframes wh-flick {
+  0%, 100% { transform: scale(0.8, 0.5) translateX(0); opacity: calc(var(--fo, 0.5) * 0.45); }
+  35% { transform: scale(1, 1) translateX(3px); opacity: var(--fo, 0.5); }
+  70% { transform: scale(0.86, 0.72) translateX(-3px); opacity: calc(var(--fo, 0.5) * 0.7); }
+}
+@media (max-width: 640px) {
+  .wh-fire i { width: 22px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wh-fire i { animation: none; opacity: calc(var(--fo, 0.5) * 0.6); transform: scale(0.9, 0.65); }
+}
+
+/* ---- Warboard head to head ---- */
+.vs-mix-bar { display: grid; gap: 0.2rem; min-width: 0; }
+.vs-mix .mu { width: 100%; height: 12px; border-radius: 8px; background: rgba(255, 255, 255, 0.07); }
+.vs-mix .mu .up { background: rgb(var(--c)); }
+.vs-mix .mu .eq { background: rgba(var(--c), 0.55); }
+.vs-mix .mu .dn { background: rgba(var(--c), 0.28); }
+.vs-mix-txt { color: var(--muted); font-size: 0.72rem; letter-spacing: 0.02em; }
+.vs-block .mr-legend .dot.s-up { background: #fff; }
+.vs-block .mr-legend .dot.s-eq { background: rgba(255, 255, 255, 0.55); }
+.vs-block .mr-legend .dot.s-dn { background: rgba(255, 255, 255, 0.28); }

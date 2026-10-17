@@ -16,7 +16,7 @@ const drawerTabs = document.querySelectorAll('.drawer-tab');
 
 const tabsEl = $('tabs');
 const tabButtons = Array.from(document.querySelectorAll('.tab'));
-const panels = { month: $('panel-month'), last: $('panel-last'), war: $('panel-war'), guide: $('panel-guide') };
+const panels = { month: $('panel-month'), war: $('panel-war'), guide: $('panel-guide') };
 
 // How many leaderboard rows show before the "Show all" button. Change this
 // one number to show more or fewer by default (set it very high to always
@@ -85,7 +85,7 @@ const BACKEND_URL =
     ? ''
     : 'https://147-224-36-247.sslip.io';
 
-// ---------- Tabs: This Month / Last Month / War ----------
+// ---------- Tabs: Leaderboard / War / Guide ----------
 let activeTab = 'month';
 
 // The gold pill behind the selected tab. First placement is instant; after
@@ -131,7 +131,7 @@ const boardReplays = {}; // tab name -> function that replays that board's entra
 
 function activateTab(name, { updateHash = true } = {}) {
   const btn = tabButtons.find((b) => b.dataset.tab === name);
-  if (!btn || btn.hidden) name = 'month'; // e.g. "#last" but there's no last-month data
+  if (!btn || btn.hidden) name = 'month'; // unknown tab names fall back to the leaderboard
   activeTab = name;
   for (const b of tabButtons) {
     const on = b.dataset.tab === name;
@@ -145,7 +145,7 @@ function activateTab(name, { updateHash = true } = {}) {
   window.CR_THEME_PENDING = theme;
   if (window.CR_FX) window.CR_FX.setTheme(theme);
   if (boardReplays[name]) boardReplays[name]();
-  syncSummary(); // the strip is this month's numbers, so it sits out the Last Month tab
+  syncSummary(); // the strip is this month's numbers, so it sits out the Guide
   if (updateHash) {
     try {
       const hash = name === 'guide' && window.CR_GUIDE ? window.CR_GUIDE.hash() : `#${name}`;
@@ -438,7 +438,7 @@ function playEntrance(...els) {
   }
 }
 
-// ---------- Leaderboard component (used by This Month and Last Month) ----------
+// ---------- Leaderboard component (used by the Leaderboard and its Last month fold) ----------
 // rows: [{ tag, rank, name, role, leagueIcon, mr, warStars, donated, raids,
 //          rankChange, trend, breakdown, champLabel }]
 // opts.trend  -> show rank arrows (the sparkline lives in the player card)
@@ -694,99 +694,137 @@ function createLeaderboard(prefix, opts = {}) {
 const monthBoard = createLeaderboard('member', { trend: true, details: true, podium: true, onFilter: onFindResults, onPick: onComparePick });
 const lastBoard = createLeaderboard('last', { podium: true });
 boardReplays.month = () => monthBoard.replay();
-boardReplays.last = () => lastBoard.replay();
 
-// ---------- Member search ("Find") ----------
-const findBtn = $('find-btn');
-const findBar = $('find-bar');
-const findInput = $('find-input');
-const findCount = $('find-count');
-const findClear = $('find-clear');
-const findEmpty = $('find-empty');
-
-function setFind(open, { focus = true } = {}) {
-  findBar.hidden = !open;
-  findBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  findBtn.classList.toggle('is-on', open);
-  if (open) {
-    if (focus) findInput.focus();
-  } else if (findInput.value) {
-    findInput.value = '';
-    monthBoard.setFilter('');
-  }
+// ---------- Find (search) ----------
+// One small tool, used by both the Leaderboard and the Warboard.
+function createFindTool(o) {
+  const tool = {
+    set(open, { focus = true } = {}) {
+      o.bar.hidden = !open;
+      o.btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      o.btn.classList.toggle('is-on', open);
+      if (open) {
+        if (focus) o.input.focus();
+      } else if (o.input.value) {
+        o.input.value = '';
+        o.apply('');
+      }
+    },
+    results({ q, count, total }) {
+      o.count.textContent = q ? `${count} of ${total}` : '';
+      o.clear.hidden = !q;
+      const none = q && count === 0;
+      o.empty.hidden = !none;
+      if (none) o.empty.textContent = `No ${o.noun} matches \u201c${q}\u201d.`;
+    },
+  };
+  o.btn.addEventListener('click', () => tool.set(o.bar.hidden));
+  o.input.addEventListener('input', () => o.apply(o.input.value));
+  o.input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      tool.set(false);
+      o.btn.focus();
+    }
+  });
+  o.clear.addEventListener('click', () => {
+    o.input.value = '';
+    o.apply('');
+    o.input.focus();
+  });
+  return tool;
 }
 
-function onFindResults({ q, count, total }) {
-  findCount.textContent = q ? `${count} of ${total}` : '';
-  findClear.hidden = !q;
-  const none = q && count === 0;
-  findEmpty.hidden = !none;
-  if (none) findEmpty.textContent = `No member matches “${q}”.`;
+const memberFind = createFindTool({
+  btn: $('find-btn'), bar: $('find-bar'), input: $('find-input'), count: $('find-count'), clear: $('find-clear'), empty: $('find-empty'),
+  noun: 'member', apply: (text) => monthBoard.setFilter(text),
+});
+const setFind = (open, opts) => memberFind.set(open, opts);
+function onFindResults(info) {
+  memberFind.results(info);
 }
 
-findBtn.addEventListener('click', () => setFind(findBar.hidden));
-findInput.addEventListener('input', () => monthBoard.setFilter(findInput.value));
-findInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    setFind(false);
-    findBtn.focus();
-  }
-});
-findClear.addEventListener('click', () => {
-  findInput.value = '';
-  monthBoard.setFilter('');
-  findInput.focus();
-});
-
-// ---------- Compare two members (head to head) ----------
-const cmpBtn = $('compare-btn');
-const cmpBar = $('compare-bar');
-const cmpHint = $('cmp-hint');
-const cmpSlots = { a: $('cmp-a'), b: $('cmp-b') };
+// ---------- Compare two (head to head) ----------
 const vsModal = $('vs-modal');
 const vsSheet = $('vs-sheet');
-let cmpPicks = []; // tags
 let vsOpener = null;
+let vsActive = null; // the compare tool whose sheet is open
 let lastTrendDates = [];
 
-function compareRow(tag) {
-  return monthBoard.rows().find((r) => r.tag === tag);
-}
-
-function updateCompareBar() {
-  const [a, b] = cmpPicks.map(compareRow);
-  const fill = (el, row) => {
-    el.classList.toggle('is-set', !!row);
-    el.querySelector('b').textContent = row ? row.name : '?';
+function createCompareTool(o) {
+  let picks = []; // tags, in order (A, then B)
+  const tool = {
+    picks: () => picks,
+    rows: () => picks.map(o.rowFor),
+    update() {
+      const [a, b] = picks.map(o.rowFor);
+      const fill = (el, row) => {
+        el.classList.toggle('is-set', !!row);
+        el.querySelector('b').textContent = row ? row.name : '?';
+      };
+      fill(o.slots.a, a);
+      fill(o.slots.b, b);
+      o.hint.textContent = picks.length === 0 ? `Tap two ${o.noun}s to compare` : picks.length === 1 ? `Now tap the second ${o.noun}` : 'Opening head to head\u2026';
+    },
+    set(on) {
+      picks = [];
+      o.bar.hidden = !on;
+      o.btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      o.btn.classList.toggle('is-on', on);
+      o.setPick(on, picks);
+      tool.update();
+    },
+    pick(tag) {
+      const at = picks.indexOf(tag);
+      if (at >= 0) picks.splice(at, 1);
+      else {
+        if (picks.length === 2) picks.shift();
+        picks.push(tag);
+      }
+      o.setPick(true, picks);
+      tool.update();
+      if (picks.length === 2) setTimeout(() => picks.length === 2 && tool.open(), reduceMotion() ? 0 : 320);
+    },
+    sheet() {
+      const [a, b] = picks.map(o.rowFor);
+      return a && b ? o.html(a, b) : '';
+    },
+    open() {
+      const html = tool.sheet();
+      if (!html) return;
+      vsActive = tool;
+      vsOpener = document.activeElement;
+      vsSheet.innerHTML = html;
+      vsModal.hidden = false;
+      document.body.classList.add('modal-open');
+      vsSheet.scrollTop = 0;
+      vsSheet.querySelectorAll('[data-count]').forEach((n) => countUp(n, 1000));
+      const x = vsSheet.querySelector('.vs-x');
+      if (x) x.focus({ preventScroll: true });
+    },
+    swap() {
+      picks.reverse();
+      o.setPick(true, picks);
+      tool.update();
+      vsSheet.innerHTML = tool.sheet();
+      vsSheet.querySelectorAll('[data-count]').forEach((n) => countUp(n, 800));
+      const x = vsSheet.querySelector('.vs-x');
+      if (x) x.focus({ preventScroll: true });
+    },
   };
-  fill(cmpSlots.a, a);
-  fill(cmpSlots.b, b);
-  cmpHint.textContent = cmpPicks.length === 0 ? 'Tap two members to compare' : cmpPicks.length === 1 ? 'Now tap the second member' : 'Opening head to head…';
+  o.btn.addEventListener('click', () => tool.set(o.bar.hidden));
+  o.cancel.addEventListener('click', () => tool.set(false));
+  return tool;
 }
 
-function setCompare(on) {
-  cmpPicks = [];
-  cmpBar.hidden = !on;
-  cmpBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-  cmpBtn.classList.toggle('is-on', on);
-  monthBoard.setPick(on, cmpPicks);
-  updateCompareBar();
-}
-
+const memberCompare = createCompareTool({
+  btn: $('compare-btn'), bar: $('compare-bar'), hint: $('cmp-hint'), cancel: $('cmp-cancel'), slots: { a: $('cmp-a'), b: $('cmp-b') },
+  noun: 'member', rowFor: (tag) => monthBoard.rows().find((r) => r.tag === tag),
+  setPick: (on, list) => monthBoard.setPick(on, list), html: (a, b) => vsHtml(a, b),
+});
+const setCompare = (on) => memberCompare.set(on);
 function onComparePick(tag) {
-  const at = cmpPicks.indexOf(tag);
-  if (at >= 0) cmpPicks.splice(at, 1);
-  else {
-    if (cmpPicks.length === 2) cmpPicks.shift();
-    cmpPicks.push(tag);
-  }
-  monthBoard.setPick(true, cmpPicks);
-  updateCompareBar();
-  if (cmpPicks.length === 2) setTimeout(() => cmpPicks.length === 2 && openVs(), reduceMotion() ? 0 : 320);
+  memberCompare.pick(tag);
 }
-
-cmpBtn.addEventListener('click', () => setCompare(cmpBar.hidden));
-$('cmp-cancel').addEventListener('click', () => setCompare(false));
 
 // A dual line chart of both members' MR, day by day.
 function vsChartSvg(ta, tb, w, h) {
@@ -830,13 +868,13 @@ function vsFighterHtml(r, side, wins) {
   </div>`;
 }
 
-function vsRowHtml(label, a, b, i) {
+function vsRowHtml(label, a, b, i, format = fmt) {
   const max = Math.max(1, a, b);
   const lead = a === b ? '' : a > b ? 'a' : 'b';
   return `<div class="vs-row${lead ? ` lead-${lead}` : ''}" style="--i:${i}">
-    <span class="vs-val a">${fmt(a)}</span>
+    <span class="vs-val a">${format(a)}</span>
     <span class="vs-label">${label}</span>
-    <span class="vs-val b">${fmt(b)}</span>
+    <span class="vs-val b">${format(b)}</span>
     <span class="vs-bars"><span class="vs-half a"><i style="--w:${((a / max) * 100).toFixed(1)}%"></i></span><span class="vs-half b"><i style="--w:${((b / max) * 100).toFixed(1)}%"></i></span></span>
   </div>`;
 }
@@ -881,19 +919,6 @@ function vsHtml(a, b) {
     <div class="vs-actions"><button type="button" class="ghost-btn" id="vs-swap">Swap sides</button><button type="button" class="ghost-btn" id="vs-again">Pick others</button></div>`;
 }
 
-function openVs() {
-  const [a, b] = cmpPicks.map(compareRow);
-  if (!a || !b) return;
-  vsOpener = document.activeElement;
-  vsSheet.innerHTML = vsHtml(a, b);
-  vsModal.hidden = false;
-  document.body.classList.add('modal-open');
-  vsSheet.scrollTop = 0;
-  vsSheet.querySelectorAll('[data-count]').forEach((n) => countUp(n, 1000));
-  const x = vsSheet.querySelector('.vs-x');
-  if (x) x.focus({ preventScroll: true });
-}
-
 function closeVs() {
   if (vsModal.hidden) return;
   vsModal.hidden = true;
@@ -904,20 +929,11 @@ function closeVs() {
 
 vsModal.addEventListener('click', (e) => {
   if (e.target.closest('[data-close]')) return closeVs();
-  if (e.target.closest('#vs-swap')) {
-    cmpPicks.reverse();
-    monthBoard.setPick(true, cmpPicks);
-    updateCompareBar();
-    const [a, b] = cmpPicks.map(compareRow);
-    vsSheet.innerHTML = vsHtml(a, b);
-    vsSheet.querySelectorAll('[data-count]').forEach((n) => countUp(n, 800));
-    const x = vsSheet.querySelector('.vs-x');
-    if (x) x.focus({ preventScroll: true });
-    return;
-  }
-  if (e.target.closest('#vs-again')) {
+  if (e.target.closest('#vs-swap') && vsActive) return vsActive.swap();
+  if (e.target.closest('#vs-again') && vsActive) {
+    const tool = vsActive;
     closeVs();
-    setCompare(true);
+    tool.set(true);
   }
 });
 document.addEventListener('keydown', (e) => {
@@ -969,8 +985,10 @@ async function searchClan(tag) {
   summaryHasData = false;
   summaryEl.hidden = true;
   $('month-awards').hidden = true;
-  shareData.month = shareData.last = null;
-  $('tab-last').hidden = true;
+  shareData.month = shareData.last = shareData.war = null;
+  $('last-fold').hidden = true;
+  $('last-fold').open = false;
+  shareData.war = null;
   $('war-live-dot').hidden = true;
   $('history-card').hidden = true;
 
@@ -1077,7 +1095,7 @@ const summaryEl = $('summary');
 let summaryHasData = false;
 
 function syncSummary() {
-  summaryEl.hidden = !summaryHasData || activeTab === 'last' || activeTab === 'guide';
+  summaryEl.hidden = !summaryHasData || activeTab === 'guide';
 }
 
 function renderSummary(sum) {
@@ -1177,7 +1195,7 @@ function renderMonthAwards(awards) {
 // ---------- Share as picture ----------
 // Draws the top 5 onto a canvas and either opens the phone's share sheet or
 // downloads a PNG. Uses only text and shapes (no game artwork).
-const shareData = { month: null, last: null };
+const shareData = { month: null, last: null, war: null };
 
 const METALS = {
   1: { a: '#fff0b0', b: '#f2c14e', c: '#c8902a', text: '#ffe9a6', wash: 'rgba(242,193,78,0.20)' },
@@ -1280,8 +1298,8 @@ function drawListRow(ctx, r, y, W, rowH, font) {
   ctx.textAlign = 'left';
   ctx.font = `50px ${font}`;
   ctx.fillStyle = '#f4f1ea';
-  ctx.fillText(fitText(ctx, r.name || '', 560), x0 + 140, cy - (r.role ? 2 : -14));
-  const roleLabel = ROLE_LABELS[r.role];
+  ctx.fillText(fitText(ctx, r.name || '', 560), x0 + 140, cy - (r.role || r.sub ? 2 : -14));
+  const roleLabel = r.sub || ROLE_LABELS[r.role];
   if (roleLabel) {
     ctx.font = `30px ${font}`;
     ctx.fillStyle = '#a3adcf';
@@ -1293,7 +1311,7 @@ function drawListRow(ctx, r, y, W, rowH, font) {
   ctx.fillText(fmt(r.mr), x0 + w - 36, cy + 14);
   ctx.font = `26px ${font}`;
   ctx.fillStyle = '#9298ad';
-  ctx.fillText('MR', x0 + w - 36, cy + 48);
+  ctx.fillText(r.bigLabel || 'MR', x0 + w - 36, cy + 48);
 }
 
 // One podium place: metal-washed card, crown, name, big MR, three small stats,
@@ -1367,7 +1385,7 @@ function drawPodiumCard(ctx, r, rank, x, baseY, w, font) {
   ctx.font = `${dims.name}px ${font}`;
   let y = top + 30 + crownH + dims.name + 8;
   ctx.fillText(fitText(ctx, r.name || '', w - 36), cx, y);
-  const roleLabel = ROLE_LABELS[r.role];
+  const roleLabel = r.sub || ROLE_LABELS[r.role];
   y += 38;
   if (roleLabel) {
     ctx.font = `28px ${font}`;
@@ -1386,7 +1404,7 @@ function drawPodiumCard(ctx, r, rank, x, baseY, w, font) {
   ctx.restore();
   ctx.font = `30px ${font}`;
   ctx.fillStyle = `rgba(${rgb},0.9)`;
-  ctx.fillText('MR', cx, y + 40);
+  ctx.fillText(r.bigLabel || 'MR', cx, y + 40);
 
   // small stats
   const sy = baseY - dims.bh - 56;
@@ -1396,12 +1414,12 @@ function drawPodiumCard(ctx, r, rank, x, baseY, w, font) {
   ctx.moveTo(x + 28, sy - 44);
   ctx.lineTo(x + w - 28, sy - 44);
   ctx.stroke();
-  const stats = [[r.warStars, 'stars'], [r.donated, 'donated'], [r.raids, 'raids']];
+  const stats = r.stats || [[r.warStars, 'stars'], [r.donated, 'donated'], [r.raids, 'raids']];
   stats.forEach(([v, label], i) => {
     const sx = x + (w / 3) * (i + 0.5);
     ctx.font = `${rank === 1 ? 38 : 32}px ${font}`;
     ctx.fillStyle = '#f4f1ea';
-    ctx.fillText(fmt(v), sx, sy);
+    ctx.fillText(typeof v === 'number' ? fmt(v) : v, sx, sy);
     ctx.font = `20px ${font}`;
     ctx.fillStyle = '#9298ad';
     ctx.fillText(label.toUpperCase(), sx, sy + 26);
@@ -1523,7 +1541,7 @@ async function buildShareCanvas(info) {
   // month with little gold rules either side
   ctx.font = `36px ${display}`;
   ctx.fillStyle = '#ffe9a6';
-  const label = info.monthLabel || '';
+  const label = info.heading || info.monthLabel || '';
   ctx.fillText(label, W / 2, 330);
   const lw = ctx.measureText(label).width / 2;
   for (const dir of [-1, 1]) {
@@ -1621,7 +1639,7 @@ async function shareBoard(info, button) {
     const canvas = await buildShareCanvas(info);
     const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
     if (!blob) throw new Error('no image');
-    const name = `clash-ratings-${(info.monthLabel || 'leaderboard').toLowerCase().replace(/\s+/g, '-')}.png`;
+    const name = `clash-ratings-${(info.fileLabel || info.monthLabel || 'leaderboard').toLowerCase().replace(/\s+/g, '-')}.png`;
     const file = new File([blob], name, { type: 'image/png' });
     const url = URL.createObjectURL(blob);
     shareState = { blob, file, url, opener: button };
@@ -1649,6 +1667,7 @@ async function shareBoard(info, button) {
 
 $('share-month').addEventListener('click', (e) => shareBoard(shareData.month, e.currentTarget));
 $('share-last').addEventListener('click', (e) => shareBoard(shareData.last, e.currentTarget));
+$('share-war').addEventListener('click', (e) => shareBoard(shareData.war, e.currentTarget));
 
 // ---------- War tab: compact current-war card ----------
 const warToggle = $('war-toggle');
@@ -1836,7 +1855,7 @@ async function fetchCurrentWar(tag) {
   }
 }
 
-// ---------- War tab: War History board ----------
+// ---------- War tab: the Warboard ----------
 const RESULT_LABEL = { win: 'W', lose: 'L', tie: 'T' };
 
 function warChipHtml(w, latest) {
@@ -1848,31 +1867,156 @@ function warChipHtml(w, latest) {
   return `<div class="ww ww-${w.result || 'unknown'}${latest ? ' ww-latest' : ''}"><span class="ww-res">${res}</span><span class="ww-text"><b>vs ${escapeHtml(w.opponentName || 'Unknown')}</b><em>${escapeHtml(date)}${score}</em></span>${tag}</div>`;
 }
 
-function renderHistoryRows(tbody, members) {
-  const topAvg = 3;
-  tbody.innerHTML = members
-    .map((m, i) => {
-      const rank = i + 1;
-      const avg = m.attacks ? m.stars / m.attacks : 0;
-      const higher = m.attackedHigher || 0;
-      const lower = m.attackedLower || 0;
-      const same = m.attackedSame || 0;
-      const total = higher + lower + same;
-      const bar = total
-        ? `<span class="mu" title="${higher} higher · ${same} same · ${lower} lower"><i class="up" style="flex:${higher}"></i><i class="eq" style="flex:${same}"></i><i class="dn" style="flex:${lower}"></i></span>`
-        : '<span class="mu mu-empty"></span>';
-      const rankCell = rank <= 3 ? crownHtml(rank) : `<span class="rank-num">${rank}</span>`;
-      const meta = `${m.wars} war${m.wars === 1 ? '' : 's'} · ${m.attacks} attack${m.attacks === 1 ? '' : 's'}`;
-      return `<tr class="${rank <= 3 ? `rank-${rank}` : ''}" style="--i:${i}">
+// The top three get a slow, low flame licking along the bottom of their row.
+const FLAME_TONGUES = 8;
+const flameHtml = () => `<span class="wh-fire" aria-hidden="true">${'<i></i>'.repeat(FLAME_TONGUES)}</span>`;
+
+const warFind = createFindTool({
+  btn: $('w-find-btn'), bar: $('w-find-bar'), input: $('w-find-input'), count: $('w-find-count'), clear: $('w-find-clear'), empty: $('w-find-empty'),
+  noun: 'player', apply: (text) => warBoard.setFilter(text),
+});
+
+// The Warboard table: players with at least one star, best first. Supports search and compare picks.
+const warBoard = (() => {
+  const body = $('history-rows');
+  let rows = [];
+  let filter = '';
+  let pickMode = false;
+  let picks = [];
+
+  const pickClass = (tag) => {
+    const i = picks.indexOf(tag);
+    return i < 0 ? '' : i ? ' is-pick-b' : ' is-pick-a';
+  };
+
+  function rowHtml(m, i, q) {
+    const rank = m.rank;
+    const topAvg = 3;
+    const avg = m.attacks ? m.stars / m.attacks : 0;
+    const higher = m.attackedHigher || 0;
+    const lower = m.attackedLower || 0;
+    const same = m.attackedSame || 0;
+    const total = higher + lower + same;
+    const bar = total
+      ? `<span class="mu" title="${higher} higher · ${same} same · ${lower} lower"><i class="up" style="flex:${higher}"></i><i class="eq" style="flex:${same}"></i><i class="dn" style="flex:${lower}"></i></span>`
+      : '<span class="mu mu-empty"></span>';
+    const rankCell = rank <= 3 ? crownHtml(rank) : `<span class="rank-num">${rank}</span>`;
+    const meta = `${m.wars} war${m.wars === 1 ? '' : 's'} · ${m.attacks} attack${m.attacks === 1 ? '' : 's'}`;
+    return `<tr class="${rank <= 3 ? `rank-${rank}` : ''}${pickClass(m.tag)}" style="--i:${i}" data-tag="${escapeHtml(m.tag)}">
         <td class="wh-rank">${rankCell}</td>
-        <td class="wh-name"><span class="name">${escapeHtml(m.name)}</span><span class="wh-meta">${meta}</span></td>
+        <td class="wh-name">${rank <= 3 ? flameHtml() : ''}<span class="name">${highlightHtml(m.name, q)}</span><span class="wh-meta">${meta}</span></td>
         <td class="num wh-stars"><span class="wh-big">${fmt(m.stars)}</span></td>
         <td class="wh-avg"><span class="wh-avgnum">${avg.toFixed(1)}</span><span class="avg-bar"><i style="width:${Math.min(100, (avg / topAvg) * 100)}%"></i></span></td>
         <td class="wh-mu">${bar}<span class="mu-txt">${higher}↑ ${same}= ${lower}↓</span></td>
       </tr>`;
-    })
-    .join('');
+  }
+
+  function draw(still) {
+    const q = filter.trim();
+    const needle = q.toLowerCase();
+    const visible = needle ? rows.filter((r) => String(r.name || '').toLowerCase().includes(needle)) : rows;
+    body.classList.toggle('is-still', !!still); // searching/picking must not replay the entrance
+    body.innerHTML = visible.map((m, i) => rowHtml(m, i, q)).join('');
+    warFind.results({ q, count: visible.length, total: rows.length });
+    $('history-table').hidden = visible.length === 0;
+  }
+
+  body.addEventListener('click', (e) => {
+    const tr = e.target.closest('tr[data-tag]');
+    if (tr && pickMode) warCompare.pick(tr.dataset.tag);
+  });
+
+  return {
+    show(members) {
+      // Players who scored no stars at all this month stay off the board.
+      rows = members.filter((m) => (m.stars || 0) > 0).map((m, i) => ({ ...m, rank: i + 1 }));
+      filter = '';
+      pickMode = false;
+      picks = [];
+      draw(false);
+    },
+    rows: () => rows,
+    clear() {
+      rows = [];
+      body.innerHTML = '';
+    },
+    setFilter(text) {
+      filter = String(text || '');
+      draw(true);
+    },
+    setPick(on, list = []) {
+      pickMode = !!on;
+      picks = pickMode ? list.slice(0, 2) : [];
+      for (const tr of body.querySelectorAll('tr[data-tag]')) {
+        const i = picks.indexOf(tr.dataset.tag);
+        tr.classList.toggle('is-pick-a', i === 0);
+        tr.classList.toggle('is-pick-b', i === 1);
+      }
+      $('history-board').classList.toggle('pick-mode', pickMode);
+    },
+  };
+})();
+
+// Head to head for two Warboard players.
+function vsWarFighterHtml(r, side, wins) {
+  const th = r.townhallLevel ? `TH${r.townhallLevel}` : '';
+  return `<div class="vs-fighter ${side}${wins ? ' is-lead' : ''}">
+    ${wins ? '<span class="vs-lead-crown" aria-hidden="true"><svg viewBox="0 0 32 24"><path d="M3 20 1.5 6.5l8 5.5L16 3l6.5 9 8-5.5L29 20Z" /><rect x="3" y="21" width="26" height="3" rx="1.2" /></svg></span>' : ''}
+    <span class="vs-icon-wrap"><span class="vs-icon vs-icon-empty">${escapeHtml((r.name || '?').trim().charAt(0).toUpperCase())}</span></span>
+    <span class="vs-name">${escapeHtml(r.name)}</span>
+    <span class="vs-meta"><span class="vs-rank">#${r.rank}</span>${escapeHtml(th)}</span>
+    <span class="vs-mr"><b data-count="${Number(r.stars) || 0}">${fmt(r.stars)}</b><i>STARS</i></span>
+  </div>`;
 }
+
+function vsWarMixHtml(r, side) {
+  const h = r.attackedHigher || 0;
+  const e = r.attackedSame || 0;
+  const l = r.attackedLower || 0;
+  const bar = h + e + l
+    ? `<span class="mu"><i class="up" style="flex:${h}"></i><i class="eq" style="flex:${e}"></i><i class="dn" style="flex:${l}"></i></span>`
+    : '<span class="mu mu-empty"></span>';
+  return `<div class="vs-mix ${side}"><span class="vs-mix-name">${escapeHtml(r.name)}</span><span class="vs-mix-bar">${bar}<span class="vs-mix-txt">${h}↑ ${e}= ${l}↓</span></span></div>`;
+}
+
+function vsWarHtml(a, b) {
+  const avg = (r) => (r.attacks ? r.stars / r.attacks : 0);
+  const cats = [
+    ['Stars', a.stars || 0, b.stars || 0],
+    ['Avg ★ / attack', avg(a), avg(b), (v) => v.toFixed(2)],
+    ['Attacks', a.attacks || 0, b.attacks || 0],
+    ['Wars', a.wars || 0, b.wars || 0],
+    ['Hits on higher TH', a.attackedHigher || 0, b.attackedHigher || 0],
+  ];
+  const winsA = cats.filter(([, x, y]) => x > y).length;
+  const winsB = cats.filter(([, x, y]) => y > x).length;
+  const leadA = winsA > winsB;
+  const leadB = winsB > winsA;
+  const total = (a.stars || 0) + (b.stars || 0);
+  const share = total > 0 ? ((a.stars || 0) / total) * 100 : 50;
+  const verdict = leadA || leadB
+    ? `<b>${escapeHtml((leadA ? a : b).name)}</b> leads in ${Math.max(winsA, winsB)} of ${cats.length} categories`
+    : winsA === 0 ? 'Dead even, nothing separates them' : 'All square on the Warboard';
+  return `<button type="button" class="vs-x" data-close aria-label="Close">&times;</button>
+    <p class="vs-kicker">Warboard head to head</p>
+    <div class="vs-top">
+      ${vsWarFighterHtml(a, 'a', leadA)}
+      <div class="vs-mid"><span class="vs-badge"><i></i><b>VS</b></span><span class="vs-tally"><b class="a">${winsA}</b>&ndash;<b class="b">${winsB}</b></span></div>
+      ${vsWarFighterHtml(b, 'b', leadB)}
+    </div>
+    <div class="vs-tug" role="img" aria-label="Share of stars"><i class="a" style="--w:${share.toFixed(1)}%"></i><i class="b" style="--w:${(100 - share).toFixed(1)}%"></i><span class="vs-spark" style="--at:${share.toFixed(1)}%"></span></div>
+    <div class="vs-rows">${cats.slice(1).map(([label, x, y, f], i) => vsRowHtml(label, x, y, i, f)).join('')}</div>
+    <div class="vs-block"><h5>Who they attacked</h5>${vsWarMixHtml(a, 'a')}${vsWarMixHtml(b, 'b')}
+      <ul class="mr-legend"><li><span class="dot s-up"></span>Higher town hall</li><li><span class="dot s-eq"></span>Same</li><li><span class="dot s-dn"></span>Lower</li></ul></div>
+    <p class="vs-verdict">${verdict}</p>
+    <div class="vs-actions"><button type="button" class="ghost-btn" id="vs-swap">Swap sides</button><button type="button" class="ghost-btn" id="vs-again">Pick others</button></div>`;
+}
+
+const warCompare = createCompareTool({
+  btn: $('w-compare-btn'), bar: $('w-compare-bar'), hint: $('w-cmp-hint'), cancel: $('w-cmp-cancel'), slots: { a: $('w-cmp-a'), b: $('w-cmp-b') },
+  noun: 'player', rowFor: (tag) => warBoard.rows().find((r) => r.tag === tag),
+  setPick: (on, list) => warBoard.setPick(on, list), html: (a, b) => vsWarHtml(a, b),
+});
 
 function renderHistorySummary(data) {
   const el = $('history-summary');
@@ -1900,8 +2044,7 @@ async function fetchWarHistory(tag) {
   const count = $('history-count');
   const historyStatus = $('history-status');
   const historyTable = $('history-table');
-  const historyRows = $('history-rows');
-  const summary = $('history-summary');
+    const summary = $('history-summary');
   const warsEl = $('history-wars');
   const board = $('history-board');
 
@@ -1911,6 +2054,12 @@ async function fetchWarHistory(tag) {
   board.hidden = true;
   summary.hidden = true;
   warsEl.hidden = true;
+  $('war-tools').hidden = true;
+  $('history-note').hidden = true;
+  warFind.set(false);
+  warCompare.set(false);
+  warBoard.clear();
+  shareData.war = null;
   card.open = true;
 
   try {
@@ -1918,15 +2067,15 @@ async function fetchWarHistory(tag) {
     const data = await res.json();
 
     if (!res.ok) {
-      title.textContent = 'War History';
+      title.textContent = 'Warboard';
       count.textContent = '';
-      historyStatus.textContent = data.error || 'Could not load war history.';
+      historyStatus.textContent = data.error || 'Could not load the Warboard.';
       historyStatus.classList.add('error');
       card.hidden = false;
       return;
     }
 
-    title.textContent = `War History — ${data.monthLabel}`;
+    title.textContent = 'Warboard';
     card.hidden = false;
 
     if (data.warsRecorded === 0) {
@@ -1943,28 +2092,54 @@ async function fetchWarHistory(tag) {
       warsEl.innerHTML = byNewest.slice(0, 8).map((w, i) => warChipHtml(w, i === 0)).join('');
       warsEl.hidden = false;
     }
-    renderHistoryRows(historyRows, data.members);
+    warBoard.show(data.members);
+    const ranked = warBoard.rows();
+    if (!ranked.length) {
+      historyStatus.textContent = 'No one has scored a star in a war yet this month.';
+      return;
+    }
+    $('war-tools').hidden = false;
     historyTable.hidden = false;
     board.hidden = false;
+    $('history-note').hidden = false;
+    shareData.war = {
+      kind: 'war',
+      clanName: clanName.textContent,
+      monthLabel: data.monthLabel,
+      heading: `Warboard · ${data.monthLabel}`,
+      fileLabel: `warboard-${data.monthLabel}`,
+      rows: ranked.slice(0, 5).map((m) => ({
+        rank: m.rank,
+        name: m.name,
+        sub: `${m.wars} war${m.wars === 1 ? '' : 's'} · ${m.attacks} attack${m.attacks === 1 ? '' : 's'}`,
+        mr: m.stars,
+        bigLabel: 'STARS',
+        stats: [[(m.attacks ? m.stars / m.attacks : 0).toFixed(1), 'avg'], [m.wars, 'wars'], [m.attacks, 'attacks']],
+      })),
+    };
   } catch (err) {
-    title.textContent = 'War History';
+    title.textContent = 'Warboard';
     count.textContent = '';
-    historyStatus.textContent = 'Could not reach the server for war history.';
+    historyStatus.textContent = 'Could not reach the server for the Warboard.';
     historyStatus.classList.add('error');
     card.hidden = false;
   }
 }
 
-// ---------- Last Month tab ----------
+// ---------- Last month (a dropdown under the leaderboard) ----------
 // Last month's leaderboard — the only past month the site keeps (the server
 // erases anything older, so on the 1st of a new month this automatically
-// becomes the month that just ended). The tab only appears when there's data.
+// becomes the month that just ended). The dropdown only appears when there's data.
+const lastFold = $('last-fold');
+lastFold.addEventListener('toggle', () => {
+  if (lastFold.open) lastBoard.replay();
+});
+
 async function fetchPreviousMonth(tag) {
-  const lastTab = $('tab-last');
   const lastTitle = $('last-title');
   const lastStatus = $('last-status');
 
-  lastTab.hidden = true;
+  lastFold.hidden = true;
   lastStatus.textContent = '';
   lastStatus.classList.remove('error');
   lastBoard.clear();
@@ -1972,10 +2147,10 @@ async function fetchPreviousMonth(tag) {
   $('share-last').hidden = true;
 
   const fail = () => {
-    lastTitle.textContent = 'Last month';
+    lastTitle.textContent = '';
     lastStatus.textContent = "Couldn't load last month's leaderboard.";
     lastStatus.classList.add('error');
-    lastTab.hidden = false;
+    lastFold.hidden = false;
   };
 
   try {
@@ -1988,7 +2163,7 @@ async function fetchPreviousMonth(tag) {
 
     if (data.members && data.members.length > 0) {
       lastTitle.textContent = data.monthLabel;
-      // Same leaderboard as This Month. Role/league icon come from the
+      // Same leaderboard as this month's. Role/league icon come from the
       // current member list when the person is still in the clan; Donated is
       // the end-of-month snapshot (0 for a month that was never captured).
       lastBoard.show(
@@ -2011,9 +2186,12 @@ async function fetchPreviousMonth(tag) {
       awardsWrap.hidden = false;
       shareData.last = { monthLabel: data.monthLabel, clanName: clanName.textContent, rows: lastBoard.rows() };
       $('share-last').hidden = false;
-      lastTab.hidden = false;
-      // If the page was opened straight to #last, switch to it now that it exists.
-      if (hashTab() === 'last' && activeTab !== 'last') activateTab('last', { updateHash: false });
+      lastFold.hidden = false;
+      // Opened straight to #last: open the dropdown and bring it into view.
+      if (location.hash.replace('#', '').split('/')[0] === 'last') {
+        lastFold.open = true;
+        setTimeout(() => lastFold.scrollIntoView({ block: 'start', behavior: reduceMotion() ? 'auto' : 'smooth' }), 250);
+      }
     }
   } catch (err) {
     console.error('Last month leaderboard failed:', err);

@@ -152,21 +152,20 @@
 
       <div id="tabs" class="tabs" role="tablist" aria-label="Views" hidden>
         <span id="tab-pill" class="tab-pill" aria-hidden="true"></span>
-        <button type="button" role="tab" id="tab-month" class="tab" data-tab="month" aria-selected="true" aria-controls="panel-month">This Month</button>
-        <button type="button" role="tab" id="tab-last" class="tab" data-tab="last" aria-selected="false" aria-controls="panel-last" tabindex="-1" hidden>Last Month</button>
+        <button type="button" role="tab" id="tab-month" class="tab" data-tab="month" aria-selected="true" aria-controls="panel-month">Leaderboard</button>
         <button type="button" role="tab" id="tab-war" class="tab" data-tab="war" aria-selected="false" aria-controls="panel-war" tabindex="-1">War <span id="war-live-dot" class="live-dot" hidden title="A war is active right now" aria-hidden="true"></span></button>
         <button type="button" role="tab" id="tab-guide" class="tab" data-tab="guide" aria-selected="false" aria-controls="panel-guide" tabindex="-1">Guide</button>
       </div>
 
-      <!-- ===== This Month ===== -->
+      <!-- ===== Leaderboard ===== -->
       <section id="panel-month" class="panel" role="tabpanel" aria-labelledby="tab-month" hidden>
         <div class="panel-head">
           <h3 id="month-title" class="panel-title"></h3>
-          <div class="tool-group">
-            <button type="button" id="find-btn" class="tool-btn tb-compact" aria-expanded="false" aria-controls="find-bar" title="Find a member"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m15 15 5 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><span class="tb-label">Find</span></button>
-            <button type="button" id="compare-btn" class="tool-btn tb-compact" aria-pressed="false" title="Compare two members head to head"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v16M16 4v16M4.5 8 8 4l3.5 4M12.5 16 16 20l3.5-4" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-label">Compare</span></button>
-            <button type="button" id="share-month" class="tool-btn" title="Make a picture of the top 5 to share"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-ring" aria-hidden="true"><i></i></span><span class="tb-label">Share</span></button>
-          </div>
+        </div>
+        <div class="toolbar" role="toolbar" aria-label="Leaderboard tools">
+          <button type="button" id="find-btn" class="tool-btn" aria-expanded="false" aria-controls="find-bar" title="Find a member"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m15 15 5 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><span class="tb-label">Find</span></button>
+          <button type="button" id="compare-btn" class="tool-btn" aria-pressed="false" title="Compare two members head to head"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v16M16 4v16M4.5 8 8 4l3.5 4M12.5 16 16 20l3.5-4" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-label">Compare</span></button>
+          <button type="button" id="share-month" class="tool-btn" title="Make a picture of the top 5 to share"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-ring" aria-hidden="true"><i></i></span><span class="tb-label">Share</span></button>
         </div>
         <div id="find-bar" class="find-bar" hidden>
           <svg class="find-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m15 15 5 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
@@ -209,42 +208,45 @@
           <div class="fold-body"><div id="month-awards-body" class="awards"></div></div>
         </details>
 
+        <details id="last-fold" class="fold last-fold" hidden>
+          <summary>
+            <span>Last month</span>
+            <span id="last-title" class="fold-meta"></span>
+            <span class="chev" aria-hidden="true"></span>
+          </summary>
+          <div class="fold-body">
+            <p id="last-status" class="panel-note"></p>
+            <div id="last-awards-wrap" class="hof" hidden>
+              <h4 class="hof-title">Hall of Fame</h4>
+              <div id="last-awards" class="awards"></div>
+            </div>
+            <div id="last-podium" class="podium-wrap" hidden></div>
+            <div class="board" id="last-board">
+              <div class="table-scroll">
+                <table id="last-table" class="leaderboard" hidden>
+                  <thead>
+                    <tr>
+                      <th class="rank">#</th>
+                      <th>Member</th>
+                      <th class="num c-mr" title="Member Rating from recorded raid attacks (25 pts each), war stars (50 pts each, adjusted for town hall difference) and donations (1 pt each)">MR</th>
+                      <th class="num c-stars"><span class="long">War Stars</span><span class="short">Stars</span></th>
+                      <th class="num c-donated" title="Donations as they stood at the end of the month (0 if that month wasn't captured)">Donated</th>
+                      <th class="num c-raids"><span class="long">Raid Attacks</span><span class="short">Raids</span></th>
+                    </tr>
+                  </thead>
+                  <tbody id="last-rows"></tbody>
+                </table>
+              </div>
+              <button type="button" id="last-more" class="more-btn" aria-expanded="false" hidden></button>
+            </div>
+            <div class="last-actions"><button type="button" id="share-last" class="tool-btn" title="Make a picture of the top 5 to share" hidden><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-ring" aria-hidden="true"><i></i></span><span class="tb-label">Share last month</span></button></div>
+          </div>
+        </details>
+
         <section id="hall" class="hall" aria-label="Hall of Champions" hidden>
           <h4 class="hall-title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v4a5 5 0 0 1-10 0V3Z" /><path d="M7 4H3.5v1.5A3.5 3.5 0 0 0 7 9M17 4h3.5v1.5A3.5 3.5 0 0 1 17 9" fill="none" stroke-width="1.6" /><rect x="10.5" y="12" width="3" height="4" /><rect x="7.5" y="17" width="9" height="3" rx="1" /></svg>Hall of Champions</h4>
           <div id="hall-list" class="hall-list"></div>
         </section>
-      </section>
-
-      <!-- ===== Last Month ===== -->
-      <section id="panel-last" class="panel" role="tabpanel" aria-labelledby="tab-last" hidden>
-        <div class="panel-head">
-          <h3 id="last-title" class="panel-title"></h3>
-          <button type="button" id="share-last" class="tool-btn" title="Make a picture of the top 5 to share" hidden><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-ring" aria-hidden="true"><i></i></span><span class="tb-label">Share</span></button>
-        </div>
-        <p id="last-status" class="panel-note"></p>
-        <div id="last-awards-wrap" class="hof" hidden>
-          <h4 class="hof-title">Hall of Fame</h4>
-          <div id="last-awards" class="awards"></div>
-        </div>
-        <div id="last-podium" class="podium-wrap" hidden></div>
-        <div class="board" id="last-board">
-          <div class="table-scroll">
-            <table id="last-table" class="leaderboard" hidden>
-              <thead>
-                <tr>
-                  <th class="rank">#</th>
-                  <th>Member</th>
-                  <th class="num c-mr" title="Member Rating from recorded raid attacks (25 pts each), war stars (50 pts each, adjusted for town hall difference) and donations (1 pt each)">MR</th>
-                  <th class="num c-stars"><span class="long">War Stars</span><span class="short">Stars</span></th>
-                  <th class="num c-donated" title="Donations as they stood at the end of the month (0 if that month wasn't captured)">Donated</th>
-                  <th class="num c-raids"><span class="long">Raid Attacks</span><span class="short">Raids</span></th>
-                </tr>
-              </thead>
-              <tbody id="last-rows"></tbody>
-            </table>
-          </div>
-          <button type="button" id="last-more" class="more-btn" aria-expanded="false" hidden></button>
-        </div>
       </section>
 
       <!-- ===== Guide ===== -->
@@ -302,7 +304,7 @@
 
         <details id="history-card" class="fold wh" open hidden>
           <summary>
-            <span id="history-title">War History</span>
+            <span id="history-title">Warboard</span>
             <span id="history-count" class="fold-meta"></span>
             <span class="chev" aria-hidden="true"></span>
           </summary>
@@ -310,6 +312,25 @@
             <p id="history-status" class="panel-note"></p>
             <div id="history-summary" class="wh-summary" hidden></div>
             <div id="history-wars" class="wh-wars" hidden></div>
+            <div id="war-tools" hidden>
+              <div class="toolbar" role="toolbar" aria-label="Warboard tools">
+          <button type="button" id="w-find-btn" class="tool-btn" aria-expanded="false" aria-controls="w-find-bar" title="Find a player on the Warboard"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m15 15 5 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><span class="tb-label">Find</span></button>
+          <button type="button" id="w-compare-btn" class="tool-btn" aria-pressed="false" title="Compare two players head to head"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v16M16 4v16M4.5 8 8 4l3.5 4M12.5 16 16 20l3.5-4" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-label">Compare</span></button>
+          <button type="button" id="share-war" class="tool-btn" title="Make a picture of the top 5 to share"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-ring" aria-hidden="true"><i></i></span><span class="tb-label">Share</span></button>
+        </div>
+              <div id="w-find-bar" class="find-bar" hidden>
+          <svg class="find-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m15 15 5 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+          <input id="w-find-input" type="search" placeholder="Find a player" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Find a player" />
+          <span id="w-find-count" class="find-count" aria-live="polite"></span>
+          <button type="button" id="w-find-clear" class="find-clear" aria-label="Clear search">&times;</button>
+        </div>
+        <div id="w-compare-bar" class="compare-bar" hidden>
+          <span class="cmp-hint" id="w-cmp-hint">Tap two players to compare</span>
+          <span class="cmp-slots"><span class="cmp-slot a" id="w-cmp-a"><i>A</i><b>?</b></span><span class="cmp-vs">vs</span><span class="cmp-slot b" id="w-cmp-b"><i>B</i><b>?</b></span></span>
+          <button type="button" id="w-cmp-cancel" class="cmp-cancel">Cancel</button>
+        </div>
+              <p id="w-find-empty" class="find-empty" hidden></p>
+            </div>
             <div id="history-board" class="wh-board" hidden>
               <div class="table-scroll flat">
                 <table id="history-table" class="wh-table" hidden>
@@ -317,7 +338,7 @@
                     <tr>
                       <th class="wh-rank">#</th>
                       <th>Attacker</th>
-                      <th class="num wh-stars" title="Stars earned in the wars recorded this month">Stars</th>
+                      <th class="num wh-stars" title="Stars earned in the wars this month">Stars</th>
                       <th class="wh-avg" title="Average stars per attack (3 is perfect)"><span class="long">Avg / attack</span><span class="short">Avg</span></th>
                       <th class="wh-mu" title="Who they attacked: a higher town hall (&uarr;), the same (=) or a lower one (&darr;)"><span class="long">Matchups</span><span class="short">Hits</span></th>
                     </tr>
@@ -326,6 +347,7 @@
                 </table>
               </div>
             </div>
+            <p id="history-note" class="wh-note" hidden>The Warboard starts fresh every month.</p>
           </div>
         </details>
       </section>
