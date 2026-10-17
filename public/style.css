@@ -3752,7 +3752,6 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 /* The top three are lit like Overwatch's leaderboard: a flame streams across the whole row, left to right.
    #1 glows hot on the left and turns to a purple iridescent flame, #2 is gold, #3 is a deep red champion flame. */
 .wh.fold { border-color: rgba(255, 106, 32, 0.28); }
-.wh-table tr.rank-1, .wh-table tr.rank-2, .wh-table tr.rank-3 { position: relative; isolation: isolate; }
 .wh-table tr.rank-1 td:first-child { box-shadow: inset 3px 0 0 #b58cff; }
 .wh-table tr.rank-2 td:first-child { box-shadow: inset 3px 0 0 #ffc940; }
 .wh-table tr.rank-3 td:first-child { box-shadow: inset 3px 0 0 #e8283a; }
@@ -3762,28 +3761,47 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 .wh-fire b { position: absolute; inset: 0; overflow: hidden; }
 
 /* The top three get a still colour wash that is strongest at the left (behind the lit-up name) and fades out toward
-   the right. #1 is purple, #2 gold, #3 red. Every 5 seconds a shimmer of iridescent light sweeps across #1. The wash
-   itself never moves; only that one soft strip does, and it moves with transform so phones handle it easily. */
-.wh-fire b { position: absolute; inset: 0; }
-.wh-fire i, .wh-fire .f1, .wh-fire .f3 { display: none; }
-.wh-fire .f4 { background: var(--wash); }
-.wh-table tr.rank-1 { --wash: linear-gradient(90deg, rgba(150, 96, 255, 0.5) 0%, rgba(160, 100, 255, 0.4) 22%, rgba(150, 110, 235, 0.26) 52%, rgba(120, 140, 230, 0.15) 100%); }
-.wh-table tr.rank-2 { --wash: linear-gradient(90deg, rgba(255, 190, 50, 0.46) 0%, rgba(255, 186, 44, 0.36) 22%, rgba(255, 180, 40, 0.22) 52%, rgba(255, 190, 70, 0.12) 100%); }
-.wh-table tr.rank-3 { --wash: linear-gradient(90deg, rgba(232, 36, 52, 0.5) 0%, rgba(226, 30, 46, 0.38) 22%, rgba(220, 30, 44, 0.22) 52%, rgba(230, 50, 54, 0.12) 100%); }
-.wh-table tr.rank-1 .f2 {
-  display: block;
-  inset: 0 auto 0 0;
-  width: 42%;
-  background: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(120, 200, 255, 0.34) 22%, rgba(255, 130, 220, 0.4) 45%, rgba(190, 150, 255, 0.4) 66%, rgba(255, 255, 255, 0) 100%);
-  transform: translateX(-110%) skewX(-18deg);
-  opacity: 0;
-  animation: wh-shimmer 5s ease-in-out infinite;
+   the right. #1 is purple, #2 gold, #3 red. Every 5 seconds a shimmer of iridescent light sweeps across #1.
+   Each cell of the row paints its own slice of the wash (plain cell backgrounds work in every browser, including
+   iPhones, which do not reliably anchor positioned elements inside table rows). */
+.wh-fire { display: none; }
+.wh-table tr.rank-1 { --rc: 150, 100, 255; --rc2: 120, 140, 230; }
+.wh-table tr.rank-2 { --rc: 255, 188, 46; --rc2: 255, 190, 70; }
+.wh-table tr.rank-3 { --rc: 230, 32, 48; --rc2: 230, 50, 54; }
+.wh-table tr.rank-1 td:nth-child(1) { --w: linear-gradient(90deg, rgba(var(--rc), 0.5), rgba(var(--rc), 0.44)) }
+.wh-table tr.rank-1 td:nth-child(2) { --w: linear-gradient(90deg, rgba(var(--rc), 0.44), rgba(var(--rc), 0.3)) }
+.wh-table tr.rank-1 td:nth-child(3) { --w: linear-gradient(90deg, rgba(var(--rc), 0.3), rgba(var(--rc), 0.24)) }
+.wh-table tr.rank-1 td:nth-child(4) { --w: linear-gradient(90deg, rgba(var(--rc), 0.24), rgba(var(--rc2), 0.18)) }
+.wh-table tr.rank-1 td:nth-child(5) { --w: linear-gradient(90deg, rgba(var(--rc2), 0.18), rgba(var(--rc2), 0.12)) }
+.wh-table tr.rank-2 td:nth-child(1) { --w: linear-gradient(90deg, rgba(var(--rc), 0.5), rgba(var(--rc), 0.44)) }
+.wh-table tr.rank-2 td:nth-child(2) { --w: linear-gradient(90deg, rgba(var(--rc), 0.44), rgba(var(--rc), 0.3)) }
+.wh-table tr.rank-2 td:nth-child(3) { --w: linear-gradient(90deg, rgba(var(--rc), 0.3), rgba(var(--rc), 0.24)) }
+.wh-table tr.rank-2 td:nth-child(4) { --w: linear-gradient(90deg, rgba(var(--rc), 0.24), rgba(var(--rc2), 0.18)) }
+.wh-table tr.rank-2 td:nth-child(5) { --w: linear-gradient(90deg, rgba(var(--rc2), 0.18), rgba(var(--rc2), 0.12)) }
+.wh-table tr.rank-3 td:nth-child(1) { --w: linear-gradient(90deg, rgba(var(--rc), 0.5), rgba(var(--rc), 0.44)) }
+.wh-table tr.rank-3 td:nth-child(2) { --w: linear-gradient(90deg, rgba(var(--rc), 0.44), rgba(var(--rc), 0.3)) }
+.wh-table tr.rank-3 td:nth-child(3) { --w: linear-gradient(90deg, rgba(var(--rc), 0.3), rgba(var(--rc), 0.24)) }
+.wh-table tr.rank-3 td:nth-child(4) { --w: linear-gradient(90deg, rgba(var(--rc), 0.24), rgba(var(--rc2), 0.18)) }
+.wh-table tr.rank-3 td:nth-child(5) { --w: linear-gradient(90deg, rgba(var(--rc2), 0.18), rgba(var(--rc2), 0.12)) }
+/* each cell paints its slice */
+.wh-table tr.rank-1 td, .wh-table tr.rank-2 td, .wh-table tr.rank-3 td { background-image: var(--w); }
+/* the sweep: a soft iridescent band that crosses the cells of #1's row one after another */
+.wh-table tr.rank-1 td {
+  --sheen: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(120, 200, 255, 0.34) 24%, rgba(255, 130, 220, 0.4) 48%, rgba(190, 150, 255, 0.4) 70%, rgba(255, 255, 255, 0) 100%);
+  background-image: var(--sheen), var(--w);
+  background-size: 100% 100%, 100% 100%;
+  background-repeat: no-repeat;
+  background-position: -120% 0, 0 0;
+  animation: wh-sweep 5s linear infinite;
 }
-@keyframes wh-shimmer {
-  0%, 8% { transform: translateX(-110%) skewX(-18deg); opacity: 0; }
-  14% { opacity: 1; }
-  34% { opacity: 1; }
-  40%, 100% { transform: translateX(260%) skewX(-18deg); opacity: 0; }
+.wh-table tr.rank-1 td:nth-child(2) { animation-delay: 0.22s; }
+.wh-table tr.rank-1 td:nth-child(3) { animation-delay: 0.44s; }
+.wh-table tr.rank-1 td:nth-child(4) { animation-delay: 0.66s; }
+.wh-table tr.rank-1 td:nth-child(5) { animation-delay: 0.88s; }
+@keyframes wh-sweep {
+  0% { background-position: -120% 0, 0 0; }
+  5% { background-position: 120% 0, 0 0; }
+  100% { background-position: 120% 0, 0 0; }
 }
 
 /* the name is lit up on the left; the small text stays readable over the flames */
@@ -3794,11 +3812,12 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 .wh-table tr.rank-2 .name { color: #fff0bd; text-shadow: 0 0 8px rgba(255, 200, 70, 0.8), 0 0 15px rgba(255, 160, 20, 0.45); }
 .wh-table tr.rank-3 .name { color: #ffdcd6; text-shadow: 0 0 8px rgba(255, 70, 60, 0.8), 0 0 15px rgba(220, 30, 40, 0.45); }
 @media (prefers-reduced-motion: reduce) {
-  .wh-fire b { animation: none !important; }
+  .wh-table tr.rank-1 td { animation: none !important; }
 }
 /* Phones: skip the animated text/bar shimmer on a perfect 3.0 average (it repaints every frame). */
 @media (max-width: 760px), (hover: none) and (pointer: coarse) {
-  .wh-avg.is-perfect .wh-avgnum, .wh-avg.is-perfect .avg-bar i { animation: none !important; }
+  .wh-avg.is-perfect .wh-avgnum { animation: none !important; background: none; color: #b996ff; -webkit-text-fill-color: #b996ff; }
+  .wh-avg.is-perfect .avg-bar i { animation: none !important; background: linear-gradient(90deg, #8a5cff, #b58cff); box-shadow: none; }
 }
 
 /* ---- Warboard head to head ---- */
