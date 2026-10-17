@@ -2304,12 +2304,23 @@ function renderBulletin() {
     if (!m) return '';
     return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   };
+  // links and images from the data file must be https (or a file in assets/) so a typo can't inject anything odd
+  const safeUrl = (u) => (typeof u === 'string' && /^https:\/\//i.test(u) ? u : null);
+  const safeImg = (u) => (typeof u === 'string' && (/^https:\/\//i.test(u) || /^assets\/[\w./-]+$/.test(u)) ? u : null);
+  const linksHtml = (links) =>
+    (links || [])
+      .map((l) => (safeUrl(l && l.url) ? `<a class="bl-link" href="${escapeHtml(l.url)}" target="_blank" rel="noopener">${escapeHtml(l.label || l.url)}</a>` : ''))
+      .join('');
+  const listHtml = (items) => (items && items.length ? `<ul>${items.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : '');
+  const sectionHtml = (sec) =>
+    `<section class="bl-sec"><h5>${escapeHtml(sec.title || '')}</h5>${sec.text ? `<p>${escapeHtml(sec.text)}</p>` : ''}${listHtml(sec.points)}${linksHtml(sec.links)}</section>`;
   root.innerHTML = posts
     .map((p) => {
       const meta = [p.label ? `<span class="bl-label">${escapeHtml(p.label)}</span>` : '', dateLabel(p.date) ? `<time>${escapeHtml(dateLabel(p.date))}</time>` : ''].join('');
+      const img = safeImg(p.image) ? `<img class="bl-img" src="${escapeHtml(p.image)}" alt="${escapeHtml(p.imageAlt || '')}" loading="lazy" decoding="async">` : '';
       const body = (p.body || []).map((t) => `<p>${escapeHtml(t)}</p>`).join('');
-      const list = p.list && p.list.length ? `<ul>${p.list.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : '';
-      return `<article class="bl-post"><div class="bl-banner"><h4>${escapeHtml(p.title || '')}</h4></div><div class="bl-meta">${meta}</div>${body}${list}</article>`;
+      const secs = p.sections && p.sections.length ? `<div class="bl-secs">${p.sections.map(sectionHtml).join('')}</div>` : '';
+      return `<article class="bl-post"><div class="bl-banner"><h4>${escapeHtml(p.title || '')}</h4></div>${img}<div class="bl-meta">${meta}</div>${body}${listHtml(p.list)}${secs}</article>`;
     })
     .join('');
 }

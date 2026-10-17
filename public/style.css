@@ -3921,9 +3921,61 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 .bl-post > :last-child { margin-bottom: 0; }
 .bl-empty { margin: 0; text-align: center; color: var(--muted); font-size: 0.95rem; }
 
+/* post picture: slanted like the banner */
+.bl-img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; margin: 0 0 0.7rem; object-fit: cover; background: #0b0c12; clip-path: polygon(0 3%, 100% 0, 99.2% 97%, 0.6% 100%); }
+
+/* numbered sections, like pages of a tutorial */
+.bl-secs { counter-reset: bl-sec; display: grid; gap: 0.95rem; margin-top: 0.85rem; }
+.bl-sec { counter-increment: bl-sec; min-width: 0; }
+.bl-sec h5 { display: flex; align-items: flex-start; gap: 0.6rem; margin: 0 0 0.3rem; font-family: var(--font-display); font-weight: 400; font-size: 1.05rem; line-height: 1.25; color: var(--accent-hi); overflow-wrap: anywhere; }
+.bl-sec h5::before {
+  content: counter(bl-sec);
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-top: -0.05rem;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.95rem;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.bl-sec p, .bl-sec ul { margin-left: 2.2rem; }
+.bl-sec p { margin-bottom: 0.4rem; }
+.bl-link { display: inline-block; margin: 0.15rem 0 0 2.2rem; color: var(--accent-hi); font-size: 0.9rem; text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.bl-link:hover { color: var(--accent-pale); }
+
 @media (max-width: 440px) {
+  .bl-sec p, .bl-sec ul, .bl-link { margin-left: 0; }
   .bl-inner { padding: 1rem 0.95rem 1.2rem; }
   .bl-title { font-size: 1.85rem; padding-right: 3.8rem; }
-  .bl-dagger { right: 30px; }
+  .bl-dagger { right: 40px; }
 }
 @media (prefers-reduced-motion: reduce) { .bl-dagger { animation: none; } }
+
+/* ---------- Hammer Jam meteors: blue streaks from top right to bottom left, behind everything ---------- */
+.meteors { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.meteors i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 190px;
+  height: 3px;
+  border-radius: 3px;
+  /* the bright head is on the left (the way it travels), the tail fades out to the right */
+  background: linear-gradient(90deg, #eaf6ff 0, rgba(130, 195, 255, 0.95) 10%, rgba(60, 120, 255, 0.4) 55%, rgba(60, 120, 255, 0));
+  box-shadow: 0 0 9px 1px rgba(90, 160, 255, 0.5);
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: meteor var(--d, 10s) var(--w, 0s) linear infinite;
+}
+/* each streak crosses the screen in about a quarter of its cycle, then rests */
+@keyframes meteor {
+  0% { opacity: 0; transform: translate(var(--sx), var(--sy)) rotate(-35deg); }
+  3% { opacity: 1; }
+  20% { opacity: 1; }
+  26%, 100% { opacity: 0; transform: translate(calc(var(--sx) - 900px), calc(var(--sy) + 630px)) rotate(-35deg); }
+}
+@media (max-width: 640px) { .meteors i:nth-child(n+4) { display: none; } }
+@media (prefers-reduced-motion: reduce) { .meteors { display: none; } }
