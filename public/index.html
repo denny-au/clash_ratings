@@ -316,7 +316,6 @@
               <div class="toolbar" role="toolbar" aria-label="Warboard tools">
           <button type="button" id="w-find-btn" class="tool-btn" aria-expanded="false" aria-controls="w-find-bar" title="Find a player on the Warboard"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m15 15 5 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><span class="tb-label">Find</span></button>
           <button type="button" id="w-compare-btn" class="tool-btn" aria-pressed="false" title="Compare two players head to head"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4v16M16 4v16M4.5 8 8 4l3.5 4M12.5 16 16 20l3.5-4" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-label">Compare</span></button>
-          <button type="button" id="share-war" class="tool-btn" title="Make a picture of the top 5 to share"><svg class="tb-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="tb-ring" aria-hidden="true"><i></i></span><span class="tb-label">Share</span></button>
         </div>
               <div id="w-find-bar" class="find-bar" hidden>
           <svg class="find-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m15 15 5 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
@@ -362,6 +361,11 @@
   <div id="vs-modal" class="vs-modal" hidden role="dialog" aria-modal="true" aria-label="Head to head">
     <div class="vs-backdrop" data-close></div>
     <div id="vs-sheet" class="vs-sheet"></div>
+  </div>
+
+  <div id="player-modal" class="vs-modal pc-modal" hidden role="dialog" aria-modal="true" aria-label="Player card">
+    <div class="vs-backdrop" data-close></div>
+    <div id="player-sheet" class="vs-sheet pc-sheet"></div>
   </div>
 
   <div id="share-modal" class="share-modal" hidden role="dialog" aria-modal="true" aria-label="Share picture">

@@ -24,6 +24,7 @@ const panels = { month: $('panel-month'), war: $('panel-war'), guide: $('panel-g
 const TOP_N = 10;
 
 let currentClanTag = null;
+let rankBaselineLabel = 'the last check'; // used by the player card
 let membersByTag = new Map(); // current clan members, used to add role/icon to last month's rows
 
 // --- Hamburger menu / FAQ / About drawer ---
@@ -255,7 +256,7 @@ function memberCellHtml(row, reserveIcon, hl) {
     ? `<span class="sep" aria-hidden="true">|</span><span class="role role-${escapeHtml(row.role)}">${label}</span>`
     : '';
   const champ = row.champLabel ? champHtml(row.champLabel) : '';
-  const nameLine = `<span class="name-line"><span class="name">${hl ? highlightHtml(row.name, hl) : escapeHtml(row.name)}</span>${champ}</span>`;
+  const nameLine = `<span class="name-line"><span class="name" data-card="${escapeHtml(row.tag || '')}">${hl ? highlightHtml(row.name, hl) : escapeHtml(row.name)}</span>${champ}</span>`;
   // Last month's champion gets a written label under the name, beside the role.
   const nameBlock = row.champLabel ? `<span class="name-col">${nameLine}${CHAMP_TAG}</span>` : nameLine;
   return `<td class="member"><div class="who">${icon}<span class="who-text">${nameBlock}${roleHtml}</span></div></td>`;
@@ -398,6 +399,84 @@ async function loadProfile(tag) {
 
 const profileFor = (tag) => profileCache.get(tag) || profileErrors.get(tag) || null;
 
+// ---------- Player card (pop-up) ----------
+// Opens from a name on the Leaderboard, a podium card, the Warboard or the Hall of Fame. It shows the same
+// details as an expanded row (MR split and day-by-day line, profile, this month's war attacks) in a pop-up.
+const playerModal = $('player-modal');
+const playerSheet = $('player-sheet');
+let playerCardTag = null;
+let playerCardOpener = null;
+
+function playerCardParts(tag, fallbackName) {
+  const m = membersByTag.get(tag) || { tag, name: fallbackName || 'Player', trend: [], breakdown: null, rankChange: null };
+  const profile = profileFor(tag);
+  const iconUrl = safeIconUrl(m.leagueIcon || (profile && profile.leagueIcon));
+  const role = ROLE_LABELS[m.role || (profile && profile.role)] || '';
+  const th = profile && profile.townHall ? `TH${profile.townHall}` : '';
+  const sub = [role, th, tag].filter(Boolean).map(escapeHtml).join(' · ');
+  const stat = (v, label) => `<div><b>${fmt(v)}</b><span>${label}</span></div>`;
+  const stats = membersByTag.has(tag)
+    ? `<div class="pc-stats">${stat(m.mr, 'MR')}${stat(m.mrRank, 'Rank')}${stat(m.monthWarStars, 'War stars')}${stat(m.donations, 'Donated')}${stat(m.raidAttacks, 'Raids')}</div>`
+    : '<p class="dc-note">Not in the clan right now, so only their game profile is shown.</p>';
+  return {
+    head: `<div class="pc-head">${iconUrl ? `<img class="pc-league" src="${iconUrl}" alt="" width="52" height="52" referrerpolicy="no-referrer" />` : ''}
+      <div class="pc-who"><h3 class="pc-name">${escapeHtml(m.name)}</h3><p class="pc-sub">${sub}</p></div></div>${stats}`,
+    body: detailInnerHtml(m, profile, rankBaselineLabel),
+  };
+}
+
+function renderPlayerCard(tag, fallbackName) {
+  const parts = playerCardParts(tag, fallbackName);
+  const top = playerSheet.scrollTop;
+  playerSheet.innerHTML = `<button type="button" class="vs-x" data-close aria-label="Close">&times;</button>${parts.head}<div class="pc-body">${parts.body}</div>`;
+  playerSheet.scrollTop = top;
+}
+
+async function openPlayerCard(tag, fallbackName, opener) {
+  if (!tag) return;
+  playerCardTag = tag;
+  playerCardOpener = opener || null;
+  renderPlayerCard(tag, fallbackName);
+  playerModal.hidden = false;
+  document.body.classList.add('modal-open');
+  const x = playerSheet.querySelector('.vs-x');
+  if (x) x.focus({ preventScroll: true });
+  if (!profileCache.has(tag)) {
+    profileErrors.delete(tag);
+    const result = await loadProfile(tag);
+    if (result.error) profileErrors.set(tag, result);
+    if (playerCardTag === tag && !playerModal.hidden) renderPlayerCard(tag, fallbackName);
+  }
+}
+
+function closePlayerCard() {
+  if (playerModal.hidden) return;
+  playerModal.hidden = true;
+  playerCardTag = null;
+  if (!document.querySelector('.vs-modal:not([hidden]), .share-modal:not([hidden])')) document.body.classList.remove('modal-open');
+  if (playerCardOpener && playerCardOpener.focus && document.contains(playerCardOpener)) playerCardOpener.focus({ preventScroll: true });
+  playerCardOpener = null;
+}
+
+playerModal.addEventListener('click', (e) => {
+  if (e.target.closest('[data-close]')) closePlayerCard();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closePlayerCard();
+});
+// A tap on a name opens the card (except while comparing, when a tap picks the member instead).
+document.addEventListener(
+  'click',
+  (e) => {
+    const el = e.target.closest('[data-card]');
+    if (!el || !el.dataset.card || el.closest('.pick-mode')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    openPlayerCard(el.dataset.card, el.textContent.trim(), el);
+  },
+  true
+);
+
 // Little stars that float up off the podium block. Pure CSS; positions and
 // timings are fixed per slot so the cards never "re-roll" when redrawn.
 const SPARK_SLOTS = [
@@ -527,7 +606,7 @@ function createLeaderboard(prefix, opts = {}) {
       <span class="pod-glow" aria-hidden="true"></span>
       ${r.rank === 1 ? '<span class="pod-ring" aria-hidden="true"><i></i></span>' : ''}
       <span class="pod-crown">${crownHtml(r.rank)}</span>
-      <span class="pod-who">${icon}<span class="pod-name">${escapeHtml(r.name)}</span>${r.champLabel ? champHtml(r.champLabel) : ''}</span>
+      <span class="pod-who">${icon}<span class="pod-name" data-card="${escapeHtml(r.tag || '')}">${escapeHtml(r.name)}</span>${r.champLabel ? champHtml(r.champLabel) : ''}</span>
       <span class="pod-role">${escapeHtml(label)}</span>
       ${r.champLabel ? '<span class="pod-champ">Previous month\'s champion</span>' : ''}
       <span class="pod-mr"><b data-count="${Number(r.mr) || 0}">${fmt(r.mr)}</b><i>MR</i></span>
@@ -1063,6 +1142,7 @@ function renderClan(data) {
   const champTag = data.lastChampion ? data.lastChampion.tag : null;
   const champLabel = data.lastChampion ? `Champion of ${data.lastChampion.monthLabel}` : '';
   const baselineLabel = shortDateLabel(data.rankBaseline);
+  rankBaselineLabel = baselineLabel;
 
   monthBoard.show(
     data.members.map((m) => ({
@@ -1182,7 +1262,7 @@ function awardsHtml(awards, { when = 'month' } = {}) {
         <span class="award-medal"><svg viewBox="0 0 24 24" aria-hidden="true">${AWARD_ICONS[a.key] || ''}</svg></span>
         <span class="award-body">
           <span class="award-title">${escapeHtml(a.title)}${a.rare ? '<em class="rare-tag">Rare</em>' : ''}</span>
-          <span class="award-name">${escapeHtml(a.name)}</span>
+          <span class="award-name"${a.tag ? ` data-card="${escapeHtml(a.tag)}"` : ''}>${escapeHtml(a.name)}</span>
           <span class="award-value"><b>${fmt(a.value)}</b> ${escapeHtml(a.unit)}</span>
           ${sub}
         </span>
@@ -1207,6 +1287,36 @@ const METALS = {
   2: { a: '#ffffff', b: '#cfd5e3', c: '#8f98ad', text: '#eef1f8', wash: 'rgba(207,213,227,0.16)' },
   3: { a: '#f6c79d', b: '#d9935a', c: '#a8622f', text: '#f7d6b8', wash: 'rgba(217,147,90,0.17)' },
 };
+
+// The Warboard picture uses the same colours as the Warboard itself: #1 iridescent purple, #2 gold, #3 red.
+const WAR_METALS = {
+  1: { a: '#efe3ff', b: '#a874ff', c: '#6a3fd6', text: '#f4ecff', rgb: '160,110,255' },
+  2: { a: '#fff0b8', b: '#ffc22e', c: '#c98a14', text: '#ffeab0', rgb: '255,190,50' },
+  3: { a: '#ffb4b4', b: '#ea3244', c: '#a8101f', text: '#ffdcd8', rgb: '232,40,56' },
+};
+METALS[1].rgb = '242,193,78';
+METALS[2].rgb = '207,213,227';
+METALS[3].rgb = '217,147,90';
+let shareWar = false; // true while drawing the Warboard picture
+const rankImgs = {};
+function loadRankImgs() {
+  return Promise.all(
+    [1, 2, 3].map(
+      (rank) =>
+        new Promise((resolve) => {
+          if (rankImgs[rank]) return resolve();
+          const img = new Image();
+          img.onload = () => {
+            rankImgs[rank] = img;
+            resolve();
+          };
+          img.onerror = () => resolve(); // falls back to the crown
+          img.src = `assets/warboard/rank-${rank}.png`;
+        })
+    )
+  );
+}
+const shareMetal = (rank) => (shareWar ? WAR_METALS : METALS)[rank];
 
 function fitText(ctx, text, maxWidth) {
   if (ctx.measureText(text).width <= maxWidth) return text;
@@ -1251,9 +1361,27 @@ function mulberry32(seed) {
   };
 }
 
-// A crown with its place number on it.
+// A crown (or, on the Warboard picture, the shield icon) with its place number on it. Returns the height drawn.
 function drawRankCrown(ctx, x, y, size, rank, font) {
-  const metal = METALS[rank];
+  const img = shareWar ? rankImgs[rank] : null;
+  if (img) {
+    const h = size * 0.84;
+    const w = h * (img.naturalWidth / img.naturalHeight);
+    ctx.drawImage(img, x + (size - w) / 2, y, w, h);
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    ctx.font = `${Math.round(h * 0.42)}px ${font}`;
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = Math.max(5, h * 0.1);
+    ctx.strokeStyle = 'rgba(10,6,18,0.9)';
+    ctx.strokeText(String(rank), x + size / 2, y + h * 0.9);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(String(rank), x + size / 2, y + h * 0.9);
+    ctx.restore();
+    return h;
+  }
+  const metal = shareMetal(rank);
   drawCrown(ctx, x, y, size, metal);
   ctx.save();
   ctx.textAlign = 'center';
@@ -1266,6 +1394,7 @@ function drawRankCrown(ctx, x, y, size, rank, font) {
   ctx.fillStyle = rank === 2 ? '#ffffff' : rank === 1 ? '#fff8de' : '#fff0df';
   ctx.fillText(String(rank), x + size / 2, y + size * 0.59);
   ctx.restore();
+  return size * (26 / 32);
 }
 
 function drawStar4(ctx, x, y, r, color, alpha) {
@@ -1322,7 +1451,7 @@ function drawListRow(ctx, r, y, W, rowH, font) {
 // One podium place: metal-washed card, crown, name, big MR, three small stats,
 // and the lit block it stands on.
 function drawPodiumCard(ctx, r, rank, x, baseY, w, font) {
-  const metal = METALS[rank];
+  const metal = shareMetal(rank);
   const dims = {
     1: { h: 560, bh: 64, crown: 130, name: 58, mr: 112 },
     2: { h: 490, bh: 46, crown: 100, name: 46, mr: 84 },
@@ -1330,7 +1459,7 @@ function drawPodiumCard(ctx, r, rank, x, baseY, w, font) {
   }[rank];
   const top = baseY - dims.h;
   const cx = x + w / 2;
-  const rgb = rank === 1 ? '242,193,78' : rank === 2 ? '207,213,227' : '217,147,90';
+  const rgb = metal.rgb;
 
   // floor glow
   const floor = ctx.createRadialGradient(cx, baseY + 6, 4, cx, baseY + 6, w * 0.62);
@@ -1372,17 +1501,17 @@ function drawPodiumCard(ctx, r, rank, x, baseY, w, font) {
   ctx.stroke();
   ctx.globalAlpha = 1;
 
-  // crown
+  // crown (or the Warboard shield icon)
+  let crownH;
   if (rank === 1) {
     ctx.save();
-    ctx.shadowColor = 'rgba(242,193,78,0.8)';
+    ctx.shadowColor = `rgba(${rgb},0.8)`;
     ctx.shadowBlur = 40;
-    drawRankCrown(ctx, cx - dims.crown / 2, top + 30, dims.crown, rank, font);
+    crownH = drawRankCrown(ctx, cx - dims.crown / 2, top + 30, dims.crown, rank, font);
     ctx.restore();
   } else {
-    drawRankCrown(ctx, cx - dims.crown / 2, top + 30, dims.crown, rank, font);
+    crownH = drawRankCrown(ctx, cx - dims.crown / 2, top + 30, dims.crown, rank, font);
   }
-  const crownH = dims.crown * (26 / 32);
 
   // name + role
   ctx.textAlign = 'center';
@@ -1465,6 +1594,8 @@ async function buildShareCanvas(info) {
   } catch (e) {
     /* fall back to system fonts */
   }
+  shareWar = info.kind === 'war';
+  if (shareWar) await loadRankImgs();
   const W = 1080;
   const rows = info.rows.slice(0, 5);
   const podium = rows.length >= 3;
@@ -1568,7 +1699,7 @@ async function buildShareCanvas(info) {
     // stars around the champion
     const cx1 = startX + sw + gap + cw / 2;
     for (const [dx, dy, r, a] of [[-190, -430, 16, 0.95], [196, -380, 12, 0.8], [-230, -250, 9, 0.7], [236, -520, 9, 0.75], [-120, -540, 8, 0.7], [140, -300, 7, 0.6]]) {
-      drawStar4(ctx, cx1 + dx, baseY + dy, r, '#ffe9a6', a);
+      drawStar4(ctx, cx1 + dx, baseY + dy, r, shareWar ? '#e2d2ff' : '#ffe9a6', a);
     }
     lower.forEach((r, i) => drawListRow(ctx, r, listTop + i * rowH, W, rowH, display));
   } else {
@@ -1672,7 +1803,6 @@ async function shareBoard(info, button) {
 
 $('share-month').addEventListener('click', (e) => shareBoard(shareData.month, e.currentTarget));
 $('share-last').addEventListener('click', (e) => shareBoard(shareData.last, e.currentTarget));
-$('share-war').addEventListener('click', (e) => shareBoard(shareData.war, e.currentTarget));
 
 // ---------- War tab: compact current-war card ----------
 const warToggle = $('war-toggle');
@@ -1907,7 +2037,7 @@ const warBoard = (() => {
       : '<span class="mu mu-empty"></span>';
     const rankCell = rank <= 3 ? rankIconHtml(rank) : `<span class="rank-num">${rank}</span>`;
     const meta = `${m.wars} war${m.wars === 1 ? '' : 's'} · ${m.attacks} attack${m.attacks === 1 ? '' : 's'}`;
-    return `<tr class="${rank <= 3 ? `rank-${rank}` : ''}${pickClass(m.tag)}" style="--i:${i}" data-tag="${escapeHtml(m.tag)}">
+    return `<tr class="${rank <= 3 ? `rank-${rank}` : ''}${pickClass(m.tag)}" style="--i:${i}" data-tag="${escapeHtml(m.tag)}" tabindex="0">
         <td class="wh-rank">${rank <= 3 ? flameHtml() : ''}${rankCell}</td>
         <td class="wh-name"><span class="name">${highlightHtml(m.name, q)}</span><span class="wh-meta">${meta}</span></td>
         <td class="num wh-stars"><span class="wh-big">${fmt(m.stars)}</span></td>
@@ -1939,9 +2069,19 @@ const warBoard = (() => {
   if (typeof ResizeObserver === 'function') new ResizeObserver(fitSheen).observe($('history-table'));
   else window.addEventListener('resize', fitSheen);
 
+  const nameOf = (tr) => (tr.querySelector('.name') ? tr.querySelector('.name').textContent : '');
   body.addEventListener('click', (e) => {
     const tr = e.target.closest('tr[data-tag]');
-    if (tr && pickMode) warCompare.pick(tr.dataset.tag);
+    if (!tr) return;
+    if (pickMode) warCompare.pick(tr.dataset.tag);
+    else openPlayerCard(tr.dataset.tag, nameOf(tr), tr);
+  });
+  body.addEventListener('keydown', (e) => {
+    const tr = e.target.closest('tr[data-tag]');
+    if (!tr || e.target !== tr || (e.key !== 'Enter' && e.key !== ' ')) return;
+    e.preventDefault();
+    if (pickMode) warCompare.pick(tr.dataset.tag);
+    else openPlayerCard(tr.dataset.tag, nameOf(tr), tr);
   });
 
   return {
@@ -2120,21 +2260,6 @@ async function fetchWarHistory(tag) {
     historyTable.hidden = false;
     board.hidden = false;
     $('history-note').hidden = false;
-    shareData.war = {
-      kind: 'war',
-      clanName: clanName.textContent,
-      monthLabel: data.monthLabel,
-      heading: `Warboard · ${data.monthLabel}`,
-      fileLabel: `warboard-${data.monthLabel}`,
-      rows: ranked.slice(0, 5).map((m) => ({
-        rank: m.rank,
-        name: m.name,
-        sub: `${m.wars} war${m.wars === 1 ? '' : 's'} · ${m.attacks} attack${m.attacks === 1 ? '' : 's'}`,
-        mr: m.stars,
-        bigLabel: 'STARS',
-        stats: [[(m.attacks ? m.stars / m.attacks : 0).toFixed(1), 'avg'], [m.wars, 'wars'], [m.attacks, 'attacks']],
-      })),
-    };
   } catch (err) {
     title.textContent = 'Warboard';
     count.textContent = '';
