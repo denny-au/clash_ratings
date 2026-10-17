@@ -1398,7 +1398,7 @@ tbody tr:hover {
   stroke: var(--gold);
 }
 .award-donor svg { fill: #ff8aa8; stroke: #ff8aa8; }
-.award-raider svg { fill: #b08cff; stroke: #b08cff; }
+.award-conqueror svg { fill: #b99aff; stroke: #b99aff; }
 .award-sharpshooter svg { fill: none; stroke: #6fd8ee; }
 .award-sharpshooter svg circle:last-child { fill: #6fd8ee; }
 
@@ -2610,13 +2610,10 @@ body.modal-open { overflow: hidden; }
 .award-rare .award-medal { width: 52px; height: 52px; }
 .award-rare .award-medal svg { width: 28px; height: 28px; }
 .award-rare .award-name { font-size: 1.3rem; }
-/* On wide screens the six awards fill a tidy 3 + 2 + 1 grid (no gap in the second row). */
+/* On wide screens the six awards fill a tidy 3 + 3 grid. */
 @media (min-width: 700px) {
   .awards:has(> .award:nth-child(6):last-child) { grid-template-columns: repeat(6, 1fr); }
   .awards:has(> .award:nth-child(6):last-child) > .award { grid-column: span 2; }
-  .awards:has(> .award:nth-child(6):last-child) > .award:nth-child(4),
-  .awards:has(> .award:nth-child(6):last-child) > .award:nth-child(5) { grid-column: span 3; }
-  .awards:has(> .award:nth-child(6):last-child) > .award:nth-child(6) { grid-column: 1 / -1; }
 }
 .award-rare::after {
   content: "";
@@ -3014,7 +3011,24 @@ body.modal-open { overflow: hidden; }
 .wh-avgnum { display: inline-block; min-width: 2.2ch; font-family: var(--font-display); font-size: 1rem; }
 .avg-bar { display: inline-block; vertical-align: middle; width: 56px; height: 6px; margin-left: 0.4rem; border-radius: 6px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
 .avg-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, rgba(255, 255, 255, 0.45), #fff); }
-.wh-table tr.rank-1 .avg-bar i { background: linear-gradient(90deg, #b8862b, #ffe08a); }
+.wh-table .wh-icon { display: block; width: 36px; height: 36px; margin: 0 auto; object-fit: contain; filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.55)); user-select: none; }
+/* A perfect 3.0 average (every attack a 3-star) gets an iridescent purple bar and number. */
+.wh-avg.is-perfect .wh-avgnum {
+  background: linear-gradient(100deg, #b98cff, #ff9be8 30%, #8fd3ff 55%, #c9a2ff 80%, #b98cff);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: irid-shift 4.5s linear infinite;
+}
+.wh-avg.is-perfect .avg-bar i {
+  background: linear-gradient(100deg, #9a6bff, #ff8fe0 28%, #7fd0ff 52%, #b98cff 76%, #9a6bff);
+  background-size: 220% 100%;
+  box-shadow: 0 0 8px rgba(176, 130, 255, 0.55);
+  animation: irid-shift 4.5s linear infinite;
+}
+@keyframes irid-shift { from { background-position: 0 0; } to { background-position: -220% 0; } }
+@media (prefers-reduced-motion: reduce) { .wh-avg.is-perfect .wh-avgnum, .wh-avg.is-perfect .avg-bar i { animation: none; } }
 
 .mu { display: flex; width: 100px; height: 8px; border-radius: 8px; overflow: hidden; background: rgba(255, 255, 255, 0.07); }
 .mu i { display: block; height: 100%; }

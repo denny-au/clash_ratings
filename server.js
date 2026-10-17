@@ -551,7 +551,8 @@ app.get('/api/clan', async (req, res) => {
         warAttacks: m.warAttacks,
         higherAttacks: m.higherAttacks,
         raidAttacks: m.raidAttacks,
-      }))
+      })),
+      topWarrior(warTracker.summarizeByMember(monthWars))
     );
 
     // Who won last month's Champion award (gets a little trophy by their name).
@@ -782,6 +783,12 @@ app.get('/api/hall-of-champions', async (req, res) => {
 // (regular wars and CWL).
 // Last month's final standings (from the saved war/raid records and the
 // end-of-month donation snapshot) plus that month's awards.
+// The Warboard's #1 (members come back sorted by war stars), for the Conqueror award.
+function topWarrior(warMembers) {
+  const top = warMembers && warMembers[0];
+  return top && top.stars > 0 ? { tag: top.tag, name: top.name, stars: top.stars } : null;
+}
+
 async function buildPreviousMonth(tag) {
   const prev = warTracker.getPreviousMonth();
   const wars = await warTracker.getHistoryForClanInMonth(tag, prev.year, prev.month);
@@ -831,7 +838,7 @@ async function buildPreviousMonth(tag) {
     monthLabel: prev.label,
     warsRecorded: wars.length,
     weekendsRecorded: seasons.length,
-    awards: warTracker.computeAwards(members),
+    awards: warTracker.computeAwards(members, topWarrior(warMembers)),
     members,
   };
 }

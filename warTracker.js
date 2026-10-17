@@ -533,21 +533,17 @@ async function applyMrTrends(clanTag, members, now = new Date()) {
   return { trendDates, baselineDate: baseline ? baseline.date : null };
 }
 
-// --- Monthly awards ---
-// rows: [{ tag, name, mr, donated, warStars, warAttacks, raidAttacks }], any
+// --- Monthly awards (the Hall of Fame) ---
+// rows: [{ tag, name, mr, donated, warStars, warAttacks, higherAttacks }], any
 // order. Each award goes to whoever is highest (ties go to the higher MR);
-// an award nobody earned (best value is 0) is left out. "Sharpshooter" is
-// stars per war attack and needs at least 2 attacks so one lucky 3-star
-// doesn't win it.
+// an award nobody earned (best value is 0) is left out.
+// - Conqueror is simply whoever tops the Warboard (`conqueror`: { tag, name, stars }).
+// - Sharpshooter is stars per war attack and needs at least 2 attacks so one
+//   lucky 3-star doesn't win it.
+// - Challenger is whoever made the most attacks on town halls above their own.
 const SHARPSHOOTER_MIN_ATTACKS = 2;
 
-// "Challenger" is the rare one: it only exists in a month where somebody
-// repeatedly attacked town halls ABOVE their own, and did it for most of
-// their attacks (not just because they made a lot of them).
-const CHALLENGER_MIN_HIGHER = 3; // attacks on a higher town hall
-const CHALLENGER_MIN_SHARE = 0.5; // ...and at least this share of their attacks
-
-function computeAwards(rows) {
+function computeAwards(rows, conqueror = null) {
   const ranked = [...rows].sort((a, b) => (b.mr || 0) - (a.mr || 0));
   const best = (valueOf, eligible = () => true) => {
     let top = null;
@@ -565,9 +561,14 @@ function computeAwards(rows) {
 
   const defs = [
     { key: 'champion', title: 'Champion', unit: 'MR', pick: best((r) => r.mr || 0) },
-    { key: 'donor', title: 'Top Donor', unit: 'troops donated', pick: best((r) => r.donated || 0) },
+    {
+      key: 'conqueror',
+      title: 'Conqueror',
+      unit: 'war stars',
+      pick: conqueror && conqueror.stars > 0 ? { row: conqueror, value: conqueror.stars } : null,
+    },
+    { key: 'donor', title: 'Provider', unit: 'troops donated', pick: best((r) => r.donated || 0) },
     { key: 'stars', title: 'Star Collector', unit: 'war stars', pick: best((r) => r.warStars || 0) },
-    { key: 'raider', title: 'Raid Master', unit: 'raid attacks', pick: best((r) => r.raidAttacks || 0) },
     {
       key: 'sharpshooter',
       title: 'Sharpshooter',
@@ -577,16 +578,7 @@ function computeAwards(rows) {
         (r) => (r.warAttacks || 0) >= SHARPSHOOTER_MIN_ATTACKS
       ),
     },
-    {
-      key: 'challenger',
-      title: 'Challenger',
-      unit: 'attacks on higher town halls',
-      rare: true,
-      pick: best(
-        (r) => r.higherAttacks || 0,
-        (r) => (r.higherAttacks || 0) >= CHALLENGER_MIN_HIGHER && (r.warAttacks || 0) > 0 && r.higherAttacks / r.warAttacks >= CHALLENGER_MIN_SHARE
-      ),
-    },
+    { key: 'challenger', title: 'Challenger', unit: 'attacks on higher town halls', pick: best((r) => r.higherAttacks || 0) },
   ];
 
   return defs
@@ -597,7 +589,6 @@ function computeAwards(rows) {
       unit: d.unit,
       tag: d.pick.row.tag,
       name: d.pick.row.name,
-      ...(d.rare ? { rare: true, of: d.pick.row.warAttacks || 0 } : {}),
       value: d.key === 'sharpshooter' ? Math.round(d.pick.value * 100) / 100 : Math.round(d.pick.value),
     }));
 }

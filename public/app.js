@@ -218,6 +218,11 @@ function crownHtml(rank) {
   </span>`;
 }
 
+// Warboard top three: shield icons (1st purple, 2nd gold, 3rd red).
+function rankIconHtml(rank) {
+  return `<img class="wh-icon" src="assets/site/rank-${rank}.png" width="40" height="40" alt="Rank ${rank}" title="Rank ${rank}" draggable="false">`;
+}
+
 // Small trophy shown next to last month's Champion.
 function champHtml(label) {
   return `<svg class="champ" viewBox="0 0 24 24" role="img" aria-label="${escapeHtml(label)}"><title>${escapeHtml(label)}</title>
@@ -1128,7 +1133,7 @@ const AWARD_ICONS = {
   champion: '<path d="M7 3h10v4a5 5 0 0 1-10 0V3Z"/><path d="M7 4H3.5v1.5A3.5 3.5 0 0 0 7 9M17 4h3.5v1.5A3.5 3.5 0 0 1 17 9" fill="none" stroke-width="1.6"/><rect x="10.5" y="12" width="3" height="4"/><rect x="7.5" y="17" width="9" height="3" rx="1"/>',
   donor: '<path d="M12 20.5s-7.5-4.6-7.5-10A4.2 4.2 0 0 1 12 8a4.2 4.2 0 0 1 7.5 2.5c0 5.4-7.5 10-7.5 10Z"/>',
   stars: '<path d="m12 2.8 2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 16.6 6.6 19.6l1.1-6.1L3.2 9.2l6.1-.8L12 2.8Z"/>',
-  raider: '<path d="M4 21V4h2v2h12l-2.5 4L18 14H6v7H4Z"/>',
+  conqueror: '<path d="M3 18 2 7l5.5 4L12 3.5l4.5 7.5L22 7l-1 11Z"/><rect x="3" y="19.5" width="18" height="2.2" rx="1"/>',
   challenger: '<path d="M4 4l11 11M20 4 9 15" stroke-width="2.2" stroke-linecap="round" fill="none"/><path d="M13 17l4-4M7 13l4 4" stroke-width="2.2" stroke-linecap="round" fill="none"/><path d="M16 16l3 3M8 16l-3 3" stroke-width="2.2" stroke-linecap="round" fill="none"/><circle cx="20" cy="20" r="1.4"/><circle cx="4" cy="20" r="1.4"/>',
   sharpshooter: '<circle cx="12" cy="12" r="8.5" fill="none" stroke-width="1.8"/><circle cx="12" cy="12" r="4.6" fill="none" stroke-width="1.8"/><circle cx="12" cy="12" r="1.6"/>',
 };
@@ -1138,7 +1143,7 @@ const AWARD_TINTS = {
   champion: '242,193,78',
   donor: '255,138,168',
   stars: '255,150,48',
-  raider: '176,140,255',
+  conqueror: '176,140,255',
   sharpshooter: '111,216,238',
   challenger: '255,82,110',
 };
@@ -1147,11 +1152,11 @@ const AWARD_TINTS = {
 // greyed out with the requirement, so the set never changes shape.
 const AWARD_SLOTS = [
   { key: 'champion', title: 'Champion', hint: 'Needs a Mastery Rating above 0' },
-  { key: 'donor', title: 'Top Donor', hint: 'Needs at least 1 troop donated' },
+  { key: 'conqueror', title: 'Conqueror', hint: 'Goes to the top of the Warboard' },
+  { key: 'donor', title: 'Provider', hint: 'Needs at least 1 troop donated' },
   { key: 'stars', title: 'Star Collector', hint: 'Needs at least 1 war star' },
-  { key: 'raider', title: 'Raid Master', hint: 'Needs at least 1 raid attack' },
   { key: 'sharpshooter', title: 'Sharpshooter', hint: 'Needs 2+ war attacks' },
-  { key: 'challenger', title: 'Challenger', hint: 'Needs 3+ attacks on higher town halls, over half of their war attacks', rare: true },
+  { key: 'challenger', title: 'Challenger', hint: 'Most attacks on higher town halls' },
 ];
 
 function awardsHtml(awards, { when = 'month' } = {}) {
@@ -1892,6 +1897,7 @@ const warBoard = (() => {
     const rank = m.rank;
     const topAvg = 3;
     const avg = m.attacks ? m.stars / m.attacks : 0;
+    const perfect = m.attacks > 0 && m.stars === m.attacks * 3; // every attack a 3-star
     const higher = m.attackedHigher || 0;
     const lower = m.attackedLower || 0;
     const same = m.attackedSame || 0;
@@ -1899,13 +1905,13 @@ const warBoard = (() => {
     const bar = total
       ? `<span class="mu" title="${higher} higher · ${same} same · ${lower} lower"><i class="up" style="flex:${higher}"></i><i class="eq" style="flex:${same}"></i><i class="dn" style="flex:${lower}"></i></span>`
       : '<span class="mu mu-empty"></span>';
-    const rankCell = rank <= 3 ? crownHtml(rank) : `<span class="rank-num">${rank}</span>`;
+    const rankCell = rank <= 3 ? rankIconHtml(rank) : `<span class="rank-num">${rank}</span>`;
     const meta = `${m.wars} war${m.wars === 1 ? '' : 's'} · ${m.attacks} attack${m.attacks === 1 ? '' : 's'}`;
     return `<tr class="${rank <= 3 ? `rank-${rank}` : ''}${pickClass(m.tag)}" style="--i:${i}" data-tag="${escapeHtml(m.tag)}">
         <td class="wh-rank">${rank <= 3 ? flameHtml() : ''}${rankCell}</td>
         <td class="wh-name"><span class="name">${highlightHtml(m.name, q)}</span><span class="wh-meta">${meta}</span></td>
         <td class="num wh-stars"><span class="wh-big">${fmt(m.stars)}</span></td>
-        <td class="wh-avg"><span class="wh-avgnum">${avg.toFixed(1)}</span><span class="avg-bar"><i style="width:${Math.min(100, (avg / topAvg) * 100)}%"></i></span></td>
+        <td class="wh-avg${perfect ? ' is-perfect' : ''}"><span class="wh-avgnum">${avg.toFixed(1)}</span><span class="avg-bar"><i style="width:${Math.min(100, (avg / topAvg) * 100)}%"></i></span></td>
         <td class="wh-mu">${bar}<span class="mu-txt">${higher}↑ ${same}= ${lower}↓</span></td>
       </tr>`;
   }
