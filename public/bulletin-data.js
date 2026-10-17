@@ -23,7 +23,7 @@ window.CR_BULLETIN = [
     title: 'Hammer Jam',
     date: '2026-10-17',
     label: 'Event',
-    image: 'assets/bulletin/hammer-jam.jpg',
+    image: 'assets/site/hammer-jam.jpg',
     imageAlt: 'Hammer Jam event art: a Builder raising a glowing blue hammer while meteors streak across the sky',
     body: ['50% off upgrade time and cost, and double production. Here is how to get the most out of it.'],
     list: [
