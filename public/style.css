@@ -3759,25 +3759,33 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 .wh-fire { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
 .wh-fire b { position: absolute; inset: 0; overflow: hidden; }
 
-/* The row itself is one flame. A single body runs the full width: dense and saturated at the left (where the name is
-   lit up), then the same colour stays across the rest of the row, just fainter, so it never disappears. The edges are
-   ragged flame tongues. A second, denser layer sits over the left part and the two flicker slowly. */
+/* The row itself is one flame. One body runs the full width and its brightness falls away smoothly from the left
+   (where the name is lit up) to the right without ever disappearing. At the far end the edge breaks into curled
+   flame tongues, with a few faint wisps licking out in front of them. Everything flickers slowly. */
 .wh-fire b { position: absolute; inset: 0; overflow: visible; }
-.wh-fire i, .wh-fire .f2, .wh-fire .f3 { display: none; }
-.wh-fire .f4, .wh-fire .f1 { -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; transform-origin: 0 50%; }
+.wh-fire i, .wh-fire .f3 { display: none; }
+.wh-fire .f4, .wh-fire .f1, .wh-fire .f2 { -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; transform-origin: 0 50%; }
 .wh-fire .f4 {
-  background: linear-gradient(90deg, rgba(var(--fa), 0.42) 0%, rgba(var(--fa), 0.34) 16%, rgba(var(--fb), 0.26) 42%, rgba(var(--fc), 0.22) 72%, rgba(var(--fc), 0.2) 100%);
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cpath%20d=%22M0%206L10%208L22%203L30%209L42%202L50%208L63%201L71%207L84%200L91%206L100%203L96%2030L100%2048L93%2066L98%2086L90%2096L80%2092L72%2099L60%2093L50%20100L40%2094L28%20100L18%2095L8%20100L0%2096Z%22%20fill=%22%23000%22/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cpath%20d=%22M0%206L10%208L22%203L30%209L42%202L50%208L63%201L71%207L84%200L91%206L100%203L96%2030L100%2048L93%2066L98%2086L90%2096L80%2092L72%2099L60%2093L50%20100L40%2094L28%20100L18%2095L8%20100L0%2096Z%22%20fill=%22%23000%22/%3E%3C/svg%3E");
+  background: linear-gradient(90deg,
+    rgba(var(--fa), 0.46) 0%, rgba(var(--fa), 0.41) 8%, rgba(var(--fa), 0.35) 17%, rgba(var(--fb), 0.3) 28%,
+    rgba(var(--fb), 0.26) 40%, rgba(var(--fb), 0.23) 55%, rgba(var(--fc), 0.21) 72%, rgba(var(--fc), 0.2) 100%);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cpath%20d=%22M0%204L50%203Q60%206%2064%2017Q71%2014%2076%201Q76%2012%2080%2019Q88%2014%2093%202Q92%2012%2096%2019Q99%2012%20100%201L99%2040L100%2060Q97%2068%2095%2082Q89%2084%2086%2099Q85%2090%2081%2082Q74%2086%2070%20100Q69%2090%2065%2083Q58%2088%2054%2098L0%2097Z%22%20fill=%22%23000%22/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cpath%20d=%22M0%204L50%203Q60%206%2064%2017Q71%2014%2076%201Q76%2012%2080%2019Q88%2014%2093%202Q92%2012%2096%2019Q99%2012%20100%201L99%2040L100%2060Q97%2068%2095%2082Q89%2084%2086%2099Q85%2090%2081%2082Q74%2086%2070%20100Q69%2090%2065%2083Q58%2088%2054%2098L0%2097Z%22%20fill=%22%23000%22/%3E%3C/svg%3E");
   animation: wh-flick-a 3.4s ease-in-out infinite alternate;
 }
+/* a soft hot glow behind the name; same silhouette, no hard edge of its own */
 .wh-fire .f1 {
-  right: 36%;
-  background: linear-gradient(90deg, rgba(var(--fd), 0.5) 0%, rgba(var(--fa), 0.34) 38%, rgba(var(--fb), 0) 82%);
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cpath%20d=%22M0%204L8%207L16%202L24%208L33%201L41%207L50%203L58%2010L64%206L60%2030L66%2050L58%2072L64%2092L52%2096L44%20100L34%2094L24%20100L14%2094L6%20100L0%2097Z%22%20fill=%22%23000%22/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cpath%20d=%22M0%204L8%207L16%202L24%208L33%201L41%207L50%203L58%2010L64%206L60%2030L66%2050L58%2072L64%2092L52%2096L44%20100L34%2094L24%20100L14%2094L6%20100L0%2097Z%22%20fill=%22%23000%22/%3E%3C/svg%3E");
-  animation: wh-flick-b 2.4s ease-in-out infinite alternate;
+  background: radial-gradient(ellipse 46% 130% at 0% 50%, rgba(var(--fd), 0.42), rgba(var(--fa), 0.2) 55%, rgba(var(--fa), 0) 100%);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cpath%20d=%22M0%204L50%203Q60%206%2064%2017Q71%2014%2076%201Q76%2012%2080%2019Q88%2014%2093%202Q92%2012%2096%2019Q99%2012%20100%201L99%2040L100%2060Q97%2068%2095%2082Q89%2084%2086%2099Q85%2090%2081%2082Q74%2086%2070%20100Q69%2090%2065%2083Q58%2088%2054%2098L0%2097Z%22%20fill=%22%23000%22/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cpath%20d=%22M0%204L50%203Q60%206%2064%2017Q71%2014%2076%201Q76%2012%2080%2019Q88%2014%2093%202Q92%2012%2096%2019Q99%2012%20100%201L99%2040L100%2060Q97%2068%2095%2082Q89%2084%2086%2099Q85%2090%2081%2082Q74%2086%2070%20100Q69%2090%2065%2083Q58%2088%2054%2098L0%2097Z%22%20fill=%22%23000%22/%3E%3C/svg%3E");
+  animation: wh-flick-b 2.6s ease-in-out infinite alternate;
 }
-@keyframes wh-flick-a { from { transform: scaleX(0.97); opacity: 0.88; } to { transform: scaleX(1.02); opacity: 1; } }
-@keyframes wh-flick-b { from { transform: scaleX(1.08) scaleY(0.97); opacity: 0.8; } to { transform: scaleX(0.9) scaleY(1.02); opacity: 1; } }
+.wh-fire .f2 {
+  background: linear-gradient(90deg, rgba(var(--fb), 0) 40%, rgba(var(--fc), 0.3) 70%, rgba(var(--fc), 0.1) 100%);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cpath%20d=%22M46%2030Q64%2028%2080%208Q74%2028%2062%2038ZM52%2052Q72%2050%2092%2032Q84%2054%2066%2062ZM44%2070Q62%2068%2078%2054Q72%2076%2058%2084ZM64%2078Q80%2076%2096%2066Q88%2086%2074%2092Z%22%20fill=%22%23000%22/%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cpath%20d=%22M46%2030Q64%2028%2080%208Q74%2028%2062%2038ZM52%2052Q72%2050%2092%2032Q84%2054%2066%2062ZM44%2070Q62%2068%2078%2054Q72%2076%2058%2084ZM64%2078Q80%2076%2096%2066Q88%2086%2074%2092Z%22%20fill=%22%23000%22/%3E%3C/svg%3E");
+  animation: wh-flick-c 2.1s ease-in-out infinite alternate;
+}
+@keyframes wh-flick-a { from { transform: scaleX(0.97); opacity: 0.9; } to { transform: scaleX(1.02); opacity: 1; } }
+@keyframes wh-flick-b { from { opacity: 0.75; } to { opacity: 1; } }
+@keyframes wh-flick-c { from { transform: translateX(-1.5%) scaleY(0.94); opacity: 0.55; } to { transform: translateX(1.5%) scaleY(1.04); opacity: 1; } }
 .wh-table tr.rank-1 { --fa: 150, 96, 255; --fb: 196, 112, 240; --fc: 110, 170, 255; --fd: 176, 128, 255; }
 .wh-table tr.rank-2 { --fa: 255, 186, 40; --fb: 255, 172, 30; --fc: 255, 200, 90; --fd: 255, 205, 80; }
 .wh-table tr.rank-3 { --fa: 226, 30, 44; --fb: 214, 26, 40; --fc: 240, 60, 56; --fd: 245, 50, 60; }
