@@ -3761,61 +3761,31 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 .wh-fire { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
 .wh-fire b { position: absolute; inset: 0; overflow: hidden; }
 
-/* The top three are banners: a flag that is fullest at the pole (left, behind the lit-up name), still coloured but
-   fainter to the right, with a swallowtail end. The edges ripple and a soft light/shadow wave travels along the cloth
-   like wind. #1 is iridescent purple, #2 gold, #3 red. */
-.wh-fire { --wave: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20120%20100%22%20preserveAspectRatio=%22none%22%3E%3Cpath%20d=%22M0%206C15%20-2%2045%20-2%2060%206C75%2014%20105%2014%20120%206L120%2094C105%20102%2075%20102%2060%2094C45%2086%2015%2086%200%2094Z%22%20fill=%22%23000%22/%3E%3C/svg%3E"); --cut: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cpath%20d=%22M0%200H100L90%2050L100%20100H0Z%22%20fill=%22%23000%22/%3E%3C/svg%3E"); }
-.wh-fire b { position: absolute; inset: 0; overflow: visible; }
-.wh-fire i { display: none; }
-.wh-fire .f4, .wh-fire .f1, .wh-fire .f2 {
-  -webkit-mask-image: var(--wave), var(--cut), var(--fade, linear-gradient(90deg, #000, #000));
-  mask-image: var(--wave), var(--cut), var(--fade, linear-gradient(90deg, #000, #000));
-  -webkit-mask-size: 120px 100%, 100% 100%, 100% 100%;
-  mask-size: 120px 100%, 100% 100%, 100% 100%;
-  -webkit-mask-repeat: repeat-x, no-repeat, no-repeat;
-  mask-repeat: repeat-x, no-repeat, no-repeat;
-  -webkit-mask-composite: source-in, source-in;
-  mask-composite: intersect, intersect;
-  animation: wh-edge 3.2s linear infinite;
-}
-@keyframes wh-edge { from { -webkit-mask-position: 0 0, 0 0, 0 0; mask-position: 0 0, 0 0, 0 0; } to { -webkit-mask-position: 120px 0, 0 0, 0 0; mask-position: 120px 0, 0 0, 0 0; } }
-/* flat at the pole, wavy toward the free end: a flat band (f3) fades out as the rippling one (f4) fades in */
-.wh-fire .f4 { --fade: linear-gradient(90deg, rgba(0, 0, 0, 0) 14%, rgba(0, 0, 0, 0.3) 52%, rgba(0, 0, 0, 0.3)); background: var(--cloth); }
-.wh-fire .f3 {
-  background: var(--cloth);
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Crect%20x=%220%22%20y=%225%22%20width=%22100%22%20height=%2290%22%20fill=%22%23000%22/%3E%3C/svg%3E"), var(--cut), linear-gradient(90deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.5) 18%, rgba(0, 0, 0, 0.26) 42%, rgba(0, 0, 0, 0) 62%);
-  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Crect%20x=%220%22%20y=%225%22%20width=%22100%22%20height=%2290%22%20fill=%22%23000%22/%3E%3C/svg%3E"), var(--cut), linear-gradient(90deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.5) 18%, rgba(0, 0, 0, 0.26) 42%, rgba(0, 0, 0, 0) 62%);
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-composite: source-in, source-in;
-  mask-composite: intersect, intersect;
-}
-/* light and shadow moving along the cloth; calm at the pole, stronger toward the free end */
-.wh-fire .f1 {
-  --fade: linear-gradient(90deg, rgba(0, 0, 0, 0) 6%, rgba(0, 0, 0, 0.9) 60%);
-  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.2) 30px, rgba(255, 255, 255, 0) 60px, rgba(0, 0, 0, 0.22) 90px, rgba(255, 255, 255, 0) 120px);
-  background-size: 120px 100%;
-  animation: wh-edge 3.2s linear infinite, wh-cloth 3.2s linear infinite;
-}
-@keyframes wh-cloth { from { background-position: 0 0; } to { background-position: 120px 0; } }
-.wh-table tr.rank-1 { --cloth: linear-gradient(100deg, #7448ff 0%, #a85cff 16%, #ff74d8 34%, #5cc8ff 52%, #8a68ff 68%, #c47cff 84%, #8a60ff 100%); }
-.wh-table tr.rank-2 { --cloth: linear-gradient(90deg, #e0a014 0%, #ffc940 45%, #f2b02a 100%); }
-.wh-table tr.rank-3 { --cloth: linear-gradient(90deg, #c0121f 0%, #e8283a 50%, #cf1c2e 100%); }
-/* first place is iridescent: the colours shimmer slowly, and a sheen sweeps across */
-.wh-table tr.rank-1 .f4 { animation: wh-edge 3.2s linear infinite, wh-irid 7s ease-in-out infinite alternate; }
-.wh-table tr.rank-1 .f3 { animation: wh-irid 7s ease-in-out infinite alternate; }
-@keyframes wh-irid { from { filter: hue-rotate(-22deg) saturate(1.05); } to { filter: hue-rotate(34deg) saturate(1.2); } }
+/* The top three get a still colour wash that is strongest at the left (behind the lit-up name) and fades out toward
+   the right. #1 is purple, #2 gold, #3 red. Every 5 seconds a shimmer of iridescent light sweeps across #1. The wash
+   itself never moves; only that one soft strip does, and it moves with transform so phones handle it easily. */
+.wh-fire b { position: absolute; inset: 0; }
+.wh-fire i, .wh-fire .f1, .wh-fire .f3 { display: none; }
+.wh-fire .f4 { background: var(--wash); }
+.wh-table tr.rank-1 { --wash: linear-gradient(90deg, rgba(150, 96, 255, 0.5) 0%, rgba(160, 100, 255, 0.4) 22%, rgba(150, 110, 235, 0.26) 52%, rgba(120, 140, 230, 0.15) 100%); }
+.wh-table tr.rank-2 { --wash: linear-gradient(90deg, rgba(255, 190, 50, 0.46) 0%, rgba(255, 186, 44, 0.36) 22%, rgba(255, 180, 40, 0.22) 52%, rgba(255, 190, 70, 0.12) 100%); }
+.wh-table tr.rank-3 { --wash: linear-gradient(90deg, rgba(232, 36, 52, 0.5) 0%, rgba(226, 30, 46, 0.38) 22%, rgba(220, 30, 44, 0.22) 52%, rgba(230, 50, 54, 0.12) 100%); }
 .wh-table tr.rank-1 .f2 {
   display: block;
-  --fade: linear-gradient(90deg, #000, #000);
-  background: linear-gradient(105deg, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0) 70%) no-repeat;
-  background-size: 45% 100%;
-  animation: wh-edge 3.2s linear infinite, wh-sheen 5.5s ease-in-out infinite;
+  inset: 0 auto 0 0;
+  width: 42%;
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(120, 200, 255, 0.34) 22%, rgba(255, 130, 220, 0.4) 45%, rgba(190, 150, 255, 0.4) 66%, rgba(255, 255, 255, 0) 100%);
+  transform: translateX(-110%) skewX(-18deg);
+  opacity: 0;
+  animation: wh-shimmer 5s ease-in-out infinite;
 }
-@keyframes wh-sheen { from { background-position: -20% 0; } 60%, to { background-position: 130% 0; } }
-.wh-table tr.rank-1 .wh-fire .f2 { opacity: 0.9; }
+@keyframes wh-shimmer {
+  0%, 8% { transform: translateX(-110%) skewX(-18deg); opacity: 0; }
+  14% { opacity: 1; }
+  34% { opacity: 1; }
+  40%, 100% { transform: translateX(260%) skewX(-18deg); opacity: 0; }
+}
+
 /* the name is lit up on the left; the small text stays readable over the flames */
 .wh-table tr.rank-1 .wh-meta, .wh-table tr.rank-2 .wh-meta, .wh-table tr.rank-3 .wh-meta { color: rgba(255, 255, 255, 0.82); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
 .wh-table tr.rank-1 .wh-big, .wh-table tr.rank-2 .wh-big, .wh-table tr.rank-3 .wh-big { text-shadow: 0 1px 8px rgba(0, 0, 0, 0.75); }
@@ -3826,11 +3796,8 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 @media (prefers-reduced-motion: reduce) {
   .wh-fire b { animation: none !important; }
 }
-/* Phones: the waving flag is drawn once and stays still. Animating masks and filters every frame is too heavy for
-   them, so the banner keeps its shape and colours but not the movement. */
+/* Phones: skip the animated text/bar shimmer on a perfect 3.0 average (it repaints every frame). */
 @media (max-width: 760px), (hover: none) and (pointer: coarse) {
-  .wh-fire b { animation: none !important; }
-  .wh-table tr.rank-1 .f2 { display: none; }
   .wh-avg.is-perfect .wh-avgnum, .wh-avg.is-perfect .avg-bar i { animation: none !important; }
 }
 
