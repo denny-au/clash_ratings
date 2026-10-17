@@ -1867,9 +1867,8 @@ function warChipHtml(w, latest) {
   return `<div class="ww ww-${w.result || 'unknown'}${latest ? ' ww-latest' : ''}"><span class="ww-res">${res}</span><span class="ww-text"><b>vs ${escapeHtml(w.opponentName || 'Unknown')}</b><em>${escapeHtml(date)}${score}</em></span>${tag}</div>`;
 }
 
-// The top three get a slow, low flame licking along the bottom of their row.
-const FLAME_TONGUES = 8;
-const flameHtml = () => `<span class="wh-fire" aria-hidden="true">${'<i></i>'.repeat(FLAME_TONGUES)}</span>`;
+// The top three get a flame that streams across the whole row (the layers are drawn by CSS).
+const flameHtml = () => '<span class="wh-fire" aria-hidden="true"><b class="f4"><i></i></b><b class="f1"><i></i></b><b class="f2"><i></i></b><b class="f3"><i></i></b></span>';
 
 const warFind = createFindTool({
   btn: $('w-find-btn'), bar: $('w-find-bar'), input: $('w-find-input'), count: $('w-find-count'), clear: $('w-find-clear'), empty: $('w-find-empty'),
@@ -1903,8 +1902,8 @@ const warBoard = (() => {
     const rankCell = rank <= 3 ? crownHtml(rank) : `<span class="rank-num">${rank}</span>`;
     const meta = `${m.wars} war${m.wars === 1 ? '' : 's'} · ${m.attacks} attack${m.attacks === 1 ? '' : 's'}`;
     return `<tr class="${rank <= 3 ? `rank-${rank}` : ''}${pickClass(m.tag)}" style="--i:${i}" data-tag="${escapeHtml(m.tag)}">
-        <td class="wh-rank">${rankCell}</td>
-        <td class="wh-name">${rank <= 3 ? flameHtml() : ''}<span class="name">${highlightHtml(m.name, q)}</span><span class="wh-meta">${meta}</span></td>
+        <td class="wh-rank">${rank <= 3 ? flameHtml() : ''}${rankCell}</td>
+        <td class="wh-name"><span class="name">${highlightHtml(m.name, q)}</span><span class="wh-meta">${meta}</span></td>
         <td class="num wh-stars"><span class="wh-big">${fmt(m.stars)}</span></td>
         <td class="wh-avg"><span class="wh-avgnum">${avg.toFixed(1)}</span><span class="avg-bar"><i style="width:${Math.min(100, (avg / topAvg) * 100)}%"></i></span></td>
         <td class="wh-mu">${bar}<span class="mu-txt">${higher}↑ ${same}= ${lower}↓</span></td>
