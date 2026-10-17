@@ -3826,6 +3826,13 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 @media (prefers-reduced-motion: reduce) {
   .wh-fire b { animation: none !important; }
 }
+/* Phones: the waving flag is drawn once and stays still. Animating masks and filters every frame is too heavy for
+   them, so the banner keeps its shape and colours but not the movement. */
+@media (max-width: 760px), (hover: none) and (pointer: coarse) {
+  .wh-fire b { animation: none !important; }
+  .wh-table tr.rank-1 .f2 { display: none; }
+  .wh-avg.is-perfect .wh-avgnum, .wh-avg.is-perfect .avg-bar i { animation: none !important; }
+}
 
 /* ---- Warboard head to head ---- */
 .vs-mix-bar { display: grid; gap: 0.2rem; min-width: 0; }
