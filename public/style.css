@@ -3785,23 +3785,20 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 .wh-table tr.rank-3 td:nth-child(5) { --w: linear-gradient(90deg, rgba(var(--rc2), 0.18), rgba(var(--rc2), 0.12)) }
 /* each cell paints its slice */
 .wh-table tr.rank-1 td, .wh-table tr.rank-2 td, .wh-table tr.rank-3 td { background-image: var(--w); }
-/* the sweep: a soft iridescent band that crosses the cells of #1's row one after another */
+/* the sweep: one soft iridescent band that crosses the whole row of #1 every 5 seconds. Each cell draws the same
+   row-wide picture shifted by its own offset (--off) so the band lines up across cells; app.js sets --off and --rw. */
 .wh-table tr.rank-1 td {
-  --sheen: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(120, 200, 255, 0.34) 24%, rgba(255, 130, 220, 0.4) 48%, rgba(190, 150, 255, 0.4) 70%, rgba(255, 255, 255, 0) 100%);
-  background-image: var(--sheen), var(--w);
-  background-size: 100% 100%, 100% 100%;
+  --rw: 800px;
+  --off: 0px;
+  background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 30%, rgba(120, 200, 255, 0.36) 40%, rgba(255, 130, 220, 0.42) 50%, rgba(190, 150, 255, 0.4) 60%, rgba(255, 255, 255, 0) 70%), var(--w);
+  background-size: var(--rw) 100%, 100% 100%;
   background-repeat: no-repeat;
-  background-position: -120% 0, 0 0;
-  animation: wh-sweep 5s linear infinite;
+  background-position: calc(-1 * var(--rw) - var(--off)) 0, 0 0;
+  animation: wh-sweep 5s ease-in-out infinite;
 }
-.wh-table tr.rank-1 td:nth-child(2) { animation-delay: 0.22s; }
-.wh-table tr.rank-1 td:nth-child(3) { animation-delay: 0.44s; }
-.wh-table tr.rank-1 td:nth-child(4) { animation-delay: 0.66s; }
-.wh-table tr.rank-1 td:nth-child(5) { animation-delay: 0.88s; }
 @keyframes wh-sweep {
-  0% { background-position: -120% 0, 0 0; }
-  5% { background-position: 120% 0, 0 0; }
-  100% { background-position: 120% 0, 0 0; }
+  0% { background-position: calc(-1 * var(--rw) - var(--off)) 0, 0 0; }
+  30%, 100% { background-position: calc(var(--rw) - var(--off)) 0, 0 0; }
 }
 
 /* the name is lit up on the left; the small text stays readable over the flames */

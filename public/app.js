@@ -1924,7 +1924,20 @@ const warBoard = (() => {
     body.innerHTML = visible.map((m, i) => rowHtml(m, i, q)).join('');
     warFind.results({ q, count: visible.length, total: rows.length });
     $('history-table').hidden = visible.length === 0;
+    fitSheen();
   }
+
+  // First place's shimmer is one band across the whole row; each cell needs to know where it sits in the row.
+  function fitSheen() {
+    const tr = body.querySelector('tr.rank-1');
+    if (!tr || !tr.offsetWidth) return;
+    for (const td of tr.children) {
+      td.style.setProperty('--rw', tr.offsetWidth + 'px');
+      td.style.setProperty('--off', td.offsetLeft + 'px');
+    }
+  }
+  if (typeof ResizeObserver === 'function') new ResizeObserver(fitSheen).observe($('history-table'));
+  else window.addEventListener('resize', fitSheen);
 
   body.addEventListener('click', (e) => {
     const tr = e.target.closest('tr[data-tag]');
