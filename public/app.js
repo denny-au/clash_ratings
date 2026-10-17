@@ -220,7 +220,7 @@ function crownHtml(rank) {
 
 // Warboard top three: shield icons (1st purple, 2nd gold, 3rd red).
 function rankIconHtml(rank) {
-  return `<img class="wh-icon" src="assets/warboard/rank-${rank}.png" width="40" height="40" alt="Rank ${rank}" title="Rank ${rank}" draggable="false">`;
+  return `<span class="wh-badge" role="img" aria-label="Rank ${rank}" title="Rank ${rank}"><img class="wh-icon" src="assets/warboard/rank-${rank}.png" alt="" draggable="false"><b aria-hidden="true">${rank}</b></span>`;
 }
 
 // Small trophy shown next to last month's Champion.
