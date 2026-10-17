@@ -3017,20 +3017,16 @@ body.modal-open { overflow: hidden; }
 /* A perfect 3.0 average (every attack a 3-star) gets an iridescent purple bar and number. */
 .wh-avg.is-perfect .wh-avgnum {
   background: linear-gradient(100deg, #b98cff, #ff9be8 30%, #8fd3ff 55%, #c9a2ff 80%, #b98cff);
-  background-size: 220% 100%;
+  background-size: 100% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: irid-shift 4.5s linear infinite;
 }
 .wh-avg.is-perfect .avg-bar i {
   background: linear-gradient(100deg, #9a6bff, #ff8fe0 28%, #7fd0ff 52%, #b98cff 76%, #9a6bff);
-  background-size: 220% 100%;
+  background-size: 100% 100%;
   box-shadow: 0 0 8px rgba(176, 130, 255, 0.55);
-  animation: irid-shift 4.5s linear infinite;
 }
-@keyframes irid-shift { from { background-position: 0 0; } to { background-position: -220% 0; } }
-@media (prefers-reduced-motion: reduce) { .wh-avg.is-perfect .wh-avgnum, .wh-avg.is-perfect .avg-bar i { animation: none; } }
 
 .mu { display: flex; width: 100px; height: 8px; border-radius: 8px; overflow: hidden; background: rgba(255, 255, 255, 0.07); }
 .mu i { display: block; height: 100%; }
@@ -3811,11 +3807,6 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 @media (prefers-reduced-motion: reduce) {
   .wh-table tr.rank-1 td { animation: none !important; }
 }
-/* Phones: skip the animated text/bar shimmer on a perfect 3.0 average (it repaints every frame). */
-@media (max-width: 760px), (hover: none) and (pointer: coarse) {
-  .wh-avg.is-perfect .wh-avgnum { animation: none !important; background: none; color: #b996ff; -webkit-text-fill-color: #b996ff; }
-  .wh-avg.is-perfect .avg-bar i { animation: none !important; background: linear-gradient(90deg, #8a5cff, #b58cff); box-shadow: none; }
-}
 
 /* ---- Warboard head to head ---- */
 .vs-mix-bar { display: grid; gap: 0.2rem; min-width: 0; }
@@ -3828,23 +3819,11 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 .vs-block .mr-legend .dot.s-eq { background: rgba(255, 255, 255, 0.55); }
 .vs-block .mr-legend .dot.s-dn { background: rgba(255, 255, 255, 0.28); }
 
-
-/* ---- Player card (pop-up) ---- */
-[data-card] { cursor: pointer; }
-[data-card]:hover { text-decoration: underline; text-decoration-color: rgba(var(--accent-rgb), 0.6); text-underline-offset: 3px; }
+/* ---- Warboard: the player card opens under a row ---- */
 .wh-table tr[data-tag] { cursor: pointer; }
-.pc-sheet { width: min(100%, 640px); }
-.pc-head { display: flex; align-items: center; gap: 0.85rem; padding-right: 2rem; margin-bottom: 0.9rem; }
-.pc-league { flex: none; width: 52px; height: 52px; object-fit: contain; }
-.pc-who { min-width: 0; }
-.pc-name { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 1.5rem; line-height: 1.15; overflow-wrap: anywhere; }
-.pc-sub { margin: 0.15rem 0 0; color: var(--muted); font-size: 0.82rem; overflow-wrap: anywhere; }
-.pc-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.4rem; margin-bottom: 1rem; }
-.pc-stats > div { display: grid; gap: 0.1rem; padding: 0.55rem 0.3rem; text-align: center; border-radius: 12px; border: 1px solid var(--border); background: rgba(255, 255, 255, 0.04); }
-.pc-stats b { font-family: var(--font-display); font-weight: 400; font-size: 1.1rem; }
-.pc-stats span { color: var(--muted); font-size: 0.64rem; letter-spacing: 0.05em; text-transform: uppercase; }
-.pc-body .dc-grid { grid-template-columns: minmax(0, 1fr); gap: 1.1rem; }
-@media (max-width: 480px) {
-  .pc-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .pc-name { font-size: 1.3rem; }
-}
+.wh-table tr[data-tag]:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: -2px; }
+.wh-table tr.is-open:not(.rank-1):not(.rank-2):not(.rank-3) { background: rgba(255, 255, 255, 0.035); }
+.wh-table tbody tr.detail, .wh-table tbody tr.detail:hover { background: rgba(255, 255, 255, 0.022); animation: none; }
+.wh-table tr.detail td { padding: 0; white-space: normal; }
+.wh-table .detail-card .dc-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 640px) { .wh-table .detail-card .dc-grid { grid-template-columns: minmax(0, 1fr); } }
