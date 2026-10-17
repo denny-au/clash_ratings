@@ -3761,40 +3761,48 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 .wh-fire { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
 .wh-fire b { position: absolute; inset: 0; overflow: hidden; }
 
-/* The row itself is one flame, lit like Overwatch's name plates: a soft hot body at the left (behind the lit-up name)
-   whose brightness falls away smoothly to the right, with fine feathery strands of flame streaming out of it all the
-   way to the far end. Two sets of strands move at different speeds so it keeps flickering. */
+/* The top three are banners: a flag that is fullest at the pole (left, behind the lit-up name), still coloured but
+   fainter to the right, with a swallowtail end. The edges ripple and a soft light/shadow wave travels along the cloth
+   like wind. #1 is iridescent purple, #2 gold, #3 red. */
+.wh-fire { --wave: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20120%20100%22%20preserveAspectRatio=%22none%22%3E%3Cpath%20d=%22M0%206C15%20-2%2045%20-2%2060%206C75%2014%20105%2014%20120%206L120%2094C105%20102%2075%20102%2060%2094C45%2086%2015%2086%200%2094Z%22%20fill=%22%23000%22/%3E%3C/svg%3E"); --cut: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cpath%20d=%22M0%200H100L90%2050L100%20100H0Z%22%20fill=%22%23000%22/%3E%3C/svg%3E"); }
 .wh-fire b { position: absolute; inset: 0; overflow: visible; }
-.wh-fire i { display: none; }
-.wh-fire .f4, .wh-fire .f1, .wh-fire .f2, .wh-fire .f3 { -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; transform-origin: 0 50%; }
-.wh-fire .f4 {
-  background: linear-gradient(90deg, rgba(var(--fa), 0.5) 0%, rgba(var(--fa), 0.4) 20%, rgba(var(--fb), 0.24) 45%, rgba(var(--fb), 0.1) 70%, rgba(var(--fb), 0.05) 100%);
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cdefs%3E%3Cfilter%20id=%22b%22%20x=%22-5%25%22%20y=%22-30%25%22%20width=%22110%25%22%20height=%22160%25%22%3E%3CfeGaussianBlur%20stdDeviation=%220.7%201.4%22/%3E%3C/filter%3E%3C/defs%3E%3Cg%20filter=%22url%28%23b%29%22%20fill=%22%23000%22%3E%3Cpath%20d=%22M0%206H52Q66%206%2072%2020V80Q66%2094%2052%2094H0Z%22/%3E%3C/g%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cdefs%3E%3Cfilter%20id=%22b%22%20x=%22-5%25%22%20y=%22-30%25%22%20width=%22110%25%22%20height=%22160%25%22%3E%3CfeGaussianBlur%20stdDeviation=%220.7%201.4%22/%3E%3C/filter%3E%3C/defs%3E%3Cg%20filter=%22url%28%23b%29%22%20fill=%22%23000%22%3E%3Cpath%20d=%22M0%206H52Q66%206%2072%2020V80Q66%2094%2052%2094H0Z%22/%3E%3C/g%3E%3C/svg%3E");
-  animation: wh-flick-a 3.4s ease-in-out infinite alternate;
+.wh-fire i, .wh-fire .f3 { display: none; }
+.wh-fire .f4, .wh-fire .f1, .wh-fire .f2 {
+  -webkit-mask-image: var(--wave), var(--cut), var(--fade, linear-gradient(90deg, #000, #000));
+  mask-image: var(--wave), var(--cut), var(--fade, linear-gradient(90deg, #000, #000));
+  -webkit-mask-size: 120px 100%, 100% 100%, 100% 100%;
+  mask-size: 120px 100%, 100% 100%, 100% 100%;
+  -webkit-mask-repeat: repeat-x, no-repeat, no-repeat;
+  mask-repeat: repeat-x, no-repeat, no-repeat;
+  -webkit-mask-composite: source-in, source-in;
+  mask-composite: intersect, intersect;
+  animation: wh-edge 3.2s linear infinite;
 }
+@keyframes wh-edge { from { -webkit-mask-position: 0 0, 0 0, 0 0; mask-position: 0 0, 0 0, 0 0; } to { -webkit-mask-position: 120px 0, 0 0, 0 0; mask-position: 120px 0, 0 0, 0 0; } }
+.wh-fire .f4 { --fade: linear-gradient(90deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.46) 35%, rgba(0, 0, 0, 0.34) 70%, rgba(0, 0, 0, 0.3)); background: var(--cloth); }
+/* light and shadow moving along the cloth; calm at the pole, stronger toward the free end */
 .wh-fire .f1 {
-  background: radial-gradient(ellipse 34% 130% at 0% 50%, rgba(var(--fd), 0.4), rgba(var(--fa), 0.16) 60%, rgba(var(--fa), 0) 100%);
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cdefs%3E%3Cfilter%20id=%22b%22%20x=%22-5%25%22%20y=%22-30%25%22%20width=%22110%25%22%20height=%22160%25%22%3E%3CfeGaussianBlur%20stdDeviation=%220.7%201.4%22/%3E%3C/filter%3E%3C/defs%3E%3Cg%20filter=%22url%28%23b%29%22%20fill=%22%23000%22%3E%3Cpath%20d=%22M0%206H52Q66%206%2072%2020V80Q66%2094%2052%2094H0Z%22/%3E%3C/g%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cdefs%3E%3Cfilter%20id=%22b%22%20x=%22-5%25%22%20y=%22-30%25%22%20width=%22110%25%22%20height=%22160%25%22%3E%3CfeGaussianBlur%20stdDeviation=%220.7%201.4%22/%3E%3C/filter%3E%3C/defs%3E%3Cg%20filter=%22url%28%23b%29%22%20fill=%22%23000%22%3E%3Cpath%20d=%22M0%206H52Q66%206%2072%2020V80Q66%2094%2052%2094H0Z%22/%3E%3C/g%3E%3C/svg%3E");
-  animation: wh-flick-b 2.6s ease-in-out infinite alternate;
+  --fade: linear-gradient(90deg, rgba(0, 0, 0, 0) 6%, rgba(0, 0, 0, 0.9) 60%);
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.2) 30px, rgba(255, 255, 255, 0) 60px, rgba(0, 0, 0, 0.22) 90px, rgba(255, 255, 255, 0) 120px);
+  background-size: 120px 100%;
+  animation: wh-edge 3.2s linear infinite, wh-cloth 3.2s linear infinite;
 }
-.wh-fire .f2 {
-  background: linear-gradient(90deg, rgba(var(--fb), 0.1) 30%, rgba(var(--fd), 0.4) 55%, rgba(var(--fc), 0.3) 100%);
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cdefs%3E%3Cfilter%20id=%22b%22%20x=%22-5%25%22%20y=%22-30%25%22%20width=%22110%25%22%20height=%22160%25%22%3E%3CfeGaussianBlur%20stdDeviation=%220.5%200.5%22/%3E%3C/filter%3E%3C/defs%3E%3Cg%20filter=%22url%28%23b%29%22%20fill=%22%23000%22%3E%3Cpath%20d=%22M36%2020Q56.0%2018.5%2076%207Q60.0%2025.5%2036%2025Z%22/%3E%3Cpath%20d=%22M46%2034Q69.0%2032.5%2092%2017Q73.0%2038.5%2046%2038Z%22/%3E%3Cpath%20d=%22M34%2048Q67.0%2046.5%20100%2033Q71.0%2054.5%2034%2054Z%22/%3E%3Cpath%20d=%22M48%2060Q69.0%2058.5%2090%2047Q73.0%2064.0%2048%2063.5Z%22/%3E%3Cpath%20d=%22M42%2070Q69.5%2068.5%2097%2063Q73.5%2075.5%2042%2075Z%22/%3E%3Cpath%20d=%22M56%2080Q78.0%2078.5%20100%2076Q82.0%2083.5%2056%2083Z%22/%3E%3Cpath%20d=%22M34%2086Q58.0%2084.5%2082%2093Q62.0%2090.5%2034%2090Z%22/%3E%3Cpath%20d=%22M60%2012Q79.0%2010.5%2098%203Q83.0%2015.5%2060%2015Z%22/%3E%3Cpath%20d=%22M62%2090Q78.5%2088.5%2095%2098Q82.5%2093.5%2062%2093Z%22/%3E%3C/g%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cdefs%3E%3Cfilter%20id=%22b%22%20x=%22-5%25%22%20y=%22-30%25%22%20width=%22110%25%22%20height=%22160%25%22%3E%3CfeGaussianBlur%20stdDeviation=%220.5%200.5%22/%3E%3C/filter%3E%3C/defs%3E%3Cg%20filter=%22url%28%23b%29%22%20fill=%22%23000%22%3E%3Cpath%20d=%22M36%2020Q56.0%2018.5%2076%207Q60.0%2025.5%2036%2025Z%22/%3E%3Cpath%20d=%22M46%2034Q69.0%2032.5%2092%2017Q73.0%2038.5%2046%2038Z%22/%3E%3Cpath%20d=%22M34%2048Q67.0%2046.5%20100%2033Q71.0%2054.5%2034%2054Z%22/%3E%3Cpath%20d=%22M48%2060Q69.0%2058.5%2090%2047Q73.0%2064.0%2048%2063.5Z%22/%3E%3Cpath%20d=%22M42%2070Q69.5%2068.5%2097%2063Q73.5%2075.5%2042%2075Z%22/%3E%3Cpath%20d=%22M56%2080Q78.0%2078.5%20100%2076Q82.0%2083.5%2056%2083Z%22/%3E%3Cpath%20d=%22M34%2086Q58.0%2084.5%2082%2093Q62.0%2090.5%2034%2090Z%22/%3E%3Cpath%20d=%22M60%2012Q79.0%2010.5%2098%203Q83.0%2015.5%2060%2015Z%22/%3E%3Cpath%20d=%22M62%2090Q78.5%2088.5%2095%2098Q82.5%2093.5%2062%2093Z%22/%3E%3C/g%3E%3C/svg%3E");
-  animation: wh-flick-c 2.2s ease-in-out infinite alternate;
+@keyframes wh-cloth { from { background-position: 0 0; } to { background-position: 120px 0; } }
+.wh-table tr.rank-1 { --cloth: linear-gradient(100deg, #7448ff 0%, #a85cff 16%, #ff74d8 34%, #5cc8ff 52%, #8a68ff 68%, #c47cff 84%, #8a60ff 100%); }
+.wh-table tr.rank-2 { --cloth: linear-gradient(90deg, #e0a014 0%, #ffc940 45%, #f2b02a 100%); }
+.wh-table tr.rank-3 { --cloth: linear-gradient(90deg, #c0121f 0%, #e8283a 50%, #cf1c2e 100%); }
+/* first place is iridescent: the colours shimmer slowly, and a sheen sweeps across */
+.wh-table tr.rank-1 .f4 { animation: wh-edge 3.2s linear infinite, wh-irid 7s ease-in-out infinite alternate; }
+@keyframes wh-irid { from { filter: hue-rotate(-22deg) saturate(1.05); } to { filter: hue-rotate(34deg) saturate(1.2); } }
+.wh-table tr.rank-1 .f2 {
+  display: block;
+  --fade: linear-gradient(90deg, #000, #000);
+  background: linear-gradient(105deg, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0) 70%) no-repeat;
+  background-size: 45% 100%;
+  animation: wh-edge 3.2s linear infinite, wh-sheen 5.5s ease-in-out infinite;
 }
-.wh-fire .f3 {
-  background: linear-gradient(90deg, rgba(var(--fb), 0.05) 30%, rgba(var(--fc), 0.3) 60%, rgba(var(--fd), 0.28) 100%);
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cdefs%3E%3Cfilter%20id=%22b%22%20x=%22-5%25%22%20y=%22-30%25%22%20width=%22110%25%22%20height=%22160%25%22%3E%3CfeGaussianBlur%20stdDeviation=%220.5%200.5%22/%3E%3C/filter%3E%3C/defs%3E%3Cg%20filter=%22url%28%23b%29%22%20fill=%22%23000%22%3E%3Cpath%20d=%22M52%2027Q69.0%2025.5%2086%2016Q73.0%2031.0%2052%2030.5Z%22/%3E%3Cpath%20d=%22M40%2042Q67.5%2040.5%2095%2027Q71.5%2046.5%2040%2046Z%22/%3E%3Cpath%20d=%22M55%2054Q77.5%2052.5%20100%2050Q81.5%2057.5%2055%2057Z%22/%3E%3Cpath%20d=%22M38%2064Q61.0%2062.5%2084%2056Q65.0%2068.5%2038%2068Z%22/%3E%3Cpath%20d=%22M50%2075Q71.0%2073.5%2092%2072Q75.0%2079.0%2050%2078.5Z%22/%3E%3Cpath%20d=%22M58%2085Q78.0%2083.5%2098%2088Q82.0%2088.5%2058%2088Z%22/%3E%3C/g%3E%3C/svg%3E"); mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cdefs%3E%3Cfilter%20id=%22b%22%20x=%22-5%25%22%20y=%22-30%25%22%20width=%22110%25%22%20height=%22160%25%22%3E%3CfeGaussianBlur%20stdDeviation=%220.5%200.5%22/%3E%3C/filter%3E%3C/defs%3E%3Cg%20filter=%22url%28%23b%29%22%20fill=%22%23000%22%3E%3Cpath%20d=%22M52%2027Q69.0%2025.5%2086%2016Q73.0%2031.0%2052%2030.5Z%22/%3E%3Cpath%20d=%22M40%2042Q67.5%2040.5%2095%2027Q71.5%2046.5%2040%2046Z%22/%3E%3Cpath%20d=%22M55%2054Q77.5%2052.5%20100%2050Q81.5%2057.5%2055%2057Z%22/%3E%3Cpath%20d=%22M38%2064Q61.0%2062.5%2084%2056Q65.0%2068.5%2038%2068Z%22/%3E%3Cpath%20d=%22M50%2075Q71.0%2073.5%2092%2072Q75.0%2079.0%2050%2078.5Z%22/%3E%3Cpath%20d=%22M58%2085Q78.0%2083.5%2098%2088Q82.0%2088.5%2058%2088Z%22/%3E%3C/g%3E%3C/svg%3E");
-  animation: wh-flick-d 1.7s ease-in-out infinite alternate;
-}
-@keyframes wh-flick-a { from { transform: scaleX(0.97); opacity: 0.9; } to { transform: scaleX(1.02); opacity: 1; } }
-@keyframes wh-flick-b { from { opacity: 0.75; } to { opacity: 1; } }
-@keyframes wh-flick-c { from { transform: translateX(-2%) scaleY(0.95); opacity: 0.6; } to { transform: translateX(1.5%) scaleY(1.04); opacity: 1; } }
-@keyframes wh-flick-d { from { transform: translateX(2%) scaleY(1.04); opacity: 1; } to { transform: translateX(-1.5%) scaleY(0.95); opacity: 0.55; } }
-.wh-table tr.rank-1 { --fa: 150, 96, 255; --fb: 196, 112, 240; --fc: 110, 170, 255; --fd: 176, 128, 255; }
-.wh-table tr.rank-2 { --fa: 255, 186, 40; --fb: 255, 172, 30; --fc: 255, 200, 90; --fd: 255, 205, 80; }
-.wh-table tr.rank-3 { --fa: 226, 30, 44; --fb: 214, 26, 40; --fc: 240, 60, 56; --fd: 245, 50, 60; }
-
+@keyframes wh-sheen { from { background-position: -20% 0; } 60%, to { background-position: 130% 0; } }
+.wh-table tr.rank-1 .wh-fire .f2 { opacity: 0.9; }
 /* the name is lit up on the left; the small text stays readable over the flames */
 .wh-table tr.rank-1 .wh-meta, .wh-table tr.rank-2 .wh-meta, .wh-table tr.rank-3 .wh-meta { color: rgba(255, 255, 255, 0.82); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7); }
 .wh-table tr.rank-1 .wh-big, .wh-table tr.rank-2 .wh-big, .wh-table tr.rank-3 .wh-big { text-shadow: 0 1px 8px rgba(0, 0, 0, 0.75); }
