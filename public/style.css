@@ -3766,7 +3766,7 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
    like wind. #1 is iridescent purple, #2 gold, #3 red. */
 .wh-fire { --wave: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20120%20100%22%20preserveAspectRatio=%22none%22%3E%3Cpath%20d=%22M0%206C15%20-2%2045%20-2%2060%206C75%2014%20105%2014%20120%206L120%2094C105%20102%2075%20102%2060%2094C45%2086%2015%2086%200%2094Z%22%20fill=%22%23000%22/%3E%3C/svg%3E"); --cut: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Cpath%20d=%22M0%200H100L90%2050L100%20100H0Z%22%20fill=%22%23000%22/%3E%3C/svg%3E"); }
 .wh-fire b { position: absolute; inset: 0; overflow: visible; }
-.wh-fire i, .wh-fire .f3 { display: none; }
+.wh-fire i { display: none; }
 .wh-fire .f4, .wh-fire .f1, .wh-fire .f2 {
   -webkit-mask-image: var(--wave), var(--cut), var(--fade, linear-gradient(90deg, #000, #000));
   mask-image: var(--wave), var(--cut), var(--fade, linear-gradient(90deg, #000, #000));
@@ -3779,7 +3779,19 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
   animation: wh-edge 3.2s linear infinite;
 }
 @keyframes wh-edge { from { -webkit-mask-position: 0 0, 0 0, 0 0; mask-position: 0 0, 0 0, 0 0; } to { -webkit-mask-position: 120px 0, 0 0, 0 0; mask-position: 120px 0, 0 0, 0 0; } }
-.wh-fire .f4 { --fade: linear-gradient(90deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.46) 35%, rgba(0, 0, 0, 0.34) 70%, rgba(0, 0, 0, 0.3)); background: var(--cloth); }
+/* flat at the pole, wavy toward the free end: a flat band (f3) fades out as the rippling one (f4) fades in */
+.wh-fire .f4 { --fade: linear-gradient(90deg, rgba(0, 0, 0, 0) 14%, rgba(0, 0, 0, 0.3) 52%, rgba(0, 0, 0, 0.3)); background: var(--cloth); }
+.wh-fire .f3 {
+  background: var(--cloth);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Crect%20x=%220%22%20y=%225%22%20width=%22100%22%20height=%2290%22%20fill=%22%23000%22/%3E%3C/svg%3E"), var(--cut), linear-gradient(90deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.5) 18%, rgba(0, 0, 0, 0.26) 42%, rgba(0, 0, 0, 0) 62%);
+  mask-image: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%20100%20100%22%20preserveAspectRatio=%22none%22%3E%3Crect%20x=%220%22%20y=%225%22%20width=%22100%22%20height=%2290%22%20fill=%22%23000%22/%3E%3C/svg%3E"), var(--cut), linear-gradient(90deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.5) 18%, rgba(0, 0, 0, 0.26) 42%, rgba(0, 0, 0, 0) 62%);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-composite: source-in, source-in;
+  mask-composite: intersect, intersect;
+}
 /* light and shadow moving along the cloth; calm at the pole, stronger toward the free end */
 .wh-fire .f1 {
   --fade: linear-gradient(90deg, rgba(0, 0, 0, 0) 6%, rgba(0, 0, 0, 0.9) 60%);
@@ -3793,6 +3805,7 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 .wh-table tr.rank-3 { --cloth: linear-gradient(90deg, #c0121f 0%, #e8283a 50%, #cf1c2e 100%); }
 /* first place is iridescent: the colours shimmer slowly, and a sheen sweeps across */
 .wh-table tr.rank-1 .f4 { animation: wh-edge 3.2s linear infinite, wh-irid 7s ease-in-out infinite alternate; }
+.wh-table tr.rank-1 .f3 { animation: wh-irid 7s ease-in-out infinite alternate; }
 @keyframes wh-irid { from { filter: hue-rotate(-22deg) saturate(1.05); } to { filter: hue-rotate(34deg) saturate(1.2); } }
 .wh-table tr.rank-1 .f2 {
   display: block;
