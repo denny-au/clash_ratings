@@ -16,7 +16,7 @@ const drawerTabs = document.querySelectorAll('.drawer-tab');
 
 const tabsEl = $('tabs');
 const tabButtons = Array.from(document.querySelectorAll('.tab'));
-const panels = { month: $('panel-month'), war: $('panel-war'), guide: $('panel-guide') };
+const panels = { month: $('panel-month'), war: $('panel-war'), bulletin: $('panel-bulletin'), guide: $('panel-guide') };
 
 // How many leaderboard rows show before the "Show all" button. Change this
 // one number to show more or fewer by default (set it very high to always
@@ -985,6 +985,7 @@ async function searchClan(tag) {
   setStatus('Searching...', false);
   clanInfo.hidden = true;
   tabsEl.hidden = true;
+  $('tab-bulletin').hidden = true; // only the home clan gets a Bulletin
   for (const el of Object.values(panels)) el.hidden = true;
   monthBoard.clear();
   lastBoard.clear();
@@ -1010,6 +1011,7 @@ async function searchClan(tag) {
     currentClanTag = data.tag;
     renderClan(data);
     setStatus('', false); // the clan card already says how many members — no need to repeat it
+    $('tab-bulletin').hidden = data.tag !== DEFAULT_CLAN_TAG;
     tabsEl.hidden = false;
     activateTab(hashTab(), { updateHash: false });
     fetchCurrentWar(data.tag);
@@ -2288,6 +2290,30 @@ async function fetchPreviousMonth(tag) {
     fail();
   }
 }
+
+// ---------- Bulletin (posts come from bulletin-data.js) ----------
+function renderBulletin() {
+  const root = $('bulletin-root');
+  const posts = Array.isArray(window.CR_BULLETIN) ? window.CR_BULLETIN : [];
+  if (!posts.length) {
+    root.innerHTML = '<p class="panel-note">Nothing new right now.</p>';
+    return;
+  }
+  const dateLabel = (iso) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    if (!m) return '';
+    return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  };
+  root.innerHTML = posts
+    .map((p) => {
+      const meta = [p.label ? `<span class="bl-label">${escapeHtml(p.label)}</span>` : '', dateLabel(p.date) ? `<time>${escapeHtml(dateLabel(p.date))}</time>` : ''].join('');
+      const body = (p.body || []).map((t) => `<p>${escapeHtml(t)}</p>`).join('');
+      const list = p.list && p.list.length ? `<ul>${p.list.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : '';
+      return `<article class="bl-post"><div class="bl-meta">${meta}</div><h4>${escapeHtml(p.title || '')}</h4>${body}${list}</article>`;
+    })
+    .join('');
+}
+renderBulletin();
 
 // Kick off the first search last, once everything above is defined.
 searchClan(DEFAULT_CLAN_TAG);

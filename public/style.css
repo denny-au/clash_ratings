@@ -3827,3 +3827,27 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 .wh-table tr.detail td { padding: 0; white-space: normal; }
 .wh-table .detail-card .dc-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 640px) { .wh-table .detail-card .dc-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- Bulletin ---------- */
+.bulletin { display: grid; gap: 0.8rem; max-width: 640px; margin: 0 auto; }
+.bl-post {
+  padding: 0.95rem 1.05rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+}
+.bl-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem; color: var(--muted); font-size: 0.8rem; }
+.bl-label {
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(var(--accent-rgb), 0.16);
+  color: var(--accent-hi);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.bl-post h4 { margin: 0 0 0.4rem; font-family: var(--font-display); font-weight: 400; font-size: 1.2rem; color: var(--text); }
+.bl-post p { margin: 0 0 0.5rem; color: var(--text); font-size: 0.95rem; line-height: 1.5; overflow-wrap: anywhere; }
+.bl-post ul { margin: 0.1rem 0 0; padding-left: 1.2rem; color: var(--text); font-size: 0.95rem; line-height: 1.5; }
+.bl-post li { margin-bottom: 0.2rem; overflow-wrap: anywhere; }
+.bl-post > :last-child { margin-bottom: 0; }

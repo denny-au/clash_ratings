@@ -154,6 +154,7 @@
         <span id="tab-pill" class="tab-pill" aria-hidden="true"></span>
         <button type="button" role="tab" id="tab-month" class="tab" data-tab="month" aria-selected="true" aria-controls="panel-month">Leaderboard</button>
         <button type="button" role="tab" id="tab-war" class="tab" data-tab="war" aria-selected="false" aria-controls="panel-war" tabindex="-1">War <span id="war-live-dot" class="live-dot" hidden title="A war is active right now" aria-hidden="true"></span></button>
+        <button type="button" role="tab" id="tab-bulletin" class="tab" data-tab="bulletin" aria-selected="false" aria-controls="panel-bulletin" tabindex="-1" hidden>Bulletin</button>
         <button type="button" role="tab" id="tab-guide" class="tab" data-tab="guide" aria-selected="false" aria-controls="panel-guide" tabindex="-1">Guide</button>
       </div>
 
@@ -247,6 +248,14 @@
           <h4 class="hall-title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v4a5 5 0 0 1-10 0V3Z" /><path d="M7 4H3.5v1.5A3.5 3.5 0 0 0 7 9M17 4h3.5v1.5A3.5 3.5 0 0 1 17 9" fill="none" stroke-width="1.6" /><rect x="10.5" y="12" width="3" height="4" /><rect x="7.5" y="17" width="9" height="3" rx="1" /></svg>Hall of Champions</h4>
           <div id="hall-list" class="hall-list"></div>
         </section>
+      </section>
+
+      <!-- ===== Bulletin (only shown for the home clan) ===== -->
+      <section id="panel-bulletin" class="panel" role="tabpanel" aria-labelledby="tab-bulletin" hidden>
+        <div class="panel-head">
+          <h3 class="panel-title">Bulletin</h3>
+        </div>
+        <div id="bulletin-root" class="bulletin"></div>
       </section>
 
       <!-- ===== Guide ===== -->
@@ -380,6 +389,7 @@
     </div>
   </div>
 
+  <script src="bulletin-data.js"></script>
   <script src="guide-data.js"></script>
   <script src="guide.js"></script>
   <script src="app.js"></script>
