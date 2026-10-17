@@ -3828,26 +3828,102 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 .wh-table .detail-card .dc-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 640px) { .wh-table .detail-card .dc-grid { grid-template-columns: minmax(0, 1fr); } }
 
-/* ---------- Bulletin ---------- */
-.bulletin { display: grid; gap: 0.8rem; max-width: 640px; margin: 0 auto; }
-.bl-post {
-  padding: 0.95rem 1.05rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+/* ---------- Bulletin: an angled tutorial-style board with a dagger pinning its corner ---------- */
+.bl-wrap { position: relative; max-width: 640px; margin: 0 auto; padding-top: 6px; }
+.bl-board {
+  --cut: polygon(0 16px, 22px 0, 100% 9px, calc(100% - 7px) calc(100% - 16px), calc(100% - 28px) 100%, 9px calc(100% - 7px));
+  padding: 3px;
+  background: linear-gradient(135deg, var(--accent-hi), var(--accent-deep) 55%, var(--accent));
+  clip-path: var(--cut);
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.45));
 }
-.bl-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem; color: var(--muted); font-size: 0.8rem; }
-.bl-label {
-  padding: 0.1rem 0.55rem;
-  border-radius: 999px;
-  background: rgba(var(--accent-rgb), 0.16);
-  color: var(--accent-hi);
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.bl-inner {
+  --cut-in: polygon(0 15px, 21px 0, 100% 8px, calc(100% - 6px) calc(100% - 15px), calc(100% - 27px) 100%, 8px calc(100% - 6px));
+  padding: 1.1rem 1.15rem 1.35rem;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0) 40%),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.018) 0 6px, transparent 6px 12px),
+    #15161f;
+  clip-path: var(--cut-in);
 }
-.bl-post h4 { margin: 0 0 0.4rem; font-family: var(--font-display); font-weight: 400; font-size: 1.2rem; color: var(--text); }
+
+/* the dagger: its tip sits on the board, the handle leans out over the top-right corner */
+.bl-dagger {
+  position: absolute;
+  z-index: 2;
+  top: -28px;
+  right: 40px;
+  width: 31px;
+  height: 100px;
+  transform-origin: 50% 100%;
+  transform: rotate(30deg);
+  filter: drop-shadow(2px 5px 3px rgba(0, 0, 0, 0.65));
+  pointer-events: none;
+  animation: bl-stab 0.5s 0.12s cubic-bezier(0.3, 0.7, 0.3, 1) both;
+}
+@keyframes bl-stab {
+  from { transform: translate(24px, -42px) rotate(38deg); opacity: 0; }
+  55% { opacity: 1; }
+  80% { transform: translate(-1px, 3px) rotate(30deg); }
+  to { transform: rotate(30deg); opacity: 1; }
+}
+
+/* title: chunky letters, each a little off-kilter */
+.bl-title {
+  margin: 0 0 0.9rem;
+  padding-right: 4.5rem; /* keep clear of the dagger */
+  display: flex;
+  align-items: baseline;
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: 2.2rem;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--accent-pale);
+  transform: skewX(-7deg) rotate(-2.5deg);
+  transform-origin: left bottom;
+}
+.bl-title span {
+  display: inline-block;
+  text-shadow: 3px 3px 0 #000, 0 0 14px rgba(var(--accent-rgb), 0.35);
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.55);
+  paint-order: stroke fill;
+}
+.bl-title span:nth-child(1) { font-size: 1.28em; transform: rotate(-5deg); }
+.bl-title span:nth-child(2) { transform: translateY(2px) rotate(4deg); }
+.bl-title span:nth-child(3) { font-size: 1.12em; transform: rotate(-3deg); }
+.bl-title span:nth-child(4) { transform: translateY(1px) rotate(3deg); }
+.bl-title span:nth-child(5) { font-size: 1.08em; transform: rotate(-4deg); }
+.bl-title span:nth-child(6) { transform: translateY(2px) rotate(5deg); }
+.bl-title span:nth-child(7) { font-size: 1.14em; transform: rotate(-2deg); }
+.bl-title span:nth-child(8) { transform: translateY(1px) rotate(4deg); }
+
+.bulletin { display: grid; gap: 1.15rem; }
+.bl-post { min-width: 0; }
+.bl-post + .bl-post { padding-top: 1.15rem; border-top: 1px dashed rgba(255, 255, 255, 0.14); }
+
+/* cream strip with the post headline, ends cut on a slant */
+.bl-banner {
+  margin: 0 -0.35rem 0.55rem;
+  padding: 0.42rem 1rem 0.5rem;
+  background: #f6efdd;
+  clip-path: polygon(0 0, 100% 7%, calc(100% - 5px) 100%, 6px 93%);
+  text-align: center;
+}
+.bl-banner h4 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 1.1rem; letter-spacing: 0.02em; color: #1a1822; overflow-wrap: anywhere; }
+
+.bl-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin: 0 0 0.35rem; color: var(--muted); font-size: 0.8rem; }
+.bl-label { color: #ff4a57; font-family: var(--font-display); font-size: 0.95rem; letter-spacing: 0.03em; }
 .bl-post p { margin: 0 0 0.5rem; color: var(--text); font-size: 0.95rem; line-height: 1.5; overflow-wrap: anywhere; }
-.bl-post ul { margin: 0.1rem 0 0; padding-left: 1.2rem; color: var(--text); font-size: 0.95rem; line-height: 1.5; }
-.bl-post li { margin-bottom: 0.2rem; overflow-wrap: anywhere; }
+.bl-post ul { margin: 0.15rem 0 0; padding: 0; list-style: none; color: var(--text); font-size: 0.95rem; line-height: 1.5; }
+.bl-post li { position: relative; margin-bottom: 0.25rem; padding-left: 1.15rem; overflow-wrap: anywhere; }
+.bl-post li::before { content: ""; position: absolute; left: 0.1rem; top: 0.5em; width: 0.5rem; height: 0.5rem; background: var(--accent); transform: rotate(45deg); }
 .bl-post > :last-child { margin-bottom: 0; }
+.bl-empty { margin: 0; text-align: center; color: var(--muted); font-size: 0.95rem; }
+
+@media (max-width: 440px) {
+  .bl-inner { padding: 1rem 0.95rem 1.2rem; }
+  .bl-title { font-size: 1.85rem; padding-right: 3.8rem; }
+  .bl-dagger { right: 30px; }
+}
+@media (prefers-reduced-motion: reduce) { .bl-dagger { animation: none; } }

@@ -2296,7 +2296,7 @@ function renderBulletin() {
   const root = $('bulletin-root');
   const posts = Array.isArray(window.CR_BULLETIN) ? window.CR_BULLETIN : [];
   if (!posts.length) {
-    root.innerHTML = '<p class="panel-note">Nothing new right now.</p>';
+    root.innerHTML = '<p class="bl-empty">Nothing new right now.</p>';
     return;
   }
   const dateLabel = (iso) => {
@@ -2309,7 +2309,7 @@ function renderBulletin() {
       const meta = [p.label ? `<span class="bl-label">${escapeHtml(p.label)}</span>` : '', dateLabel(p.date) ? `<time>${escapeHtml(dateLabel(p.date))}</time>` : ''].join('');
       const body = (p.body || []).map((t) => `<p>${escapeHtml(t)}</p>`).join('');
       const list = p.list && p.list.length ? `<ul>${p.list.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : '';
-      return `<article class="bl-post"><div class="bl-meta">${meta}</div><h4>${escapeHtml(p.title || '')}</h4>${body}${list}</article>`;
+      return `<article class="bl-post"><div class="bl-banner"><h4>${escapeHtml(p.title || '')}</h4></div><div class="bl-meta">${meta}</div>${body}${list}</article>`;
     })
     .join('');
 }

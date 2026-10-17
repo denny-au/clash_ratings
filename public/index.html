@@ -252,10 +252,26 @@
 
       <!-- ===== Bulletin (only shown for the home clan) ===== -->
       <section id="panel-bulletin" class="panel" role="tabpanel" aria-labelledby="tab-bulletin" hidden>
-        <div class="panel-head">
-          <h3 class="panel-title">Bulletin</h3>
+        <div class="bl-wrap">
+          <svg class="bl-dagger" viewBox="0 0 40 130" aria-hidden="true" focusable="false">
+            <defs>
+              <linearGradient id="bl-steel" x1="0" x2="1"><stop offset="0" stop-color="#f4f6fb"/><stop offset=".5" stop-color="#c3c9d8"/><stop offset="1" stop-color="#7d8499"/></linearGradient>
+              <linearGradient id="bl-brass" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#b8862b"/></linearGradient>
+            </defs>
+            <path d="M12 50 H28 V102 L20 128 L12 102 Z" fill="url(#bl-steel)" stroke="#0b0c12" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M20 54 V112" stroke="#6b7388" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+            <rect x="15" y="14" width="10" height="30" rx="3" fill="#15161f" stroke="#0b0c12" stroke-width="1.4"/>
+            <path d="M15.5 20 L24.5 25 M15.5 27 L24.5 32 M15.5 34 L24.5 39" stroke="#f2c14e" stroke-width="1.6" stroke-linecap="round"/>
+            <rect x="3" y="43" width="34" height="8" rx="3.5" fill="url(#bl-brass)" stroke="#0b0c12" stroke-width="1.6"/>
+            <circle cx="20" cy="8" r="6.5" fill="url(#bl-brass)" stroke="#0b0c12" stroke-width="1.6"/>
+          </svg>
+          <div class="bl-board">
+            <div class="bl-inner">
+              <h3 class="bl-title" aria-label="Bulletin"><span aria-hidden="true">B</span><span aria-hidden="true">U</span><span aria-hidden="true">L</span><span aria-hidden="true">L</span><span aria-hidden="true">E</span><span aria-hidden="true">T</span><span aria-hidden="true">I</span><span aria-hidden="true">N</span></h3>
+              <div id="bulletin-root" class="bulletin"></div>
+            </div>
+          </div>
         </div>
-        <div id="bulletin-root" class="bulletin"></div>
       </section>
 
       <!-- ===== Guide ===== -->
