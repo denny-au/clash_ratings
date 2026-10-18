@@ -1,0 +1,44 @@
+// Data for the Planner page (planner.js). Edit this file to change the names or the placeholder numbers.
+window.CR_PLANNER_DATA = {
+  // PLACEHOLDER numbers, not real calculations yet. The real time to reach the next Town Hall or to max
+  // everything needs the upgrade time of every building level, which the game's export does not include.
+  // These are shown on the Planner as "estimates" until that data is added.
+  estimate: {
+    rushDays: 83, // "Strategic rush": days from today until the next Town Hall
+    maxDays: 410, // "Max": days from today until everything is maxed
+  },
+
+  // What the numbers in a Clash of Clans village export mean. Anything missing from these lists still
+  // shows up on the Planner, just with a generic name (so a new building never breaks the page).
+  names: {
+    buildings: {
+      1000000: 'Army Camp',
+      1000001: 'Town Hall',
+      1000002: 'Elixir Collector',
+      1000003: 'Elixir Storage',
+      1000004: 'Gold Mine',
+      1000005: 'Gold Storage',
+      1000006: 'Barracks',
+      1000007: 'Laboratory',
+      1000010: 'Wall',
+      1000015: "Builder's Hut",
+      1000077: 'Monolith',
+    },
+    units: {
+      4000000: 'Barbarian', 4000001: 'Archer', 4000002: 'Goblin', 4000003: 'Giant', 4000004: 'Wall Breaker',
+      4000005: 'Balloon', 4000006: 'Wizard', 4000007: 'Healer', 4000008: 'Dragon', 4000009: 'P.E.K.K.A',
+      4000010: 'Minion', 4000011: 'Hog Rider', 4000012: 'Valkyrie', 4000013: 'Golem', 4000132: 'Thrower',
+    },
+    heroes: {
+      28000000: 'Barbarian King', 28000001: 'Archer Queen', 28000002: 'Grand Warden', 28000004: 'Royal Champion',
+      28000006: 'Minion Prince', 28000007: 'Dragon Duke',
+    },
+    pets: {
+      73000000: 'L.A.S.S.I', 73000001: 'Electro Owl', 73000002: 'Mighty Yak', 73000003: 'Unicorn', 73000004: 'Phoenix',
+      73000009: 'Frosty',
+    },
+    helpers: {
+      93000000: "Builder's Apprentice", 93000001: 'Lab Assistant', 93000002: 'Alchemist', 93000003: 'Prospector',
+    },
+  },
+};

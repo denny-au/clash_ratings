@@ -197,6 +197,23 @@ const slideMs = 280;
 const slideInMs = 480;
 const reducedMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
+const IRID = [[255, 150, 205], [140, 205, 255], [185, 160, 255], [140, 240, 215], [255, 215, 150]];
+let iridTimer = null;
+let iridAt = 0;
+function startIrid() {
+  const step = () => {
+    const c = IRID[iridAt++ % IRID.length];
+    window.CR_THEME_PENDING = c;
+    if (window.CR_FX) window.CR_FX.setTheme(c);
+  };
+  step();
+  if (!reducedMotion()) iridTimer = setInterval(step, 5200);
+}
+function stopIrid() {
+  if (iridTimer) clearInterval(iridTimer);
+  iridTimer = null;
+}
+
 function showPlanner(open, { instant = false, restoreScroll = true } = {}) {
   if (open === plannerOpen) return;
   if (plannerBusy) {
@@ -221,10 +238,14 @@ function showPlanner(open, { instant = false, restoreScroll = true } = {}) {
       entering.classList.add(inCls);
       setTimeout(() => entering.classList.remove(inCls), slideInMs);
     }
-    // the light goes back to the tab's colour on the way out, and the original amber while the Planner is open
+    // The Planner's light is iridescent: the beams are pearly pink, blue, violet and gold, and the glow and the
+    // floating dots drift through the same colours. Leaving goes back to the tab's own colour.
+    document.documentElement.classList.toggle('on-planner', open);
+    const plLight = $('planner-light');
+    if (plLight) plLight.hidden = !open;
+    stopIrid();
     if (open) {
-      window.CR_THEME_PENDING = null;
-      if (window.CR_FX) window.CR_FX.setTheme(null);
+      startIrid();
     } else if (!tabsEl.hidden) {
       activateTab(hashTab(), { updateHash: false });
     } else {
@@ -366,6 +387,7 @@ function sweepImages() {
   document.querySelectorAll('img').forEach((img) => {
     if (img.complete || img.dataset.crFallback || !SC_IMG.test(img.getAttribute('src') || '')) return;
     const r = img.getBoundingClientRect();
+    if (!r.width || !r.height) return; // hidden (another tab, a closed menu): it has not even been asked to load yet
     if (r.bottom > -200 && r.top < window.innerHeight + 200) imgFailed(img);
   });
 }
@@ -1176,7 +1198,8 @@ async function searchClan(tag) {
   monthBoard.clear();
   lastBoard.clear();
   summaryHasData = false;
-  summaryEl.hidden = true;
+  summaryOpen = false; // the stats strip starts hidden for every clan
+  syncSummary();
   $('month-awards').hidden = true;
   shareData.month = shareData.last = shareData.war = null;
   $('last-fold').hidden = true;
@@ -1287,11 +1310,30 @@ function shortDateLabel(key) {
 
 // ---------- Clan summary strip ----------
 const summaryEl = $('summary');
+const clanToggle = $('clan-toggle');
 let summaryHasData = false;
+let summaryOpen = false; // the strip is hidden until the clan card is tapped
 
 function syncSummary() {
-  summaryEl.hidden = !summaryHasData;
+  const show = summaryHasData && summaryOpen;
+  summaryEl.hidden = !show;
+  clanToggle.hidden = !summaryHasData;
+  clanToggle.setAttribute('aria-expanded', String(show));
+  clanToggle.setAttribute('aria-label', show ? 'Hide clan stats' : 'Show clan stats');
+  clanInfo.classList.toggle('stats-open', show);
 }
+
+function toggleSummary() {
+  if (!summaryHasData) return;
+  summaryOpen = !summaryOpen;
+  syncSummary();
+  if (summaryOpen) summaryEl.querySelectorAll('[data-count]').forEach((n) => countUp(n)); // the numbers count up as it opens
+}
+// The whole card is the button (except the "Open in Clash of Clans" link); the chevron is the keyboard/screen-reader version.
+clanInfo.addEventListener('click', (e) => {
+  if (e.target.closest('a')) return;
+  toggleSummary();
+});
 
 function renderSummary(sum) {
   summaryHasData = !!sum;
@@ -1314,7 +1356,6 @@ function renderSummary(sum) {
   summaryEl.innerHTML = tiles
     .map(([label, value, n], i) => `<div class="stat" style="--i:${i}"><b${n == null ? '' : ` data-count="${Number(n) || 0}"`}>${escapeHtml(value)}</b><span>${escapeHtml(label)}</span></div>`)
     .join('');
-  summaryEl.querySelectorAll('[data-count]').forEach((n) => countUp(n));
   syncSummary();
 }
 
