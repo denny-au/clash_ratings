@@ -3842,25 +3842,26 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
   background: radial-gradient(120% 70% at 100% 0%, rgba(var(--accent-rgb), 0.07), transparent 60%);
 }
 
-/* the Builder's hammer rests on the card's top-right corner */
+/* the Builder's hammer leans left, as if swinging into the card's top-right corner */
 .bl-hammer {
   position: absolute;
   z-index: 2;
-  top: -26px;
-  right: 14px;
+  top: -24px;
+  right: 16px;
   width: 44px;
   height: auto;
-  transform-origin: 50% 85%;
-  transform: rotate(14deg);
-  filter: drop-shadow(2px 5px 3px rgba(0, 0, 0, 0.6));
+  transform-origin: 55% 90%; /* pivots near the bottom of the handle */
+  transform: rotate(-28deg);
+  filter: drop-shadow(-2px 5px 3px rgba(0, 0, 0, 0.6));
   pointer-events: none;
-  animation: bl-thunk 0.55s 0.12s cubic-bezier(0.3, 0.7, 0.3, 1) both;
+  animation: bl-thunk 0.6s 0.12s cubic-bezier(0.3, 0.7, 0.3, 1) both;
 }
+/* it swings in from the right and settles with a little bounce */
 @keyframes bl-thunk {
-  from { transform: translate(8px, -22px) rotate(-38deg); opacity: 0; }
-  55% { opacity: 1; transform: translate(0, 2px) rotate(18deg); }
-  78% { transform: rotate(9deg); }
-  to { transform: rotate(14deg); opacity: 1; }
+  from { transform: rotate(32deg); opacity: 0; }
+  50% { opacity: 1; transform: rotate(-34deg); }
+  75% { transform: rotate(-24deg); }
+  to { transform: rotate(-28deg); opacity: 1; }
 }
 
 .bulletin { display: grid; gap: 1.15rem; }
