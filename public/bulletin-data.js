@@ -14,6 +14,7 @@
 //   sections  – optional numbered tips, each a closed dropdown (tap the headline to open), each with:
 //                 title   – the section headline (required)
 //                 text    – optional paragraph (or a list of paragraphs)
+//                 art     – optional single picture at the top of the tip: { image: 'assets/...', alt: 'what it shows' }
 //                 podium  – optional picture podium: up to 3 items { image: 'assets/...', label: 'Name' }, listed 1st, 2nd, 3rd
 //                 points  – optional bullet points
 //                 links   – optional list of { label: 'text', url: 'https://...' }
@@ -40,11 +41,11 @@ window.CR_BULLETIN = [
         ],
       },
       {
-        title: 'Do not spend CWL medals unless you are about to hit the limit you can hold',
-        points: [
-          'Builder potions are the top priority.',
-          'Research potions are fine to use. Definitely invest in them if you want to train up a particular army, but do not go out of your way to max out everything in the lab.',
-          'Hammers are decent, but do not over-invest in them. Most people use 1 hammer on their town hall to rush it, but that only applies at TH15 and above. Below that, I recommend sticking with builder potions.',
+        title: 'Spending your CWL medals',
+        art: { image: 'assets/bulletin/cwl-medal.png', alt: 'Clan War League medal' },
+        text: [
+          'Clan War League (CWL) medals let you buy whatever you want, but the most useful item during Hammer Jam is the Builder Potion.',
+          'Many players buy 1 hammer before the event starts, but think carefully: that means saying goodbye to 4 Builder Potions, or about 18 days of progress.',
         ],
       },
       {

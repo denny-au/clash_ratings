@@ -2327,10 +2327,12 @@ function renderBulletin() {
           .map((it, i) => `<li class="bl-pod bl-pod-${i + 1}">${safeImg(it.image) ? `<img src="${escapeHtml(it.image)}" alt="${escapeHtml(it.label || '')}" decoding="async">` : ''}<div class="bl-step"><b>${i + 1}</b><span>${escapeHtml(it.label || '')}</span></div></li>`)
           .join('')}</ol>`
       : '';
+  // a single centred picture at the top of a tip
+  const artHtml = (a) => (a && safeImg(a.image) ? `<img class="bl-art" src="${escapeHtml(a.image)}" alt="${escapeHtml(a.alt || '')}" decoding="async">` : '');
   const textHtml = (t) => (Array.isArray(t) ? t : t ? [t] : []).map((x) => `<p>${escapeHtml(x)}</p>`).join('');
   // every numbered section is a closed dropdown: tap the headline to read the tip
   const sectionHtml = (sec) =>
-    `<details class="bl-sec"><summary><span class="bl-st">${escapeHtml(sec.title || '')}</span><span class="chev" aria-hidden="true"></span></summary><div class="bl-sec-body">${podiumHtml(sec.podium)}${textHtml(sec.text)}${listHtml(sec.points)}${linksHtml(sec.links)}</div></details>`;
+    `<details class="bl-sec"><summary><span class="bl-st">${escapeHtml(sec.title || '')}</span><span class="chev" aria-hidden="true"></span></summary><div class="bl-sec-body">${artHtml(sec.art)}${podiumHtml(sec.podium)}${textHtml(sec.text)}${listHtml(sec.points)}${linksHtml(sec.links)}</div></details>`;
   root.innerHTML = posts
     .map((p) => {
       const meta = [p.label ? `<span class="bl-label">${escapeHtml(p.label)}</span>` : '', dateLabel(p.date) ? `<time>${escapeHtml(dateLabel(p.date))}</time>` : ''].join('');
