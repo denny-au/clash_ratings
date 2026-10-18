@@ -128,6 +128,7 @@ if (window.ResizeObserver) {
 }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => positionPill(false));
 
+const TAB_GLOW = { bulletin: [110, 170, 255], war: [242, 58, 38] };
 const boardReplays = {}; // tab name -> function that replays that board's entrance
 
 function activateTab(name, { updateHash = true } = {}) {
@@ -141,12 +142,15 @@ function activateTab(name, { updateHash = true } = {}) {
   }
   for (const [key, el] of Object.entries(panels)) el.hidden = key !== name;
   positionPill(true);
-  // the Guide tints the floating lights to the town hall in view; every other tab is back to amber
-  const theme = name === 'guide' && window.CR_GUIDE ? window.CR_GUIDE.themeRgb() : null;
+  // The glow at the top (and the floating lights) change colour per tab: the Guide uses the town hall in view,
+  // the Bulletin is a soft blue, the War tab a fiery red, and the Leaderboard stays the original amber.
+  const theme = name === 'guide' ? (window.CR_GUIDE ? window.CR_GUIDE.themeRgb() : null) : TAB_GLOW[name] || null;
+  const meteors = $('meteors');
+  if (meteors) meteors.hidden = name !== 'bulletin'; // the Hammer Jam meteor shower only shows on the Bulletin
   window.CR_THEME_PENDING = theme;
   if (window.CR_FX) window.CR_FX.setTheme(theme);
   if (boardReplays[name]) boardReplays[name]();
-  syncSummary(); // the strip is this month's numbers, so it sits out the Guide
+  syncSummary(); // the clan stats strip shows on every tab
   if (updateHash) {
     try {
       const hash = name === 'guide' && window.CR_GUIDE ? window.CR_GUIDE.hash() : `#${name}`;
@@ -1104,7 +1108,7 @@ const summaryEl = $('summary');
 let summaryHasData = false;
 
 function syncSummary() {
-  summaryEl.hidden = !summaryHasData || activeTab === 'guide';
+  summaryEl.hidden = !summaryHasData;
 }
 
 function renderSummary(sum) {
@@ -2299,10 +2303,12 @@ function renderBulletin() {
     root.innerHTML = '<p class="bl-empty">Nothing new right now.</p>';
     return;
   }
+  // "2026-11-04" shows as "4 Nov 2026"; "2026-11" (day not known yet) shows as "Nov 2026"
   const dateLabel = (iso) => {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    const m = /^(\d{4})-(\d{2})(?:-(\d{2}))?$/.exec(iso || '');
     if (!m) return '';
-    return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+    const d = new Date(Date.UTC(+m[1], +m[2] - 1, +(m[3] || 1)));
+    return d.toLocaleDateString('en-GB', m[3] ? { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' } : { month: 'short', year: 'numeric', timeZone: 'UTC' });
   };
   // links and images from the data file must be https (or a file in assets/) so a typo can't inject anything odd
   const safeUrl = (u) => (typeof u === 'string' && /^https:\/\//i.test(u) ? u : null);
@@ -2312,8 +2318,9 @@ function renderBulletin() {
       .map((l) => (safeUrl(l && l.url) ? `<a class="bl-link" href="${escapeHtml(l.url)}" target="_blank" rel="noopener">${escapeHtml(l.label || l.url)}</a>` : ''))
       .join('');
   const listHtml = (items) => (items && items.length ? `<ul>${items.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : '');
+  // every numbered section is a closed dropdown: tap the headline to read the tip
   const sectionHtml = (sec) =>
-    `<section class="bl-sec"><h5>${escapeHtml(sec.title || '')}</h5>${sec.text ? `<p>${escapeHtml(sec.text)}</p>` : ''}${listHtml(sec.points)}${linksHtml(sec.links)}</section>`;
+    `<details class="bl-sec"><summary><span class="bl-st">${escapeHtml(sec.title || '')}</span><span class="chev" aria-hidden="true"></span></summary><div class="bl-sec-body">${sec.text ? `<p>${escapeHtml(sec.text)}</p>` : ''}${listHtml(sec.points)}${linksHtml(sec.links)}</div></details>`;
   root.innerHTML = posts
     .map((p) => {
       const meta = [p.label ? `<span class="bl-label">${escapeHtml(p.label)}</span>` : '', dateLabel(p.date) ? `<time>${escapeHtml(dateLabel(p.date))}</time>` : ''].join('');

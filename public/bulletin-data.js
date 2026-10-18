@@ -5,13 +5,13 @@
 //
 // Each post:
 //   title     – the headline (required)
-//   date      – "YYYY-MM-DD" (required; shown as e.g. "17 Oct 2026")
+//   date      – "YYYY-MM-DD" (shown as e.g. "4 Nov 2026"), or just "YYYY-MM" when the day is not known yet (shown as "Nov 2026")
 //   label     – optional small tag next to the date, e.g. "Event", "Balance change", "Special"
 //   image     – optional picture under the headline: a file inside public/assets/ or an https:// link
 //   imageAlt  – short description of the picture (for screen readers)
 //   body      – optional list of paragraphs (each one a line of text in quotes)
 //   list      – optional bullet points shown under the paragraphs
-//   sections  – optional numbered sections, each with:
+//   sections  – optional numbered tips, each a closed dropdown (tap the headline to open), each with:
 //                 title   – the section headline (required)
 //                 text    – optional paragraph
 //                 points  – optional bullet points
@@ -21,16 +21,10 @@
 window.CR_BULLETIN = [
   {
     title: 'Hammer Jam',
-    date: '2026-10-17',
+    date: '2026-11',
     label: 'Event',
     image: 'assets/site/hammer-jam.jpg',
     imageAlt: 'Hammer Jam event art: a Builder raising a glowing blue hammer while meteors streak across the sky',
-    body: ['50% off upgrade time and cost, and double production. Here is how to get the most out of it.'],
-    list: [
-      '-50% upgrade time and cost (all town halls)',
-      '2x collector production and capacity',
-      'Supercharges and crafted defenses are not included',
-    ],
     sections: [
       {
         title: 'Builder Potions are king',
@@ -50,11 +44,12 @@ window.CR_BULLETIN = [
       },
       {
         title: 'Save your raid medals for research potions and pet potions',
+        points: ['Prioritize research potions over pet potions, unless you desperately need a certain level on one of your pets (Spirit Fox level 10, for example).'],
       },
       {
-        title: 'Goblin Builder or Researcher',
-        text: 'If you plan on using the Goblin Builder or the Researcher, you might need around 1,000-2,000 gems to keep them going throughout the event.',
-        points: ['If you had to choose one, pick the Goblin Builder. The Researcher is also good, and gets better the higher your town hall is.'],
+        title: 'Goblin Builder or Goblin Researcher',
+        text: 'If you plan on using the Goblin Builder or the Goblin Researcher, you might need around 1,000-2,000 gems to keep either one going throughout the event.',
+        points: ['If you had to choose one, pick the Goblin Builder. The Goblin Researcher is also good, and gets better the higher your town hall is.'],
       },
       {
         title: 'P2P: Supercell ID Rewards',

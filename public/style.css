@@ -3828,23 +3828,18 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 .wh-table .detail-card .dc-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 640px) { .wh-table .detail-card .dc-grid { grid-template-columns: minmax(0, 1fr); } }
 
-/* ---------- Bulletin: an angled tutorial-style board with a dagger pinning its corner ---------- */
+/* ---------- Bulletin: a card in the same style as the rest of the site, with a dagger pinning its corner ---------- */
 .bl-wrap { position: relative; max-width: 640px; margin: 0 auto; padding-top: 6px; }
 .bl-board {
-  --cut: polygon(0 16px, 22px 0, 100% 9px, calc(100% - 7px) calc(100% - 16px), calc(100% - 28px) 100%, 9px calc(100% - 7px));
-  padding: 3px;
-  background: linear-gradient(135deg, var(--accent-hi), var(--accent-deep) 55%, var(--accent));
-  clip-path: var(--cut);
-  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.45));
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 .bl-inner {
-  --cut-in: polygon(0 15px, 21px 0, 100% 8px, calc(100% - 6px) calc(100% - 15px), calc(100% - 27px) 100%, 8px calc(100% - 6px));
-  padding: 1.1rem 1.15rem 1.35rem;
-  background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0) 40%),
-    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.018) 0 6px, transparent 6px 12px),
-    #15161f;
-  clip-path: var(--cut-in);
+  padding: 1.1rem 1.15rem 1.2rem;
+  border-radius: inherit;
+  background: radial-gradient(120% 70% at 100% 0%, rgba(var(--accent-rgb), 0.07), transparent 60%);
 }
 
 /* the dagger: its tip sits on the board, the handle leans out over the top-right corner */
@@ -3902,12 +3897,12 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 .bl-post { min-width: 0; }
 .bl-post + .bl-post { padding-top: 1.15rem; border-top: 1px dashed rgba(255, 255, 255, 0.14); }
 
-/* cream strip with the post headline, ends cut on a slant */
+/* cream strip with the post headline */
 .bl-banner {
-  margin: 0 -0.35rem 0.55rem;
-  padding: 0.42rem 1rem 0.5rem;
+  margin: 0 0 0.65rem;
+  padding: 0.45rem 1rem 0.5rem;
   background: #f6efdd;
-  clip-path: polygon(0 0, 100% 7%, calc(100% - 5px) 100%, 6px 93%);
+  border-radius: 10px;
   text-align: center;
 }
 .bl-banner h4 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 1.1rem; letter-spacing: 0.02em; color: #1a1822; overflow-wrap: anywhere; }
@@ -3921,33 +3916,40 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 .bl-post > :last-child { margin-bottom: 0; }
 .bl-empty { margin: 0; text-align: center; color: var(--muted); font-size: 0.95rem; }
 
-/* post picture: slanted like the banner */
-.bl-img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; margin: 0 0 0.7rem; object-fit: cover; background: #0b0c12; clip-path: polygon(0 3%, 100% 0, 99.2% 97%, 0.6% 100%); }
+/* post picture: a plain rectangle with rounded corners */
+.bl-img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; margin: 0 0 0.7rem; object-fit: cover; border: 1px solid var(--border); border-radius: 12px; background: #0b0c12; }
 
-/* numbered sections, like pages of a tutorial */
-.bl-secs { counter-reset: bl-sec; display: grid; gap: 0.95rem; margin-top: 0.85rem; }
-.bl-sec { counter-increment: bl-sec; min-width: 0; }
-.bl-sec h5 { display: flex; align-items: flex-start; gap: 0.6rem; margin: 0 0 0.3rem; font-family: var(--font-display); font-weight: 400; font-size: 1.05rem; line-height: 1.25; color: var(--accent-hi); overflow-wrap: anywhere; }
-.bl-sec h5::before {
+/* numbered tips: closed dropdowns */
+.bl-secs { counter-reset: bl-sec; display: grid; gap: 0.5rem; margin-top: 0.85rem; }
+.bl-sec { counter-increment: bl-sec; min-width: 0; border: 1px solid var(--border); border-radius: 12px; background: rgba(255, 255, 255, 0.025); overflow: hidden; }
+.bl-sec summary { display: flex; align-items: center; gap: 0.7rem; padding: 0.7rem 0.85rem; cursor: pointer; list-style: none; font-family: var(--font-display); font-size: 1rem; line-height: 1.25; color: var(--text); }
+.bl-sec summary::-webkit-details-marker { display: none; }
+.bl-sec summary:hover { background: rgba(255, 255, 255, 0.04); }
+.bl-sec summary:focus-visible { outline: 2px solid rgba(var(--accent-rgb), 0.6); outline-offset: -2px; }
+.bl-sec summary::before {
   content: counter(bl-sec);
-  flex: 0 0 auto;
+  flex: none;
   display: inline-grid;
   place-items: center;
-  width: 1.6rem;
-  height: 1.6rem;
-  margin-top: -0.05rem;
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-size: 0.95rem;
-  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  width: 1.65rem;
+  height: 1.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  font-size: 0.85rem;
 }
-.bl-sec p, .bl-sec ul { margin-left: 2.2rem; }
-.bl-sec p { margin-bottom: 0.4rem; }
-.bl-link { display: inline-block; margin: 0.15rem 0 0 2.2rem; color: var(--accent-hi); font-size: 0.9rem; text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
+.bl-st { min-width: 0; overflow-wrap: anywhere; }
+.bl-sec summary .chev { margin-left: auto; }
+.bl-sec[open] .chev { transform: rotate(-135deg) translate(-2px, -2px); }
+.bl-sec-body { padding: 0 0.95rem 0.85rem 3.15rem; }
+.bl-sec-body > :last-child { margin-bottom: 0; }
+.bl-link { display: inline-block; margin: 0.15rem 0 0; color: var(--accent-hi); font-size: 0.9rem; text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
 .bl-link:hover { color: var(--accent-pale); }
+.bl-link + .bl-link { margin-left: 0.9rem; }
 
 @media (max-width: 440px) {
-  .bl-sec p, .bl-sec ul, .bl-link { margin-left: 0; }
+  .bl-sec-body { padding-left: 0.95rem; }
   .bl-inner { padding: 1rem 0.95rem 1.2rem; }
   .bl-title { font-size: 1.85rem; padding-right: 3.8rem; }
   .bl-dagger { right: 40px; }
