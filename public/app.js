@@ -188,8 +188,54 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// Pictures (clan badges, league icons) come from Supercell's image server. Some countries,
+// networks and ad blockers block it. When a picture fails, we retry through our own server
+// (/api/img). Once that has been needed, the choice is remembered in this browser so later
+// visits go straight to our server and never wait on the blocked one. If our server can't
+// supply it either, the clan badge becomes the site shield and other icons are hidden, so there
+// is never a broken-image box.
+const SC_IMG = /^https:\/\/api-assets\.clashofclans\.com\//i;
+const IMG_PROXY = `${BACKEND_URL}/api/img?u=`;
+let imgProxyOn = false;
+try { imgProxyOn = localStorage.getItem('cr-img-proxy') === '1'; } catch (e) { /* storage blocked: fine */ }
+
+function viaProxy(url) {
+  return imgProxyOn && typeof url === 'string' && SC_IMG.test(url) ? IMG_PROXY + encodeURIComponent(url) : url;
+}
+
+function imgFailed(img) {
+  if (!img || img.tagName !== 'IMG' || img.dataset.crFallback === '2') return;
+  const src = img.getAttribute('src') || '';
+  if (!img.dataset.crFallback && SC_IMG.test(src)) {
+    img.dataset.crFallback = '1';
+    if (!imgProxyOn) {
+      imgProxyOn = true;
+      try { localStorage.setItem('cr-img-proxy', '1'); } catch (e) { /* ignore */ }
+    }
+    img.src = IMG_PROXY + encodeURIComponent(src);
+    return;
+  }
+  if (img.dataset.crFallback === '1' || src.startsWith(IMG_PROXY)) {
+    img.dataset.crFallback = '2';
+    if (img.id === 'clan-badge') img.src = 'assets/site/shield.png';
+    else img.style.visibility = 'hidden';
+  }
+}
+document.addEventListener('error', (e) => imgFailed(e.target), true);
+
+// A blocked host can also just hang with no error at all. A few seconds after the page draws,
+// any Supercell picture still not loaded (and actually on screen) is treated as failed.
+function sweepImages() {
+  document.querySelectorAll('img').forEach((img) => {
+    if (img.complete || img.dataset.crFallback || !SC_IMG.test(img.getAttribute('src') || '')) return;
+    const r = img.getBoundingClientRect();
+    if (r.bottom > -200 && r.top < window.innerHeight + 200) imgFailed(img);
+  });
+}
+setTimeout(sweepImages, 6000);
+
 function safeIconUrl(url) {
-  return typeof url === 'string' && /^https:\/\//i.test(url) ? url.replace(/"/g, '%22') : null;
+  return typeof url === 'string' && /^https:\/\//i.test(url) ? viaProxy(url).replace(/"/g, '%22') : null;
 }
 
 // Clash's API sends times like "20261101T040000.000Z".
@@ -1045,7 +1091,8 @@ function renderClan(data) {
   // While a Raid Weekend is live, the clan card shows the raid art and glows.
   clanInfo.classList.toggle('raid-live', raidLive);
   if (data.badgeUrl) {
-    clanBadge.src = data.badgeUrl;
+    clanBadge.src = viaProxy(data.badgeUrl);
+    setTimeout(sweepImages, 6000);
     clanBadge.alt = `${data.name} badge`;
   }
   clanInfo.hidden = false;
