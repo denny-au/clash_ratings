@@ -3962,9 +3962,11 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 .bl-sec[open] .chev { transform: rotate(-135deg) translate(-2px, -2px); }
 .bl-sec-body { padding: 0 0.95rem 0.85rem 3.15rem; }
 .bl-sec-body > :last-child { margin-bottom: 0; }
-/* inline links inside a tip: the same iridescent colours as a perfect 3.0 average, underlined */
+/* inline links inside a tip: iridescent like a perfect 3.0 average, underlined, with a bright glow that keeps sweeping from left to right */
 .bl-irid {
-  background: linear-gradient(100deg, #b98cff, #ff9be8 30%, #8fd3ff 55%, #c9a2ff 80%, #b98cff);
+  background: linear-gradient(100deg, #b98cff, #ff9be8 20%, #8fd3ff 38%, #ffffff 50%, #8fd3ff 60%, #c9a2ff 80%, #b98cff);
+  background-size: 200% 100%;
+  background-repeat: repeat-x;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -3973,7 +3975,14 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
   text-decoration-color: rgba(201, 162, 255, 0.85);
   text-underline-offset: 3px;
   overflow-wrap: anywhere;
+  animation: bl-irid-sweep 3.6s linear infinite;
 }
+/* the gradient tile is exactly one tile wide per loop, so the repeat is seamless */
+@keyframes bl-irid-sweep {
+  from { background-position: 0% 0; }
+  to { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) { .bl-irid { animation: none; } }
 .bl-irid:hover { text-decoration-color: #fff; }
 .bl-art[src$="barbarian.png"] { height: 112px; }
 .bl-art[src$="bob.png"] { height: 100px; }

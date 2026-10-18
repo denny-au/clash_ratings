@@ -989,7 +989,6 @@ async function searchClan(tag) {
   setStatus('Searching...', false);
   clanInfo.hidden = true;
   tabsEl.hidden = true;
-  $('tab-bulletin').hidden = true; // only the home clan gets a Bulletin
   for (const el of Object.values(panels)) el.hidden = true;
   monthBoard.clear();
   lastBoard.clear();
@@ -1015,7 +1014,6 @@ async function searchClan(tag) {
     currentClanTag = data.tag;
     renderClan(data);
     setStatus('', false); // the clan card already says how many members — no need to repeat it
-    $('tab-bulletin').hidden = data.tag !== DEFAULT_CLAN_TAG;
     tabsEl.hidden = false;
     activateTab(hashTab(), { updateHash: false });
     fetchCurrentWar(data.tag);
