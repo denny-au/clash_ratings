@@ -4112,9 +4112,7 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
    The master builder is in front; the lab assistant and apprentice stand beside him, a little behind. */
 .planner-btn {
   --pb-h: 46px;
-  position: absolute;
-  right: 0;
-  top: -0.7rem;
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -4175,11 +4173,21 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 }
 .planner-btn:hover .pb-arrow { transform: translateX(4px); }
 
-#panel-guide .panel-head { padding-top: 0.9rem; }
-/* phones: the Guide heading is left-aligned, so the button takes the rest of that row on the right */
-@media (max-width: 600px) {
-  #panel-guide .panel-head .panel-title { width: auto; flex: 1 1 0; min-width: 0; margin-bottom: 0.9rem; }
-  .planner-btn { position: relative; top: auto; right: auto; flex: none; margin: -0.2rem 0 0.7rem 0.5rem; }
+/* the button gets its own centred row right under the tabs (the builders' heads poke up above it) */
+.planner-row {
+  display: flex;
+  justify-content: center;
+  margin: 2.1rem 0 1.1rem; /* the top gap leaves room for the builders' heads */
+}
+/* the Guide heading stays centred at every width (on a phone the other tabs left-align theirs to make room for tool buttons) */
+#panel-guide .panel-head .panel-title { justify-content: center; padding-left: 0; }
+#panel-guide .panel-head .panel-title::before { display: block; }
+#panel-guide .panel-head .panel-title::before,
+#panel-guide .panel-head .panel-title::after { flex: 0 1 56px; background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.65)); }
+#panel-guide .panel-head .panel-title::after { transform: scaleX(-1); }
+@media (min-width: 441px) {
+  #panel-guide .panel-head .panel-title::before,
+  #panel-guide .panel-head .panel-title::after { flex-basis: 84px; }
 }
 
 /* ---- the page itself ---- */
