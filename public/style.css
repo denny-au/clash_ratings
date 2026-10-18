@@ -3962,6 +3962,22 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 .bl-sec[open] .chev { transform: rotate(-135deg) translate(-2px, -2px); }
 .bl-sec-body { padding: 0 0.95rem 0.85rem 3.15rem; }
 .bl-sec-body > :last-child { margin-bottom: 0; }
+/* inline links inside a tip: the same iridescent colours as a perfect 3.0 average, underlined */
+.bl-irid {
+  background: linear-gradient(100deg, #b98cff, #ff9be8 30%, #8fd3ff 55%, #c9a2ff 80%, #b98cff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-decoration: underline;
+  text-decoration-color: rgba(201, 162, 255, 0.85);
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+.bl-irid:hover { text-decoration-color: #fff; }
+.bl-art[src$="barbarian.png"] { height: 112px; }
+.bl-art[src$="bob.png"] { height: 100px; }
+.bl-art[src$="collectors.png"] { height: 96px; }
 .bl-link { display: inline-block; margin: 0.15rem 0 0; color: var(--accent-hi); font-size: 0.9rem; text-decoration: underline; text-underline-offset: 3px; overflow-wrap: anywhere; }
 .bl-link:hover { color: var(--accent-pale); }
 .bl-link + .bl-link { margin-left: 0.9rem; }

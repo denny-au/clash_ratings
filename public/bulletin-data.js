@@ -13,7 +13,7 @@
 //   list      – optional bullet points shown under the paragraphs
 //   sections  – optional numbered tips, each a closed dropdown (tap the headline to open), each with:
 //                 title   – the section headline (required)
-//                 text    – optional paragraph (or a list of paragraphs)
+//                 text    – optional paragraph (or a list of paragraphs). A link inside text is written [label](https://...) and shows iridescent + underlined
 //                 art     – optional picture at the top of the tip: { image: 'assets/...', alt: 'what it shows' }; add behind: [ {image, alt}, {image, alt} ] to tuck one picture behind it on each side, or beside: {image, alt} to stand a second picture next to it
 //                 podium  – optional picture podium: up to 3 items { image: 'assets/...', label: 'Name' }, listed 1st, 2nd, 3rd
 //                 points  – optional bullet points
@@ -83,21 +83,25 @@ window.CR_BULLETIN = [
         ],
       },
       {
-        title: 'P2P: Supercell ID Rewards',
-        text: 'Supercell ID Rewards stack up on a separate website (id.supercell.com) whenever you purchase an item. Be sure to take advantage of the potions there during the event.',
-        points: [
-          'The shop offers many builder potions during this time, and some are worth buying. Offers under $10 that give out a lot of builder potions are worth considering.',
+        title: 'Is your pocket feeling breezy?',
+        art: { image: 'assets/bulletin/barbarian.png', alt: 'Barbarian scratching his chin' },
+        text: [
+          'If you have been spending, your Supercell ID Rewards stack up on [id.supercell.com](https://id.supercell.com). Be sure to buy potions on that site before you buy more bundle deals in the shop.',
           'Keep in mind that the more you spend, the more Supercell may charge you for the next bundle. For example, if you spend $5-10 a week, they may start charging $15-20 and ramp up slowly from there. Be careful with how you spend your money.',
+          'A good rule of thumb for telling a deal from a scam: value every potion at 50 cents and every book at 2 dollars. If you get 5 builder potions for 1 dollar, that is pretty good. If you have to pay 5 dollars for 2 builder potions and 1 book of heroes, that is a scam.',
         ],
-        links: [{ label: 'id.supercell.com', url: 'https://id.supercell.com' }],
       },
       {
         title: 'The 6th builder, B.O.B. the Builder',
-        text: 'You will need to rush your Builder Base for him. It normally takes about 2 months to unlock him, and some people report 3 months, depending on how you get there.',
-        links: [{ label: 'Video guide by DrewTookMyName', url: 'https://www.youtube.com/watch?v=1_-3_C3wI2M' }],
+        art: { image: 'assets/bulletin/bob.png', alt: 'B.O.B. the Builder' },
+        text: [
+          'You will need to rush your Builder Base for him. It normally takes about 2-3 months to unlock him.',
+          'Here is a helpful guide: [Video guide by DrewTookMyName](https://www.youtube.com/watch?v=1_-3_C3wI2M)',
+        ],
       },
       {
         title: 'Your resources will drain fast',
+        art: { image: 'assets/bulletin/collectors.png', alt: 'Gold mine, Elixir collector and Dark Elixir drill' },
         text: 'During the event you will run out of resources extremely quickly. Use any fun army you like, or go with sneaky goblin or E-dragon armies. Do not be afraid to 1-star: your time in Hammer Jam is all about improving your base!',
       },
     ],

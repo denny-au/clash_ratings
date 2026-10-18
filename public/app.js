@@ -2317,7 +2317,7 @@ function renderBulletin() {
     (links || [])
       .map((l) => (safeUrl(l && l.url) ? `<a class="bl-link" href="${escapeHtml(l.url)}" target="_blank" rel="noopener">${escapeHtml(l.label || l.url)}</a>` : ''))
       .join('');
-  const listHtml = (items) => (items && items.length ? `<ul>${items.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : '');
+  const listHtml = (items) => (items && items.length ? `<ul>${items.map((t) => `<li>${inlineHtml(t)}</li>`).join('')}</ul>` : '');
   // every numbered section is a closed dropdown: tap the headline to read the tip
   // a podium of pictures: items are listed 1st, 2nd, 3rd and shown 2nd | 1st | 3rd, like the leaderboard
   const podiumHtml = (items) =>
@@ -2336,7 +2336,10 @@ function renderBulletin() {
     if (!back.length) return img(a.image, a.alt, 'bl-art');
     return `<div class="bl-cluster">${back[0] ? img(back[0].image, back[0].alt, 'bl-cl-back bl-cl-l') : ''}${img(a.image, a.alt, 'bl-cl-front')}${back[1] ? img(back[1].image, back[1].alt, 'bl-cl-back bl-cl-r') : ''}</div>`;
   };
-  const textHtml = (t) => (Array.isArray(t) ? t : t ? [t] : []).map((x) => `<p>${escapeHtml(x)}</p>`).join('');
+  // text can hold inline links written as [label](https://...); they are shown iridescent and underlined
+  const inlineHtml = (str) =>
+    escapeHtml(str).replace(/\[([^\]]+)\]\((https:\/\/[^)\s]+)\)/g, (m, label, url) => `<a class="bl-irid" href="${url}" target="_blank" rel="noopener">${label}</a>`);
+  const textHtml = (t) => (Array.isArray(t) ? t : t ? [t] : []).map((x) => `<p>${inlineHtml(x)}</p>`).join('');
   // every numbered section is a closed dropdown: tap the headline to read the tip
   const sectionHtml = (sec) =>
     `<details class="bl-sec"><summary><span class="bl-st">${escapeHtml(sec.title || '')}</span><span class="chev" aria-hidden="true"></span></summary><div class="bl-sec-body">${artHtml(sec.art)}${podiumHtml(sec.podium)}${textHtml(sec.text)}${listHtml(sec.points)}${linksHtml(sec.links)}</div></details>`;
