@@ -90,6 +90,7 @@ body::before {
   height: 320px;
   transform: translateX(-50%);
   background:
+    radial-gradient(ellipse 20% 24% at 50% 0%, rgba(255, 196, 108, 0.30), rgba(255, 196, 108, 0) 100%),
     radial-gradient(ellipse 34% 38% at 50% 0%, rgba(var(--gl-1), 0.34), rgba(var(--gl-1), 0) 100%),
     radial-gradient(ellipse 50% 78% at 50% 0%, rgba(var(--gl-2), 0.22), rgba(var(--gl-2), 0) 100%);
   -webkit-mask-image: linear-gradient(180deg, #000 35%, transparent 100%);
@@ -116,22 +117,41 @@ html::before {
   transform-origin: 50% 0;
   background: conic-gradient(
     from 150deg at 50% 0%,
-    transparent 0deg,
-    rgba(var(--gl-2), 0.04) 6deg,
-    rgba(var(--gl-2), 0.13) 11deg,
-    rgba(var(--gl-2), 0.03) 14.5deg,
-    rgba(var(--gl-1), 0.09) 19deg,
-    rgba(var(--gl-1), 0.22) 26deg,
-    rgba(var(--gl-1), 0.22) 34deg,
-    rgba(var(--gl-1), 0.09) 41deg,
-    rgba(var(--gl-2), 0.03) 45.5deg,
-    rgba(var(--gl-2), 0.13) 49deg,
-    rgba(var(--gl-2), 0.04) 54deg,
-    transparent 60deg
+    rgba(var(--gl-2), 0.000) 0deg,
+    rgba(var(--gl-2), 0.017) 2deg,
+    rgba(var(--gl-2), 0.028) 4deg,
+    rgba(var(--gl-2), 0.050) 6deg,
+    rgba(var(--gl-2), 0.084) 8deg,
+    rgba(var(--gl-2), 0.115) 10deg,
+    rgba(var(--gl-2), 0.124) 12deg,
+    rgba(var(--gl-2), 0.113) 14deg,
+    rgba(var(--gl-2), 0.103) 16deg,
+    rgba(var(--gl-1), 0.109) 18deg,
+    rgba(var(--gl-1), 0.131) 20deg,
+    rgba(var(--gl-1), 0.163) 22deg,
+    rgba(var(--gl-1), 0.197) 24deg,
+    rgba(var(--gl-1), 0.227) 26deg,
+    rgba(var(--gl-1), 0.248) 28deg,
+    rgba(var(--gl-1), 0.255) 30deg,
+    rgba(var(--gl-1), 0.248) 32deg,
+    rgba(var(--gl-1), 0.227) 34deg,
+    rgba(var(--gl-1), 0.197) 36deg,
+    rgba(var(--gl-1), 0.163) 38deg,
+    rgba(var(--gl-1), 0.131) 40deg,
+    rgba(var(--gl-1), 0.109) 42deg,
+    rgba(var(--gl-2), 0.103) 44deg,
+    rgba(var(--gl-2), 0.113) 46deg,
+    rgba(var(--gl-2), 0.124) 48deg,
+    rgba(var(--gl-2), 0.115) 50deg,
+    rgba(var(--gl-2), 0.084) 52deg,
+    rgba(var(--gl-2), 0.050) 54deg,
+    rgba(var(--gl-2), 0.028) 56deg,
+    rgba(var(--gl-2), 0.017) 58deg,
+    rgba(var(--gl-2), 0.000) 60deg
   );
-  /* brightest at the source, thinning out towards the bottom of the screen */
-  -webkit-mask-image: radial-gradient(circle at 50% 0%, #000 0, rgba(0, 0, 0, 0.62) 30vmax, rgba(0, 0, 0, 0.26) 70vmax, transparent 112vmax);
-  mask-image: radial-gradient(circle at 50% 0%, #000 0, rgba(0, 0, 0, 0.62) 30vmax, rgba(0, 0, 0, 0.26) 70vmax, transparent 112vmax);
+  /* the beam grows out of the glow (no hard point at the top), is strongest near the source, and thins out towards the bottom */
+  -webkit-mask-image: radial-gradient(circle at 50% 0%, transparent 0, rgba(0, 0, 0, 0.35) 9vmax, #000 20vmax, rgba(0, 0, 0, 0.62) 42vmax, rgba(0, 0, 0, 0.26) 76vmax, transparent 112vmax);
+  mask-image: radial-gradient(circle at 50% 0%, transparent 0, rgba(0, 0, 0, 0.35) 9vmax, #000 20vmax, rgba(0, 0, 0, 0.62) 42vmax, rgba(0, 0, 0, 0.26) 76vmax, transparent 112vmax);
   pointer-events: none;
   will-change: transform;
   /* starts part-way through, so the beam is already swinging when the page opens */
