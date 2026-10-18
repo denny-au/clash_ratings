@@ -2327,8 +2327,14 @@ function renderBulletin() {
           .map((it, i) => `<li class="bl-pod bl-pod-${i + 1}">${safeImg(it.image) ? `<img src="${escapeHtml(it.image)}" alt="${escapeHtml(it.label || '')}" decoding="async">` : ''}<div class="bl-step"><b>${i + 1}</b><span>${escapeHtml(it.label || '')}</span></div></li>`)
           .join('')}</ol>`
       : '';
-  // a single centred picture at the top of a tip
-  const artHtml = (a) => (a && safeImg(a.image) ? `<img class="bl-art" src="${escapeHtml(a.image)}" alt="${escapeHtml(a.alt || '')}" decoding="async">` : '');
+  // a centred picture at the top of a tip; with `behind` pictures it becomes a front item with one tucked behind on each side
+  const artHtml = (a) => {
+    if (!a || !safeImg(a.image)) return '';
+    const img = (src, alt, cls) => `<img class="${cls}" src="${escapeHtml(src)}" alt="${escapeHtml(alt || '')}" decoding="async">`;
+    const back = (a.behind || []).filter((b) => safeImg(b.image)).slice(0, 2);
+    if (!back.length) return img(a.image, a.alt, 'bl-art');
+    return `<div class="bl-cluster">${back[0] ? img(back[0].image, back[0].alt, 'bl-cl-back bl-cl-l') : ''}${img(a.image, a.alt, 'bl-cl-front')}${back[1] ? img(back[1].image, back[1].alt, 'bl-cl-back bl-cl-r') : ''}</div>`;
+  };
   const textHtml = (t) => (Array.isArray(t) ? t : t ? [t] : []).map((x) => `<p>${escapeHtml(x)}</p>`).join('');
   // every numbered section is a closed dropdown: tap the headline to read the tip
   const sectionHtml = (sec) =>

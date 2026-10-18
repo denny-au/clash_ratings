@@ -14,7 +14,7 @@
 //   sections  – optional numbered tips, each a closed dropdown (tap the headline to open), each with:
 //                 title   – the section headline (required)
 //                 text    – optional paragraph (or a list of paragraphs)
-//                 art     – optional single picture at the top of the tip: { image: 'assets/...', alt: 'what it shows' }
+//                 art     – optional picture at the top of the tip: { image: 'assets/...', alt: 'what it shows' }; add behind: [ {image, alt}, {image, alt} ] to tuck one picture behind it on each side
 //                 podium  – optional picture podium: up to 3 items { image: 'assets/...', label: 'Name' }, listed 1st, 2nd, 3rd
 //                 points  – optional bullet points
 //                 links   – optional list of { label: 'text', url: 'https://...' }
@@ -41,16 +41,34 @@ window.CR_BULLETIN = [
         ],
       },
       {
-        title: 'Spending your CWL medals',
-        art: { image: 'assets/bulletin/cwl-medal.png', alt: 'Clan War League medal' },
+        title: 'Save your CWL medals',
+        art: {
+          image: 'assets/bulletin/cwl-medal.png',
+          alt: 'Clan War League medal',
+          behind: [
+            { image: 'assets/bulletin/builder-hammer.png', alt: 'Hammer' },
+            { image: 'assets/bulletin/potion-builder.png', alt: 'Builder Potion' },
+          ],
+        },
         text: [
-          'Clan War League (CWL) medals let you buy whatever you want, but the most useful item during Hammer Jam is the Builder Potion.',
+          'Only spend your Clan War League (CWL) medals during Hammer Jam, and spend them on Builder Potions above all. They are the most useful item you can buy.',
           'Many players buy 1 hammer before the event starts, but think carefully: that means saying goodbye to 4 Builder Potions, or about 18 days of progress.',
         ],
       },
       {
-        title: 'Save your raid medals for research potions and pet potions',
-        points: ['Prioritize research potions over pet potions, unless you desperately need a certain level on one of your pets (Spirit Fox level 10, for example).'],
+        title: 'Save your raid medals',
+        art: {
+          image: 'assets/bulletin/raid-medal.png',
+          alt: 'Raid medal',
+          behind: [
+            { image: 'assets/bulletin/potion-research.png', alt: 'Research Potion' },
+            { image: 'assets/bulletin/potion-pet.png', alt: 'Pet Potion' },
+          ],
+        },
+        text: [
+          'Save your raid medals the same way you save your CWL medals. The only things worth buying with them are Research Potions and Pet Potions.',
+          'Prioritize Research Potions over Pet Potions, unless you desperately need a certain level on one of your pets (Spirit Fox level 10, for example).',
+        ],
       },
       {
         title: 'Goblin Builder or Goblin Researcher',
