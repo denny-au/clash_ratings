@@ -5,20 +5,47 @@
   'use strict';
 
   // The big glows at the top and bottom of the page follow the Guide's town hall colour
-  // (null puts the original amber back).
+  // (null puts the original amber back). There are two copies of the lights (#atm-a / #atm-b): the new colour is
+  // set on the hidden copy, which then fades in over the other. (The old way, animating the colour variables, made
+  // the browser redraw the whole page on every frame of every tab change.)
+  var atms = [document.getElementById('atm-a'), document.getElementById('atm-b')];
+  var atmCur = 0;
+  var glowKey = '';
   function setGlow(rgb) {
     var root = document.documentElement.style;
-    if (!rgb) {
-      ['--gl-1', '--gl-2', '--gl-f'].forEach(function (k) { root.removeProperty(k); });
-      return;
+    var vals = null;
+    if (rgb) {
+      var deep = rgb.map(function (v) { return Math.round(v * 0.72); });
+      vals = { '--gl-1': rgb.join(', '), '--gl-2': deep.join(', '), '--gl-f': rgb.join(', ') };
     }
-    var deep = rgb.map(function (v) { return Math.round(v * 0.72); });
-    root.setProperty('--gl-1', rgb.join(', '));
-    root.setProperty('--gl-2', deep.join(', '));
-    root.setProperty('--gl-f', rgb.join(', '));
+    // the root keeps the current colours as a plain record (the variables do not inherit, so this costs nothing)
+    ['--gl-1', '--gl-2', '--gl-f'].forEach(function (k) { if (vals) root.setProperty(k, vals[k]); else root.removeProperty(k); });
+    var key = vals ? vals['--gl-1'] : '';
+    if (key === glowKey || !atms[0] || !atms[1]) return;
+    glowKey = key;
+    var next = atms[1 - atmCur], old = atms[atmCur];
+    ['--gl-1', '--gl-2', '--gl-f'].forEach(function (k) { if (vals) next.style.setProperty(k, vals[k]); else next.style.removeProperty(k); });
+    next.classList.add('on');
+    old.classList.remove('on');
+    atmCur = 1 - atmCur;
   }
 
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---- Title glint: switched on for ~1.3s every 8s (and not at all while the tab is hidden) ----
+  var titleEl = document.getElementById('site-title');
+  if (titleEl && !reduce) {
+    titleEl.addEventListener('animationend', function (e) {
+      if (e.animationName === 'title-shine') titleEl.classList.remove('shine');
+    });
+    var glint = function () {
+      if (document.hidden) return;
+      titleEl.classList.remove('shine');
+      void titleEl.offsetWidth; // restart
+      titleEl.classList.add('shine');
+    };
+    setTimeout(function () { glint(); setInterval(glint, 8000); }, 2400);
+  }
 
   // ---- Embers: a few warm sparks drifting upward ----
   // Kept deliberately light: each colour is drawn once to a tiny sprite and
@@ -33,6 +60,7 @@
     var last = 0;
     var acc = 0;
     var STEP = 1 / 30;
+    var SCALE = 0.5;
 
     var DEFAULT_COLORS = [
       [255, 196, 84], // gold
@@ -72,8 +100,11 @@
     function resize() {
       w = window.innerWidth;
       h = window.innerHeight;
-      canvas.width = w; // 1x on purpose: soft dots don't need retina sharpness
-      canvas.height = h;
+      // Half size on purpose: the dots are soft blurs, so a quarter of the pixels looks identical and is much
+      // cheaper for the browser to hand to the screen 30 times a second (the CSS stretches it back to full size).
+      canvas.width = Math.ceil(w * SCALE);
+      canvas.height = Math.ceil(h * SCALE);
+      ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
       var want = Math.round(Math.max(10, Math.min(26, w / 45)));
       while (sparks.length < want) sparks.push(spawn(true));
       sparks.length = want;
@@ -163,6 +194,14 @@
       else start();
     });
     start();
+  }
+
+  // ---- Pause the podium's endless animations while the podium is off the screen ----
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { en.target.classList.toggle('anim-off', !en.isIntersecting); });
+    }, { rootMargin: '80px' });
+    document.querySelectorAll('.podium-wrap').forEach(function (el) { io.observe(el); });
   }
 
   if (!window.CR_FX) window.CR_FX = { setTheme: function (rgb) { setGlow(rgb); } };

@@ -36,6 +36,11 @@
 </head>
 <body>
   <canvas id="embers" class="embers" aria-hidden="true"></canvas>
+  <!-- The light: two copies of the same lights (top glow, swinging beam, bottom glow); a colour change fades one in over the other (see fx.js). -->
+  <div class="atm on" id="atm-a" aria-hidden="true"><div class="beam"><i></i></div></div>
+  <div class="atm" id="atm-b" aria-hidden="true"><div class="beam"><i></i></div></div>
+  <!-- The Planner's light: four soft beams in pearly colours that swing at different speeds (shown only on the Planner page). -->
+  <div id="planner-light" class="planner-light" aria-hidden="true" hidden><i style="--c:255,128,196;--d:47s;--o:-11s;--k:1"></i><i style="--c:112,208,255;--d:61s;--o:-33s;--k:0.82"></i><i style="--c:176,140,255;--d:53s;--o:-4s;--k:0.9"></i><i style="--c:255,214,140;--d:71s;--o:-52s;--k:0.7"></i></div>
   <!-- Hammer Jam meteors: blue streaks crossing the background from top right to bottom left (shown only on the Bulletin tab).
        Delete this whole div when the event is over (the styles are at the end of style.css). -->
   <div id="meteors" class="meteors" aria-hidden="true" hidden><i style="--sx:78vw;--sy:-12vh;--d:9s;--w:0s"></i><i style="--sx:104vw;--sy:6vh;--d:12s;--w:3.2s"></i><i style="--sx:62vw;--sy:-18vh;--d:10.5s;--w:6.1s"></i><i style="--sx:96vw;--sy:24vh;--d:13s;--w:8.4s"></i><i style="--sx:88vw;--sy:-6vh;--d:11s;--w:1.7s"></i></div>
@@ -151,6 +156,10 @@
           <p id="clan-meta"></p>
           <a id="open-in-game-btn" class="pill-button" href="#" target="_blank" rel="noopener" hidden>Open in Clash of Clans</a>
         </div>
+        <!-- Tapping the card (or this button) shows or hides the clan stats strip underneath. -->
+        <button type="button" id="clan-toggle" class="clan-toggle" aria-expanded="false" aria-controls="summary" aria-label="Show clan stats" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </section>
 
       <section id="summary" class="summary" aria-label="Clan summary this month" hidden></section>
@@ -281,6 +290,7 @@
               <img class="pb-master" src="assets/planner/master-builder.png" alt="" width="142" height="200" draggable="false" />
             </span>
             <span class="pb-text">Planner</span>
+            <img class="pb-book" src="assets/planner/book.png" alt="" width="65" height="84" draggable="false" />
             <svg class="pb-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M12.5 5.5 19 12l-6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
         </div>
@@ -394,10 +404,7 @@
         </button>
         <h2 id="planner-heading" class="panel-title">Planner</h2>
       </div>
-      <div class="planner-card">
-        <p class="planner-soon">Coming soon</p>
-        <p class="planner-note">Your builder and lab times will be planned here.</p>
-      </div>
+      <div id="planner-root" class="planner-root"></div>
     </section>
 
     <footer class="site-footer">
@@ -431,6 +438,8 @@
   <script src="bulletin-data.js"></script>
   <script src="guide-data.js"></script>
   <script src="guide.js"></script>
+  <script src="planner-data.js"></script>
+  <script src="planner.js"></script>
   <script src="app.js"></script>
   <script src="fx.js" defer></script>
 </body>
