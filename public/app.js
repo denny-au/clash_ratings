@@ -2331,6 +2331,7 @@ function renderBulletin() {
   const artHtml = (a) => {
     if (!a || !safeImg(a.image)) return '';
     const img = (src, alt, cls) => `<img class="${cls}" src="${escapeHtml(src)}" alt="${escapeHtml(alt || '')}" decoding="async">`;
+    if (a.beside && safeImg(a.beside.image)) return `<div class="bl-pair">${img(a.image, a.alt, 'bl-pair-a')}${img(a.beside.image, a.beside.alt, 'bl-pair-b')}</div>`;
     const back = (a.behind || []).filter((b) => safeImg(b.image)).slice(0, 2);
     if (!back.length) return img(a.image, a.alt, 'bl-art');
     return `<div class="bl-cluster">${back[0] ? img(back[0].image, back[0].alt, 'bl-cl-back bl-cl-l') : ''}${img(a.image, a.alt, 'bl-cl-front')}${back[1] ? img(back[1].image, back[1].alt, 'bl-cl-back bl-cl-r') : ''}</div>`;

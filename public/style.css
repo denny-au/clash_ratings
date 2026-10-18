@@ -3922,6 +3922,10 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 }
 .bl-step b { font-family: var(--font-title); font-weight: 400; font-size: 1.35rem; line-height: 1; color: var(--pt); text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5); }
 .bl-step span { font-family: var(--font-display); font-size: 0.85rem; letter-spacing: 0.02em; line-height: 1.15; color: var(--pt); padding: 0 0.2rem; overflow-wrap: anywhere; text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4); }
+.bl-pair { display: flex; align-items: flex-end; justify-content: center; gap: 0.4rem; margin: 0.2rem 0 0.8rem; }
+.bl-pair img { display: block; width: auto; filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.5)); }
+.bl-pair-a { height: 112px; }
+.bl-pair-b { height: 86px; }
 .bl-cluster { display: flex; align-items: flex-end; justify-content: center; margin: 0.2rem 0 0.8rem; padding-top: 0.2rem; }
 .bl-cluster img { display: block; width: auto; filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.5)); }
 .bl-cl-front { position: relative; z-index: 2; height: 84px; }

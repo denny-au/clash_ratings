@@ -14,7 +14,7 @@
 //   sections  – optional numbered tips, each a closed dropdown (tap the headline to open), each with:
 //                 title   – the section headline (required)
 //                 text    – optional paragraph (or a list of paragraphs)
-//                 art     – optional picture at the top of the tip: { image: 'assets/...', alt: 'what it shows' }; add behind: [ {image, alt}, {image, alt} ] to tuck one picture behind it on each side
+//                 art     – optional picture at the top of the tip: { image: 'assets/...', alt: 'what it shows' }; add behind: [ {image, alt}, {image, alt} ] to tuck one picture behind it on each side, or beside: {image, alt} to stand a second picture next to it
 //                 podium  – optional picture podium: up to 3 items { image: 'assets/...', label: 'Name' }, listed 1st, 2nd, 3rd
 //                 points  – optional bullet points
 //                 links   – optional list of { label: 'text', url: 'https://...' }
@@ -71,9 +71,16 @@ window.CR_BULLETIN = [
         ],
       },
       {
-        title: 'Goblin Builder or Goblin Researcher',
-        text: 'If you plan on using the Goblin Builder or the Goblin Researcher, you might need around 1,000-2,000 gems to keep either one going throughout the event.',
-        points: ['If you had to choose one, pick the Goblin Builder. The Goblin Researcher is also good, and gets better the higher your town hall is.'],
+        title: 'Goblin Builder / Goblin Researcher',
+        art: {
+          image: 'assets/bulletin/goblin.png',
+          alt: 'Goblin',
+          beside: { image: 'assets/bulletin/gem-chest.png', alt: 'Chest of gems' },
+        },
+        text: [
+          'If you plan on using a goblin, expect to spend around 1,000-2,000 gems to keep it working throughout the event. Running both the Goblin Builder and the Goblin Researcher means paying that much twice.',
+          'If you can only choose one, go with the Goblin Builder. The Goblin Researcher is only a decent pick once you reach a higher town hall level.',
+        ],
       },
       {
         title: 'P2P: Supercell ID Rewards',
