@@ -67,48 +67,90 @@ body {
   overflow-x: hidden;
 }
 
-/* The light: a soft beam that shines from the top of the screen to the bottom and slowly drifts
-   from left to right, then fades out at the right edge and begins again on the left. It is brightest
-   at the top, so it still reads as a glow behind the title as it passes. Its colour comes from
-   --gl-1 / --gl-2, which change per tab (blue Bulletin, red War, town-hall colours in the Guide).
-   Pure CSS; the whole loop takes 40 seconds. */
+/* The light, like the sun through a window. The source stays in the middle, at the top of the screen
+   (a soft glow behind the title), and a wide beam of light fans down from it to the bottom of the screen.
+   Over the course of a minute the beam slowly swings, like the sun moving through the day: it lands on the
+   bottom left, sweeps across to the bottom right, then swings back. Colours come from --gl-1 / --gl-2, which
+   change per tab (blue Bulletin, red War, town-hall colours in the Guide). Pure CSS, and only a transform
+   is animated, so it is cheap to draw. */
 @property --gl-1 { syntax: "<number>#"; inherits: true; initial-value: 255, 176, 62; }
 @property --gl-2 { syntax: "<number>#"; inherits: true; initial-value: 255, 104, 36; }
 @property --gl-f { syntax: "<number>#"; inherits: true; initial-value: 242, 193, 78; }
 /* the top and bottom glows change colour smoothly when the Guide tints them to a town hall */
 :root { transition: --gl-1 0.9s ease, --gl-2 0.9s ease, --gl-f 0.9s ease; }
+
+/* the source: a glow that stays put in the middle at the top */
 body::before {
   content: "";
   position: fixed;
   z-index: -1;
   top: 0;
-  left: 0;
-  width: clamp(300px, 64vw, 580px);
-  height: 100vh;
-  height: 100svh;
+  left: 50%;
+  width: min(820px, calc(100% - 2px));
+  height: 320px;
+  transform: translateX(-50%);
   background:
-    radial-gradient(ellipse 50% 20% at 50% 0%, rgba(var(--gl-1), 0.36), rgba(var(--gl-1), 0) 100%),
-    linear-gradient(90deg, transparent 0%, rgba(var(--gl-2), 0.09) 26%, rgba(var(--gl-1), 0.16) 50%, rgba(var(--gl-2), 0.09) 74%, transparent 100%);
-  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.62) 34%, rgba(0, 0, 0, 0.22) 72%, transparent 100%);
-  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.62) 34%, rgba(0, 0, 0, 0.22) 72%, transparent 100%);
+    radial-gradient(ellipse 34% 38% at 50% 0%, rgba(var(--gl-1), 0.34), rgba(var(--gl-1), 0) 100%),
+    radial-gradient(ellipse 50% 78% at 50% 0%, rgba(var(--gl-2), 0.22), rgba(var(--gl-2), 0) 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 35%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 35%, transparent 100%);
   pointer-events: none;
-  opacity: 0;
-  will-change: transform, opacity;
-  /* start part-way through, so the beam is already near the title when the page opens */
-  animation: beam-drift 40s -19s linear infinite;
+  animation: aurora-breathe 12s ease-in-out infinite alternate;
+}
+@keyframes aurora-breathe {
+  from { opacity: 0.8; transform: translateX(-50%) scaleY(1); }
+  to { opacity: 1; transform: translateX(-50%) scaleY(1.05); }
 }
 
-/* The beam's centre travels from the left edge of the screen to the right edge. */
-@keyframes beam-drift {
-  0% { transform: translateX(-50%); opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateX(calc(100vw - 50%)); opacity: 0; }
+/* the beam: a fan of light (a wide soft ray with two thinner ones beside it, like the panes of a window)
+   pointing at the bottom of the screen. It turns around its top-middle point. */
+html::before {
+  content: "";
+  position: fixed;
+  z-index: -1;
+  top: 0;
+  left: 50%;
+  width: 260vmax;
+  height: 150vmax;
+  margin-left: -130vmax;
+  transform-origin: 50% 0;
+  background: conic-gradient(
+    from 150deg at 50% 0%,
+    transparent 0deg,
+    rgba(var(--gl-2), 0.04) 6deg,
+    rgba(var(--gl-2), 0.13) 11deg,
+    rgba(var(--gl-2), 0.03) 14.5deg,
+    rgba(var(--gl-1), 0.09) 19deg,
+    rgba(var(--gl-1), 0.22) 26deg,
+    rgba(var(--gl-1), 0.22) 34deg,
+    rgba(var(--gl-1), 0.09) 41deg,
+    rgba(var(--gl-2), 0.03) 45.5deg,
+    rgba(var(--gl-2), 0.13) 49deg,
+    rgba(var(--gl-2), 0.04) 54deg,
+    transparent 60deg
+  );
+  /* brightest at the source, thinning out towards the bottom of the screen */
+  -webkit-mask-image: radial-gradient(circle at 50% 0%, #000 0, rgba(0, 0, 0, 0.62) 30vmax, rgba(0, 0, 0, 0.26) 70vmax, transparent 112vmax);
+  mask-image: radial-gradient(circle at 50% 0%, #000 0, rgba(0, 0, 0, 0.62) 30vmax, rgba(0, 0, 0, 0.26) 70vmax, transparent 112vmax);
+  pointer-events: none;
+  will-change: transform;
+  /* starts part-way through, so the beam is already swinging when the page opens */
+  animation: beam-sweep 48s -14s ease-in-out infinite alternate;
+}
+
+/* --sw is how far the beam swings to each side: about enough to reach the bottom corners of the screen
+   (less on a tall phone screen, where the corners are much closer to straight down).
+   rotate(+) turns the beam clockwise, which moves its bottom end to the LEFT; rotate(-) moves it to the right. */
+:root { --sw: 32deg; }
+@media (max-aspect-ratio: 3/4) { :root { --sw: 17deg; } }
+@keyframes beam-sweep {
+  from { transform: rotate(var(--sw)); }
+  to { transform: rotate(calc(var(--sw) * -1)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* no drifting: the beam just rests behind the title */
-  body::before { animation: none; opacity: 0.9; transform: translateX(calc(50vw - 50%)); }
+  /* no swinging: the beam rests, leaning a little to one side */
+  html::before { animation: none; transform: rotate(calc(var(--sw) * 0.3)); }
 }
 
 /* ---------- Page layout ---------- */
