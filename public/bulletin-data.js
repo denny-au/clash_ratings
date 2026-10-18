@@ -13,7 +13,8 @@
 //   list      – optional bullet points shown under the paragraphs
 //   sections  – optional numbered tips, each a closed dropdown (tap the headline to open), each with:
 //                 title   – the section headline (required)
-//                 text    – optional paragraph
+//                 text    – optional paragraph (or a list of paragraphs)
+//                 podium  – optional picture podium: up to 3 items { image: 'assets/...', label: 'Name' }, listed 1st, 2nd, 3rd
 //                 points  – optional bullet points
 //                 links   – optional list of { label: 'text', url: 'https://...' }
 //
@@ -28,10 +29,14 @@ window.CR_BULLETIN = [
     sections: [
       {
         title: 'Builder Potions are king',
-        text: 'They are the most valuable item during Hammer Jam. Research and pet potions are also good during the event, but builder potions save double the amount of time.',
-        points: [
-          'Here is how much value that is: with 6 builders, a single builder potion normally saves 54 hours, but during Hammer Jam it saves 108. Put those hours into upgrades that already take half the time, and anyone below TH17 can blast through the next town hall during the event.',
-          'TL;DR: if you are below TH17, rushing 1-2 town halls above you with builder potions is 100% recommended.',
+        podium: [
+          { image: 'assets/bulletin/potion-builder.png', label: 'Builder Potion' },
+          { image: 'assets/bulletin/potion-research.png', label: 'Research Potion' },
+          { image: 'assets/bulletin/potion-pet.png', label: 'Pet Potion' },
+        ],
+        text: [
+          'Invest in these potions in this order: Builder Potion first, then Research Potion, then Pet Potion.',
+          'During Hammer Jam, Builder Potions are so overpowered that choosing another potion without a good reason could set you back weeks of progress. If you are below TH17, use nothing but Builder Potions to rush.',
         ],
       },
       {

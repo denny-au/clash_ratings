@@ -2319,8 +2319,18 @@ function renderBulletin() {
       .join('');
   const listHtml = (items) => (items && items.length ? `<ul>${items.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>` : '');
   // every numbered section is a closed dropdown: tap the headline to read the tip
+  // a podium of pictures: items are listed 1st, 2nd, 3rd and shown 2nd | 1st | 3rd, like the leaderboard
+  const podiumHtml = (items) =>
+    items && items.length
+      ? `<ol class="bl-podium" aria-label="Priority, first to last">${items
+          .slice(0, 3)
+          .map((it, i) => `<li class="bl-pod bl-pod-${i + 1}">${safeImg(it.image) ? `<img src="${escapeHtml(it.image)}" alt="${escapeHtml(it.label || '')}" decoding="async">` : ''}<div class="bl-step"><b>${i + 1}</b><span>${escapeHtml(it.label || '')}</span></div></li>`)
+          .join('')}</ol>`
+      : '';
+  const textHtml = (t) => (Array.isArray(t) ? t : t ? [t] : []).map((x) => `<p>${escapeHtml(x)}</p>`).join('');
+  // every numbered section is a closed dropdown: tap the headline to read the tip
   const sectionHtml = (sec) =>
-    `<details class="bl-sec"><summary><span class="bl-st">${escapeHtml(sec.title || '')}</span><span class="chev" aria-hidden="true"></span></summary><div class="bl-sec-body">${sec.text ? `<p>${escapeHtml(sec.text)}</p>` : ''}${listHtml(sec.points)}${linksHtml(sec.links)}</div></details>`;
+    `<details class="bl-sec"><summary><span class="bl-st">${escapeHtml(sec.title || '')}</span><span class="chev" aria-hidden="true"></span></summary><div class="bl-sec-body">${podiumHtml(sec.podium)}${textHtml(sec.text)}${listHtml(sec.points)}${linksHtml(sec.links)}</div></details>`;
   root.innerHTML = posts
     .map((p) => {
       const meta = [p.label ? `<span class="bl-label">${escapeHtml(p.label)}</span>` : '', dateLabel(p.date) ? `<time>${escapeHtml(dateLabel(p.date))}</time>` : ''].join('');
