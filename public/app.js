@@ -16,6 +16,7 @@ const drawerTabs = document.querySelectorAll('.drawer-tab');
 
 const tabsEl = $('tabs');
 const tabButtons = Array.from(document.querySelectorAll('.tab'));
+let plannerOpen = false; // the Planner page is showing instead of the tabs (see the Planner section below)
 const panels = { month: $('panel-month'), war: $('panel-war'), bulletin: $('panel-bulletin'), guide: $('panel-guide') };
 
 // How many leaderboard rows show before the "Show all" button. Change this
@@ -144,7 +145,7 @@ function activateTab(name, { updateHash = true } = {}) {
   positionPill(true);
   // The glow at the top (and the floating lights) change colour per tab: the Guide uses the town hall in view,
   // the Bulletin is a soft blue, the War tab a fiery red, and the Leaderboard stays the original amber.
-  const theme = name === 'guide' ? (window.CR_GUIDE ? window.CR_GUIDE.themeRgb() : null) : TAB_GLOW[name] || null;
+  const theme = plannerOpen ? null : name === 'guide' ? (window.CR_GUIDE ? window.CR_GUIDE.themeRgb() : null) : TAB_GLOW[name] || null;
   const meteors = $('meteors');
   if (meteors) meteors.hidden = name !== 'bulletin'; // the Hammer Jam meteor shower only shows on the Bulletin
   window.CR_THEME_PENDING = theme;
@@ -177,6 +178,142 @@ function hashTab() {
   const h = location.hash.replace('#', '').split('/')[0];
   return panels[h] ? h : 'month';
 }
+
+// ---------- Planner page ----------
+// The Guide has a Planner button. It slides the tabs away to the left and the Planner page in from the
+// right (and the other way round going back). The big title stays; clicking it always goes back to the
+// leaderboard. The page has its own address (#planner), so the browser's Back button works too.
+const plannerPage = $('planner-page');
+const mainView = document.querySelector('main');
+const heroSearch = $('hero-search');
+const siteTitle = $('site-title');
+const plannerOpenBtn = $('planner-open');
+const plannerBackBtn = $('planner-back');
+let plannerPushed = false; // true when we added the #planner history entry ourselves
+let plannerBusy = false; // a slide is in progress
+let plannerQueued = null; // the state asked for during a slide
+let savedScrollY = 0;
+const slideMs = 280;
+const slideInMs = 480;
+const reducedMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+function showPlanner(open, { instant = false, restoreScroll = true } = {}) {
+  if (open === plannerOpen) return;
+  if (plannerBusy) {
+    plannerQueued = open;
+    return;
+  }
+  const outCls = open ? 'pv-out-l' : 'pv-out-r';
+  const inCls = open ? 'pv-in-r' : 'pv-in-l';
+  const leaving = open ? [mainView, heroSearch] : [plannerPage];
+  const entering = open ? plannerPage : mainView;
+  if (open) savedScrollY = window.scrollY;
+
+  const swap = () => {
+    plannerOpen = open;
+    document.body.classList.toggle('on-planner', open);
+    mainView.hidden = open;
+    heroSearch.hidden = open;
+    plannerPage.hidden = !open;
+    for (const el of leaving) el.classList.remove(outCls);
+    window.scrollTo(0, open || !restoreScroll ? 0 : savedScrollY);
+    if (!instant) {
+      entering.classList.add(inCls);
+      setTimeout(() => entering.classList.remove(inCls), slideInMs);
+    }
+    // the light goes back to the tab's colour on the way out, and the original amber while the Planner is open
+    if (open) {
+      window.CR_THEME_PENDING = null;
+      if (window.CR_FX) window.CR_FX.setTheme(null);
+    } else if (!tabsEl.hidden) {
+      activateTab(hashTab(), { updateHash: false });
+    } else {
+      window.CR_THEME_PENDING = null;
+      if (window.CR_FX) window.CR_FX.setTheme(null);
+    }
+    if (!instant) (open ? plannerBackBtn : plannerOpenBtn).focus({ preventScroll: true });
+  };
+
+  if (instant) {
+    swap();
+    return;
+  }
+  plannerBusy = true;
+  const quick = reducedMotion();
+  for (const el of leaving) el.classList.add(outCls);
+  setTimeout(() => {
+    swap();
+    setTimeout(() => {
+      plannerBusy = false;
+      if (plannerQueued !== null && plannerQueued !== plannerOpen) {
+        const want = plannerQueued;
+        plannerQueued = null;
+        showPlanner(want);
+      }
+      plannerQueued = null;
+    }, quick ? 0 : slideInMs);
+  }, quick ? 0 : slideMs);
+}
+
+plannerOpenBtn.addEventListener('click', () => {
+  if (plannerBusy || plannerOpen) return;
+  try {
+    history.pushState(null, '', '#planner');
+    plannerPushed = true;
+  } catch (e) {
+    plannerPushed = false; // sandboxed: no address change, the page still opens
+  }
+  showPlanner(true);
+});
+
+plannerBackBtn.addEventListener('click', () => {
+  if (plannerBusy || !plannerOpen) return;
+  if (plannerPushed) {
+    plannerPushed = false;
+    history.back(); // the hashchange below closes the page and brings back the Guide
+    return;
+  }
+  try {
+    history.replaceState(null, '', window.CR_GUIDE ? window.CR_GUIDE.hash() : '#guide');
+  } catch (e) {
+    /* ignore */
+  }
+  showPlanner(false);
+});
+
+// Browser Back / Forward, or someone editing the address.
+window.addEventListener('hashchange', () => {
+  const want = location.hash === '#planner';
+  if (want !== plannerOpen) {
+    plannerPushed = false;
+    showPlanner(want);
+  }
+});
+
+// The big title is a button: it goes back to the leaderboard from anywhere, including the Planner.
+function goHome() {
+  if (plannerOpen) {
+    plannerPushed = false;
+    try {
+      history.replaceState(null, '', location.pathname + location.search);
+    } catch (e) {
+      /* ignore */
+    }
+    showPlanner(false, { restoreScroll: false });
+  }
+  if (!tabsEl.hidden) activateTab('month');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+siteTitle.addEventListener('click', goHome);
+siteTitle.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    goHome();
+  }
+});
+
+// A link straight to the Planner (#planner) opens it without sliding.
+if (location.hash === '#planner') showPlanner(true, { instant: true });
 
 // ---------- Formatting helpers ----------
 const ROLE_LABELS = { leader: 'Leader', coLeader: 'Co-Leader', admin: 'Elder', member: 'Member' };

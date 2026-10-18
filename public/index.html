@@ -120,7 +120,8 @@
   <div class="page-content">
     <header class="hero">
       <img class="hero-shield" src="assets/site/shield.png" alt="" width="281" height="247" />
-      <h1 data-text="Clash Ratings">Clash Ratings</h1>
+      <h1 id="site-title" data-text="Clash Ratings" tabindex="0" title="Back to the leaderboard">Clash Ratings</h1>
+      <div id="hero-search" class="hero-search">
       <p class="subtitle">Enter a clan tag.</p>
 
       <form id="search-form">
@@ -136,6 +137,7 @@
       </form>
 
       <p id="status" role="status"></p>
+      </div>
     </header>
 
     <main>
@@ -272,6 +274,16 @@
       <section id="panel-guide" class="panel" role="tabpanel" aria-labelledby="tab-guide" hidden>
         <div class="panel-head">
           <h3 class="panel-title">Guide</h3>
+          <!-- Opens the Planner page. The master builder stands in front, the apprentice and lab assistant beside him. -->
+          <button type="button" id="planner-open" class="planner-btn" aria-label="Open the Planner">
+            <span class="pb-art" aria-hidden="true">
+              <img class="pb-lab" src="assets/planner/lab-assistant.png" alt="" width="126" height="180" draggable="false" />
+              <img class="pb-app" src="assets/planner/apprentice.png" alt="" width="131" height="150" draggable="false" />
+              <img class="pb-master" src="assets/planner/master-builder.png" alt="" width="142" height="200" draggable="false" />
+            </span>
+            <span class="pb-text">Planner</span>
+            <svg class="pb-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M12.5 5.5 19 12l-6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
         </div>
         <p class="guide-intro">Slide to your town hall for armies, bases and tips.</p>
         <div id="guide-root"></div>
@@ -370,6 +382,21 @@
         </details>
       </section>
     </main>
+
+    <!-- ===== Planner page: a separate view that slides in from the Guide. The title above stays; clicking it goes back to the leaderboard. ===== -->
+    <section id="planner-page" class="planner-page" aria-labelledby="planner-heading" hidden>
+      <div class="panel-head planner-head">
+        <button type="button" id="planner-back" class="planner-back" aria-label="Back to the Guide">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H6M11.5 5.5 5 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Guide</span>
+        </button>
+        <h2 id="planner-heading" class="panel-title">Planner</h2>
+      </div>
+      <div class="planner-card">
+        <p class="planner-soon">Coming soon</p>
+        <p class="planner-note">Your builder and lab times will be planned here.</p>
+      </div>
+    </section>
 
     <footer class="site-footer">
       <p>Clash Ratings is a fan-made project for the clan <strong>meow</strong>.</p>

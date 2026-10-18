@@ -67,9 +67,11 @@ body {
   overflow-x: hidden;
 }
 
-/* Aurora: a single glow that lives behind the title only. Bright blue at the
-   top centre, turning violet as it fades, gone before it reaches the search
-   box. Pure CSS; drifts very slowly. */
+/* The light: a soft beam that shines from the top of the screen to the bottom and slowly drifts
+   from left to right, then fades out at the right edge and begins again on the left. It is brightest
+   at the top, so it still reads as a glow behind the title as it passes. Its colour comes from
+   --gl-1 / --gl-2, which change per tab (blue Bulletin, red War, town-hall colours in the Guide).
+   Pure CSS; the whole loop takes 40 seconds. */
 @property --gl-1 { syntax: "<number>#"; inherits: true; initial-value: 255, 176, 62; }
 @property --gl-2 { syntax: "<number>#"; inherits: true; initial-value: 255, 104, 36; }
 @property --gl-f { syntax: "<number>#"; inherits: true; initial-value: 242, 193, 78; }
@@ -77,25 +79,36 @@ body {
 :root { transition: --gl-1 0.9s ease, --gl-2 0.9s ease, --gl-f 0.9s ease; }
 body::before {
   content: "";
-  position: absolute;
+  position: fixed;
   z-index: -1;
   top: 0;
-  left: 50%;
-  width: min(820px, calc(100% - 2px));
-  height: 320px;
-  transform: translateX(-50%);
+  left: 0;
+  width: clamp(300px, 64vw, 580px);
+  height: 100vh;
+  height: 100svh;
   background:
-    radial-gradient(ellipse 34% 38% at 50% 0%, rgba(var(--gl-1), 0.34), rgba(var(--gl-1), 0) 100%),
-    radial-gradient(ellipse 50% 78% at 50% 0%, rgba(var(--gl-2), 0.22), rgba(var(--gl-2), 0) 100%);
-  -webkit-mask-image: linear-gradient(180deg, #000 35%, transparent 100%);
-  mask-image: linear-gradient(180deg, #000 35%, transparent 100%);
+    radial-gradient(ellipse 50% 20% at 50% 0%, rgba(var(--gl-1), 0.36), rgba(var(--gl-1), 0) 100%),
+    linear-gradient(90deg, transparent 0%, rgba(var(--gl-2), 0.09) 26%, rgba(var(--gl-1), 0.16) 50%, rgba(var(--gl-2), 0.09) 74%, transparent 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.62) 34%, rgba(0, 0, 0, 0.22) 72%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.62) 34%, rgba(0, 0, 0, 0.22) 72%, transparent 100%);
   pointer-events: none;
-  animation: aurora-breathe 12s ease-in-out infinite alternate;
+  opacity: 0;
+  will-change: transform, opacity;
+  /* start part-way through, so the beam is already near the title when the page opens */
+  animation: beam-drift 40s -19s linear infinite;
 }
 
-@keyframes aurora-breathe {
-  from { opacity: 0.8; transform: translateX(-50%) scaleY(1); }
-  to { opacity: 1; transform: translateX(-50%) scaleY(1.05); }
+/* The beam's centre travels from the left edge of the screen to the right edge. */
+@keyframes beam-drift {
+  0% { transform: translateX(-50%); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateX(calc(100vw - 50%)); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* no drifting: the beam just rests behind the title */
+  body::before { animation: none; opacity: 0.9; transform: translateX(calc(50vw - 50%)); }
 }
 
 /* ---------- Page layout ---------- */
@@ -4036,3 +4049,182 @@ mark.hit { background: rgba(var(--accent-rgb), 0.3); color: inherit; border-radi
 }
 @media (max-width: 640px) { .meteors i:nth-child(n+4) { display: none; } }
 @media (prefers-reduced-motion: reduce) { .meteors { display: none; } }
+
+
+/* =====================================================================
+   Planner: the Guide's button, and the page it opens
+   ===================================================================== */
+
+/* The title is a button back to the leaderboard. */
+.hero h1 {
+  pointer-events: auto;
+  cursor: pointer;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.hero h1:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 6px; border-radius: 12px; }
+
+/* The button in the Guide (top right of the Guide heading): three builders and the word Planner.
+   The master builder is in front; the lab assistant and apprentice stand beside him, a little behind. */
+.planner-btn {
+  --pb-h: 46px;
+  position: absolute;
+  right: 0;
+  top: -0.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  height: var(--pb-h);
+  padding: 0 0.85rem 0 0.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--g-rgb, var(--accent-rgb)), 0.5);
+  background: linear-gradient(180deg, rgba(var(--g-rgb, var(--accent-rgb)), 0.16), rgba(var(--g-rgb, var(--accent-rgb)), 0.06));
+  color: var(--g-hi, var(--accent-hi));
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.planner-btn:hover {
+  border-color: var(--g-hi, var(--accent-hi));
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4), 0 0 20px rgba(var(--g-rgb, var(--accent-rgb)), 0.35);
+  transform: translateY(-1px);
+}
+.planner-btn:active { transform: translateY(0) scale(0.98); }
+.planner-btn:focus-visible { outline: 2px solid var(--g-hi, var(--accent-hi)); outline-offset: 3px; }
+
+/* the three builders: feet on the bottom of the button, heads poking out of the top */
+.pb-art {
+  position: relative;
+  flex: none;
+  align-self: flex-end;
+  width: 98px;
+  height: var(--pb-h);
+  margin-bottom: -1px;
+  pointer-events: none;
+}
+.pb-art img {
+  position: absolute;
+  bottom: 3px;
+  width: auto;
+  user-select: none;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.55));
+  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+.pb-lab { left: 0; height: 58px; z-index: 1; }
+.pb-app { right: 0; height: 47px; z-index: 1; }
+.pb-master { left: 50%; height: 68px; margin-left: -24px; z-index: 2; }
+/* on hover they perk up, the master builder most */
+.planner-btn:hover .pb-master { transform: translateY(-3px); }
+.planner-btn:hover .pb-lab { transform: translate(-2px, -2px); }
+.planner-btn:hover .pb-app { transform: translate(2px, -2px); }
+
+.pb-text { line-height: 1; padding-top: 1px; }
+.pb-arrow {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  transition: transform 0.2s ease;
+}
+.planner-btn:hover .pb-arrow { transform: translateX(4px); }
+
+#panel-guide .panel-head { padding-top: 0.9rem; }
+/* phones: the Guide heading is left-aligned, so the button takes the rest of that row on the right */
+@media (max-width: 600px) {
+  #panel-guide .panel-head .panel-title { width: auto; flex: 1 1 0; min-width: 0; margin-bottom: 0.9rem; }
+  .planner-btn { position: relative; top: auto; right: auto; flex: none; margin: -0.2rem 0 0.7rem 0.5rem; }
+}
+
+/* ---- the page itself ---- */
+.planner-page {
+  max-width: 760px;
+  margin: 0 auto;
+}
+.planner-head { margin-bottom: 0.2rem; }
+.planner-head .panel-title { margin-bottom: 0.9rem; }
+/* "Planner" sits right under the big title, a little larger than the other panel headings */
+#planner-heading { font-size: 1.7rem; letter-spacing: 0.02em; }
+.planner-back {
+  position: absolute;
+  left: 0;
+  top: -0.2rem;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.38rem 0.85rem 0.38rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--accent-rgb), 0.45);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--accent-hi);
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.planner-back svg { width: 17px; height: 17px; transition: transform 0.2s ease; }
+.planner-back:hover { background: rgba(var(--accent-rgb), 0.16); border-color: var(--accent); box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.3); }
+.planner-back:hover svg { transform: translateX(-3px); }
+.planner-back:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 2px; }
+
+.planner-card {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.35rem;
+  min-height: 260px;
+  padding: 2rem 1.25rem;
+  text-align: center;
+  background: linear-gradient(135deg, var(--panel-2), var(--panel));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+.planner-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 8%;
+  right: 8%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.8), transparent);
+}
+.planner-soon { margin: 0; font-family: var(--font-display); font-size: 1.5rem; color: var(--accent-pale); text-shadow: 0 0 18px rgba(var(--accent-rgb), 0.35); }
+.planner-note { margin: 0; color: var(--muted); }
+
+.planner-head #planner-heading { justify-content: center; padding-left: 0; }
+.planner-head #planner-heading::before { display: block; }
+.planner-head #planner-heading::before,
+.planner-head #planner-heading::after { flex: 0 1 56px; background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.65)); }
+.planner-head #planner-heading::after { transform: scaleX(-1); }
+@media (min-width: 601px) {
+  .planner-head #planner-heading::before,
+  .planner-head #planner-heading::after { flex-basis: 84px; }
+}
+@media (max-width: 600px) {
+  .planner-head { flex-wrap: wrap; }
+  .planner-back { position: relative; top: auto; left: auto; margin-right: auto; margin-bottom: 0.7rem; }
+  .planner-head #planner-heading { font-size: 1.5rem; }
+}
+
+/* ---- sliding between the main view and the Planner ---- */
+.pv-out-l { animation: pv-out-l 0.28s ease-in both; }
+.pv-in-r { animation: pv-in-r 0.46s cubic-bezier(0.2, 0.9, 0.25, 1) both; }
+.pv-out-r { animation: pv-out-r 0.28s ease-in both; }
+.pv-in-l { animation: pv-in-l 0.46s cubic-bezier(0.2, 0.9, 0.25, 1) both; }
+@keyframes pv-out-l { to { opacity: 0; transform: translateX(-56px); } }
+@keyframes pv-in-r { from { opacity: 0; transform: translateX(64px); } to { opacity: 1; transform: none; } }
+@keyframes pv-out-r { to { opacity: 0; transform: translateX(56px); } }
+@keyframes pv-in-l { from { opacity: 0; transform: translateX(-64px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .pv-out-l, .pv-out-r { animation: none; }
+  .pv-in-r, .pv-in-l { animation: pv-fade 0.2s ease both; }
+  @keyframes pv-fade { from { opacity: 0; } to { opacity: 1; } }
+}
