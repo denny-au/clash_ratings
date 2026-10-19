@@ -18,7 +18,7 @@
       var deep = rgb.map(function (v) { return Math.round(v * 0.72); });
       vals = { '--gl-1': rgb.join(', '), '--gl-2': deep.join(', '), '--gl-f': rgb.join(', ') };
     }
-    // the root keeps the current colours as a plain record (the variables do not inherit, so this costs nothing)
+    // the root keeps the current colours as a plain record too (cheap: it happens once per change, not every frame)
     ['--gl-1', '--gl-2', '--gl-f'].forEach(function (k) { if (vals) root.setProperty(k, vals[k]); else root.removeProperty(k); });
     var key = vals ? vals['--gl-1'] : '';
     if (key === glowKey || !atms[0] || !atms[1]) return;
@@ -39,7 +39,7 @@
       if (e.animationName === 'title-shine') titleEl.classList.remove('shine');
     });
     var glint = function () {
-      if (document.hidden) return;
+      if (document.hidden || document.documentElement.classList.contains('lite')) return;
       titleEl.classList.remove('shine');
       void titleEl.offsetWidth; // restart
       titleEl.classList.add('shine');
@@ -175,7 +175,7 @@
     };
 
     function start() {
-      if (running) return;
+      if (running || document.documentElement.classList.contains('lite')) return;
       running = true;
       last = performance.now();
       acc = 0;
@@ -194,6 +194,7 @@
       else start();
     });
     start();
+    window.CR_EMBERS = { start: start, stop: function () { running = false; ctx.clearRect(0, 0, w, h); } };
   }
 
   // ---- Pause the podium's endless animations while the podium is off the screen ----
@@ -205,6 +206,53 @@
   }
 
   if (!window.CR_FX) window.CR_FX = { setTheme: function (rgb) { setGlow(rgb); } };
+
+
+  // ---- Smooth mode: a lighter look for slower devices ----
+  // The page watches its own frame rate. If it is choppy (lots of slow frames while the person is using it),
+  // three bad checks (with good ones cancelling them out) switch smooth mode on and remember it. The menu switch turns it on or off by hand;
+  // switching it off by hand also stops the automatic check from turning it back on.
+  var lite = document.documentElement.classList;
+  var liteBtn = document.getElementById('lite-toggle');
+  function store(v) { try { localStorage.setItem('cr-lite', v); } catch (e) {} }
+  function read() { try { return localStorage.getItem('cr-lite'); } catch (e) { return null; } }
+  function setLite(on, save) {
+    lite.toggle('lite', on);
+    if (liteBtn) liteBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    if (window.CR_EMBERS) { if (on) window.CR_EMBERS.stop(); else window.CR_EMBERS.start(); }
+    if (save) store(on ? '1' : '0');
+  }
+  if (liteBtn) {
+    liteBtn.setAttribute('aria-pressed', lite.contains('lite') ? 'true' : 'false');
+    liteBtn.addEventListener('click', function () { setLite(!lite.contains('lite'), true); });
+  }
+  if (lite.contains('lite') && window.CR_EMBERS) window.CR_EMBERS.stop();
+  window.CR_LITE = { set: function (on) { setLite(on, true); } };
+
+  if (!reduce && read() === null && 'requestAnimationFrame' in window) {
+    var strikes = 0, sampling = false, lastBurst = 0, checks = 0;
+    // Watches ~2 seconds of frames; "choppy" = under about 36 frames a second on average, or 30% of the frames taking over 40ms.
+    var sample = function () {
+      if (sampling || document.hidden || lite.contains('lite') || read() !== null) return;
+      if (performance.now() - lastBurst < 1500) return;
+      sampling = true;
+      var t0 = performance.now(), prev = t0, n = 0, slow = 0, sum = 0;
+      (function f(now) {
+        var d = now - prev; prev = now;
+        if (d < 400) { n++; sum += d; if (d > 40) slow++; } // a long gap means the tab was hidden or busy loading, not choppy
+        if (now - t0 < 2000 && !document.hidden) { requestAnimationFrame(f); return; }
+        sampling = false; lastBurst = performance.now(); checks++;
+        if (n >= 30 && (slow / n > 0.3 || sum / n > 28)) strikes++; else if (n >= 30) strikes = Math.max(0, strikes - 1);
+        if (strikes >= 3) { setLite(true, true); }
+      })(t0);
+    };
+    // after the intro has settled, and then while the person scrolls or clicks around
+    setTimeout(sample, 3500);
+    setTimeout(sample, 7000);
+    var poke = function () { if (checks < 14) setTimeout(sample, 800); }; // wait for the click's own redraw to finish first
+    window.addEventListener('scroll', poke, { passive: true });
+    document.addEventListener('click', poke, true);
+  }
 
   // ---- Spotlight: the leaderboard panel catches the cursor ----
   // Coordinates are applied at most once per frame.

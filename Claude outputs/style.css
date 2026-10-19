@@ -73,9 +73,9 @@ body {
    bottom left, sweeps across to the bottom right, then swings back. Colours come from --gl-1 / --gl-2, which
    change per tab (blue Bulletin, red War, town-hall colours in the Guide). Pure CSS, and only a transform
    is animated, so it is cheap to draw. */
-@property --gl-1 { syntax: "<number>#"; inherits: false; initial-value: 255, 176, 62; }
-@property --gl-2 { syntax: "<number>#"; inherits: false; initial-value: 255, 104, 36; }
-@property --gl-f { syntax: "<number>#"; inherits: false; initial-value: 242, 193, 78; }
+@property --gl-1 { syntax: "<number>#"; inherits: true; initial-value: 255, 176, 62; }
+@property --gl-2 { syntax: "<number>#"; inherits: true; initial-value: 255, 104, 36; }
+@property --gl-f { syntax: "<number>#"; inherits: true; initial-value: 242, 193, 78; }
 /* Changing colour: the colours are NOT animated (animating a colour variable made the browser re-style and redraw
    the whole page on every frame, which made every tab change stutter). Instead there are two ready-made copies of the
    whole atmosphere (.atm: top glow, beam, bottom glow). A new colour is set on the copy that is hidden, and it fades in
@@ -4527,5 +4527,57 @@ html.on-planner .beam i { animation-play-state: paused; }
 .pl-day.today .pl-dots i { box-shadow: 0 0 0 1.5px rgba(20, 12, 2, 0.55); }
 
 /* the little book of hourglass in the Planner button, between the word and the arrow */
-.pb-book { flex: none; width: auto; height: 30px; margin: -2px 0 -2px -0.1rem; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5)); transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1); pointer-events: none; user-select: none; }
-.planner-btn:hover .pb-book { transform: rotate(-8deg) translateY(-2px); }
+.pb-book { flex: none; width: auto; height: 28px; margin: -3px 0 -3px 0.05rem; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5)); transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1); pointer-events: none; user-select: none; }
+.planner-back:hover .pb-book { transform: rotate(-8deg) translateY(-2px); }
+
+
+/* =====================================================================
+   Smooth mode (html.lite): a lighter look for slower devices.
+   Turned on by fx.js when the page measures as choppy, or by hand in the menu.
+   Keeps the colours and the layout, drops what costs the most: moving lights, floating dots, blur and endless animations.
+   ===================================================================== */
+html.lite #embers, html.lite .meteors, html.lite .pod-sparks { display: none !important; }
+html.lite .planner-light i:nth-child(n+3) { display: none; }
+html.lite .atm, html.lite .atm.on { transition: none; }
+html.lite .atm::before,
+html.lite .beam i,
+html.lite .pod-base::before,
+html.lite .pod::after,
+html.lite .pod-ring i,
+html.lite .tb-ring i,
+html.lite .crown,
+html.lite .live-dot::after,
+html.lite .ww-latest,
+html.lite h1,
+html.lite .hero-shield { animation: none !important; }
+html.lite .beam i { transform: rotate(calc(var(--sw) * 0.3)); will-change: auto; }
+html.lite .planner-light i { animation: none; transform: rotate(calc(var(--sw) * var(--k, 1) * 0.4)); will-change: auto; }
+html.lite .pod::after { filter: none; }
+html.lite .board::after { display: none; }
+html.lite *, html.lite *::before, html.lite *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+html.lite .tabs { background: rgba(26, 28, 38, 0.92); }
+
+.lite-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: calc(100% - 2.4rem);
+  margin: 1.2rem 1.2rem 1.4rem;
+  padding: 0.75rem 0.9rem;
+  text-align: left;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  cursor: pointer;
+  font: inherit;
+}
+.lite-toggle:hover { border-color: rgba(var(--accent-rgb), 0.6); }
+.lite-toggle:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 2px; }
+.lt-text { display: grid; gap: 0.15rem; flex: 1; }
+.lt-text b { font-family: var(--font-display); font-weight: 400; font-size: 0.98rem; }
+.lt-text i { font-style: normal; font-size: 0.78rem; opacity: 0.7; line-height: 1.3; }
+.lt-switch { position: relative; flex: none; width: 40px; height: 22px; border-radius: 999px; background: rgba(255, 255, 255, 0.16); transition: background 0.2s ease; }
+.lt-switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform 0.2s ease; }
+.lite-toggle[aria-pressed="true"] .lt-switch { background: var(--accent); }
+.lite-toggle[aria-pressed="true"] .lt-switch::after { transform: translateX(18px); }

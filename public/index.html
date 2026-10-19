@@ -32,6 +32,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Titan+One&display=swap" rel="stylesheet" />
+  <script>
+    /* Smooth mode: a lighter look (fewer moving lights and effects) for slower devices. fx.js turns it on by itself when the page is choppy; ?lite=1 / ?lite=0 force it. */
+    (function () {
+      try {
+        var q = /[?&]lite=([01])/.exec(location.search);
+        if (q) localStorage.setItem('cr-lite', q[1]);
+        if (localStorage.getItem('cr-lite') === '1') document.documentElement.classList.add('lite');
+      } catch (e) {}
+    })();
+  </script>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -120,6 +130,11 @@
         <p>Looking for a new clan? Come say hi.</p>
       </div>
     </div>
+
+    <button type="button" id="lite-toggle" class="lite-toggle" aria-pressed="false">
+      <span class="lt-text"><b>Smooth mode</b><i>Fewer moving lights and effects, for slower devices</i></span>
+      <span class="lt-switch" aria-hidden="true"></span>
+    </button>
   </nav>
 
   <div class="page-content">
@@ -290,7 +305,6 @@
               <img class="pb-master" src="assets/planner/master-builder.png" alt="" width="142" height="200" draggable="false" />
             </span>
             <span class="pb-text">Planner</span>
-            <img class="pb-book" src="assets/planner/book.png" alt="" width="65" height="84" draggable="false" />
             <svg class="pb-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M12.5 5.5 19 12l-6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
         </div>
@@ -401,6 +415,7 @@
         <button type="button" id="planner-back" class="planner-back" aria-label="Back to the Guide">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H6M11.5 5.5 5 12l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <span>Guide</span>
+          <img class="pb-book" src="assets/planner/book.png" alt="" width="65" height="84" draggable="false" />
         </button>
         <h2 id="planner-heading" class="panel-title">Planner</h2>
       </div>
