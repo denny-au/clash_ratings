@@ -71,11 +71,12 @@
     var huts = 0;
     var th = null;
 
-    function add(kind, group, e, fallback) {
+    function add(kind, group, e, fallback, hero) {
       var t = num(e.timer);
       if (t == null || t <= 0) return;
       tasks.push({
         kind: kind,
+        hero: !!hero,
         name: nameOf(group, e.data, fallback),
         from: num(e.lvl),
         end: exportedAt + t * 1000,
@@ -91,7 +92,8 @@
     (j.units || []).forEach(function (e) { add('research', 'units', e || {}, 'Troop'); });
     (j.spells || []).forEach(function (e) { add('research', 'units', e || {}, 'Spell'); });
     (j.siege_machines || []).forEach(function (e) { add('research', 'units', e || {}, 'Siege machine'); });
-    (j.heroes || []).forEach(function (e) { add('hero', 'heroes', e || {}, 'Hero'); });
+    // a hero upgrade needs a builder too, so it counts as one of the builders' jobs
+    (j.heroes || []).forEach(function (e) { add('builder', 'heroes', e || {}, 'Hero', true); });
     (j.pets || []).forEach(function (e) { add('pet', 'pets', e || {}, 'Pet'); });
 
     var helpers = (j.helpers || []).map(function (h) {
@@ -154,14 +156,20 @@
 
   // ---------- drawing ----------
   var KINDS = {
-    builder: { label: 'Builder', cls: 'k-builder' },
+    builder: { label: 'Builder', cls: 'k-builder' }, // buildings and heroes (a hero upgrade takes a builder)
     research: { label: 'Research', cls: 'k-research' },
     pet: { label: 'Pet', cls: 'k-pet' },
-    hero: { label: 'Hero', cls: 'k-hero' },
   };
+  function kindLabel(t) { return t.hero ? 'Hero' : KINDS[t.kind].label; }
 
   function taskText(t) {
-    return t.name + (t.from != null ? ' → lvl ' + (t.from + 1) : '');
+    return (t.hero ? 'Hero · ' : '') + t.name + (t.from != null ? ' → lvl ' + (t.from + 1) : '');
+  }
+
+  var TH_ART = 17; // the highest Town Hall we have a picture for (assets/th/th1.webp ... th17.webp)
+  function thArt(n, cls) {
+    if (!n || n < 1 || n > TH_ART) return '';
+    return '<img class="pl-th ' + (cls || '') + '" src="assets/th/th' + n + '.webp" alt="Town Hall ' + n + '" width="64" height="64" decoding="async" draggable="false" onerror="this.remove()" />';
   }
 
   function goalHtml(v) {
@@ -169,12 +177,14 @@
     var when = Date.now() + days * 86400000;
     var head = mode === 'max' ? 'Everything maxed' : (v.th ? 'Town Hall ' + (v.th + 1) : 'Next Town Hall');
     var sub = mode === 'max' ? 'Estimated date everything is done' : 'Estimated date you can move up';
+    var nextArt = mode === 'rush' && v.th ? thArt(v.th + 1, 'pl-th-next') : '';
     return '<section class="pl-card pl-goal">' +
       '<div class="pl-goal-top">' +
         '<span class="pl-mode' + (mode === 'rush' ? ' on' : '') + '">Strategic rush</span>' +
         '<button type="button" class="pl-switch" role="switch" aria-checked="' + (mode === 'max') + '" aria-label="Max" data-act="mode"><i></i></button>' +
         '<span class="pl-mode' + (mode === 'max' ? ' on' : '') + '">Max</span>' +
       '</div>' +
+      (nextArt ? '<div class="pl-goal-art">' + nextArt + '</div>' : '') +
       '<p class="pl-goal-head">' + esc(head) + '</p>' +
       '<p class="pl-goal-date">' + esc(longDate(when)) + '</p>' +
       '<p class="pl-goal-sub">' + sub + ' · about ' + days + ' days</p>' +
@@ -204,21 +214,42 @@
       var dow = (lead + i - 1) % 7;
       var cls = 'pl-day' + (i === now.getDate() ? ' today' : '') + (dow >= 5 ? ' wkend' : '') + (ev.length ? ' has' : '');
       var dots = ev.slice(0, 4).map(function (t) { return '<i class="' + KINDS[t.kind].cls + '"></i>'; }).join('');
-      var tip = ev.map(function (t) { return KINDS[t.kind].label + ': ' + taskText(t) + ' (' + dateTime(t.end) + ')'; }).join('\n');
+      var tip = ev.map(function (t) { return kindLabel(t) + ': ' + t.name + (t.from != null ? ' → lvl ' + (t.from + 1) : '') + ' (' + dateTime(t.end) + ')'; }).join('\n');
       cells += '<span class="' + cls + '"' + (tip ? ' title="' + esc(tip) + '"' : '') + '><b>' + i + '</b><span class="pl-dots">' + dots + '</span></span>';
     }
     var head = now.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
     var wk = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(function (d, k) { return '<span class="' + (k >= 5 ? 'wkend' : '') + '">' + d + '</span>'; }).join('');
+    // what finishes after this month: next month in full, and a note about anything later
+    var nm = new Date(y, m + 1, 1);
+    var nextList = [], laterList = [];
+    v.tasks.forEach(function (t) {
+      var d = new Date(t.end);
+      var idx = (d.getFullYear() - y) * 12 + (d.getMonth() - m);
+      if (idx === 1) nextList.push(t);
+      else if (idx > 1) laterList.push(t);
+    });
+    var nextHtml = '';
+    if (nextList.length || laterList.length) {
+      nextHtml = '<p class="pl-sub">Finishing next month <span class="pl-subm">' + esc(nm.toLocaleDateString(undefined, { month: 'long' })) + '</span></p>';
+      nextHtml += nextList.length ? '<ul class="pl-events">' + nextList.map(function (t) {
+        return '<li><span class="pl-when">' + esc(dayLabel(t.end)) + '</span><i class="' + KINDS[t.kind].cls + '"></i><span>' + esc(kindLabel(t) + ': ' + t.name + (t.from != null ? ' → lvl ' + (t.from + 1) : '')) + '</span></li>';
+      }).join('') + '</ul>' : '<p class="pl-empty">Nothing finishes next month.</p>';
+      if (laterList.length) {
+        var last = laterList[laterList.length - 1];
+        nextHtml += '<p class="pl-later">' + laterList.length + ' more finish' + (laterList.length === 1 ? 'es' : '') + ' after that, the last on ' + esc(dayLabel(last.end)) + '.</p>';
+      }
+    }
     var rows = list.map(function (t) {
       var done = t.end <= Date.now();
-      return '<li class="' + (done ? 'done' : '') + '"><span class="pl-when">' + esc(dayLabel(t.end)) + '</span><i class="' + KINDS[t.kind].cls + '"></i><span>' + esc(KINDS[t.kind].label + ': ' + taskText(t)) + '</span></li>';
+      return '<li class="' + (done ? 'done' : '') + '"><span class="pl-when">' + esc(dayLabel(t.end)) + '</span><i class="' + KINDS[t.kind].cls + '"></i><span>' + esc(kindLabel(t) + ': ' + t.name + (t.from != null ? ' → lvl ' + (t.from + 1) : '')) + '</span></li>';
     }).join('');
     return '<section class="pl-card pl-cal" aria-label="Calendar for ' + esc(head) + '">' +
       '<h3 class="pl-month">' + esc(head) + '</h3>' +
       '<div class="pl-weekdays" aria-hidden="true">' + wk + '</div>' +
       '<div class="pl-grid">' + cells + '</div>' +
-      '<ul class="pl-legend" aria-hidden="true"><li><i class="k-builder"></i>Builder</li><li><i class="k-research"></i>Research</li><li><i class="k-pet"></i>Pet</li><li><i class="k-hero"></i>Hero</li></ul>' +
+      '<ul class="pl-legend" aria-hidden="true"><li><i class="k-builder"></i>Builder (buildings and heroes)</li><li><i class="k-research"></i>Research</li><li><i class="k-pet"></i>Pet</li></ul>' +
       (rows ? '<p class="pl-sub">Finishing this month</p><ul class="pl-events">' + rows + '</ul>' : '<p class="pl-empty">Nothing finishes this month.</p>') +
+      nextHtml +
     '</section>';
   }
 
@@ -245,38 +276,26 @@
       if (!t || t.end <= now) freeCount++;
       brows += rowHtml('Builder ' + (i + 1), t, 'ready for a new upgrade');
     }
-    out += '<section class="pl-card"><h3 class="pl-h">Builders <span class="pl-count">' + freeCount + ' of ' + v.builders + ' free</span></h3><ul class="pl-rows">' + brows + '</ul></section>';
+    out += '<section class="pl-card pl-crew k-builder"><h3 class="pl-h">Builders <span class="pl-count">' + freeCount + ' of ' + v.builders + ' free</span></h3><ul class="pl-rows">' + brows + '</ul></section>';
 
     var res = by('research');
     var rrows = res.length ? res.map(function (t, k) { return rowHtml(k === 0 ? 'Laboratory' : 'Lab slot ' + (k + 1), t, ''); }).join('') : rowHtml('Laboratory', null, 'nothing is being researched');
     var resBusy = res.filter(function (t) { return t.end > now; }).length;
-    out += '<section class="pl-card"><h3 class="pl-h">Research <span class="pl-count">' + (resBusy ? resBusy + ' running' : 'free') + '</span></h3><ul class="pl-rows">' + rrows + '</ul></section>';
+    out += '<section class="pl-card pl-crew k-research"><h3 class="pl-h">Research <span class="pl-count">' + (resBusy ? resBusy + ' running' : 'free') + '</span></h3><ul class="pl-rows">' + rrows + '</ul></section>';
 
     var pets = by('pet');
     var prows = pets.length ? pets.map(function (t) { return rowHtml('Pet House', t, ''); }).join('') : rowHtml('Pet House', null, 'no pet is being upgraded');
     var petBusy = pets.filter(function (t) { return t.end > now; }).length;
-    out += '<section class="pl-card"><h3 class="pl-h">Pets <span class="pl-count">' + (petBusy ? petBusy + ' running' : 'free') + '</span></h3><ul class="pl-rows">' + prows + '</ul></section>';
+    out += '<section class="pl-card pl-crew k-pet"><h3 class="pl-h">Pets <span class="pl-count">' + (petBusy ? petBusy + ' running' : 'free') + '</span></h3><ul class="pl-rows">' + prows + '</ul></section>';
 
-    var heroes = by('hero');
-    if (heroes.length) {
-      out += '<section class="pl-card"><h3 class="pl-h">Heroes <span class="pl-count">' + heroes.filter(function (t) { return t.end > now; }).length + ' upgrading</span></h3><ul class="pl-rows">' +
-        heroes.map(function (t) { return rowHtml('Hero Hall', t, ''); }).join('') + '</ul></section>';
-    }
-
-    if (v.helpers.length) {
-      out += '<section class="pl-card"><h3 class="pl-h">Helpers</h3><ul class="pl-helpers">' + v.helpers.map(function (h) {
-        var ready = h.ready <= now;
-        return '<li class="' + (ready ? 'ready' : 'wait') + '"><b>' + esc(h.name) + '</b>' + (h.lvl != null ? '<em>lvl ' + h.lvl + '</em>' : '') +
-          '<span>' + (ready ? 'Ready' : 'Back in ' + esc(span(h.ready - now))) + '</span></li>';
-      }).join('') + '</ul></section>';
-    }
+    // (the helpers are read from the export and kept in v.helpers for later, but they are not part of the planner view)
     return out;
   }
 
   function villageHtml(v) {
     var age = Date.now() - v.exportedAt;
     var stale = age > 6 * 3600000;
-    return '<div class="pl-bar"><div class="pl-vinfo">' +
+    return '<div class="pl-bar">' + thArt(v.th, 'pl-th-now') + '<div class="pl-vinfo">' +
         '<b>' + esc(v.tag || 'Your village') + '</b>' + (v.th ? '<span>Town Hall ' + v.th + '</span>' : '') +
         '<span>Exported ' + esc(ago(age)) + '</span></div>' +
       '</div>' +

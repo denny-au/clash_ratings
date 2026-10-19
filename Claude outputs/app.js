@@ -197,22 +197,15 @@ const slideMs = 280;
 const slideInMs = 480;
 const reducedMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
+// The Planner's light starts pearly pink and then CSS slowly turns every colour through the whole rainbow
+// (a hue-rotate filter on the glows, beams and floating dots; see "pl-hue" in style.css). JS only picks the start colour.
 const IRID = [[255, 150, 205], [140, 205, 255], [185, 160, 255], [140, 240, 215], [255, 215, 150]];
-let iridTimer = null;
-let iridAt = 0;
 function startIrid() {
-  const step = () => {
-    const c = IRID[iridAt++ % IRID.length];
-    window.CR_THEME_PENDING = c;
-    if (window.CR_FX) window.CR_FX.setTheme(c);
-  };
-  step();
-  if (!reducedMotion()) iridTimer = setInterval(step, 5200);
+  const c = IRID[0];
+  window.CR_THEME_PENDING = c;
+  if (window.CR_FX) window.CR_FX.setTheme(c);
 }
-function stopIrid() {
-  if (iridTimer) clearInterval(iridTimer);
-  iridTimer = null;
-}
+function stopIrid() {}
 
 function showPlanner(open, { instant = false, restoreScroll = true } = {}) {
   if (open === plannerOpen) return;
