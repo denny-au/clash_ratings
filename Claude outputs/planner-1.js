@@ -174,7 +174,7 @@
     return (t.hero ? 'Hero · ' : '') + t.name + (t.from != null ? ' → lvl ' + (t.from + 1) : '');
   }
 
-  var TH_ART = 17; // the highest Town Hall we have a picture for (assets/th/th1.webp ... th17.webp); raise it when th18.webp is added
+  var TH_ART = 18; // the highest Town Hall we have a picture for (assets/th/th1.webp ... th18.webp); raise it when a new Town Hall picture is added
   var TH_MAX = 18; // the highest Town Hall in the game right now
   // a Town Hall picture, or (until there is a picture for it) a gold numbered tile in the same size
   function thPic(n, cls) {
