@@ -4610,15 +4610,32 @@ html.lite .tabs { background: rgba(26, 28, 38, 0.92); }
 
 
 /* Town Hall pictures on the goal card: yours, an arrow, and the next one */
-.pl-goal-art { display: flex; align-items: center; justify-content: center; gap: 1rem; margin: 0.5rem 0 0.2rem; }
+.pl-goal { overflow-x: clip; }
+.pl-goal-art { display: flex; align-items: center; justify-content: center; margin: 0.5rem 0 0.2rem; min-height: 146px; } /* tall enough for either mode, so the card does not jump when the Town Halls move */
 .pl-thbox { display: grid; justify-items: center; gap: 0.2rem; }
 .pl-thbox em { font-style: normal; font-family: var(--font-display); font-size: 0.82rem; color: var(--muted); }
 .pl-th { display: block; width: auto; height: 96px; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5)); user-select: none; }
-.pl-th-now { height: 104px; }
-.pl-goal-art:not(.solo) .pl-th-now { height: 88px; }
-.pl-goal-art:not(.solo) .pl-th-next { height: 110px; }
+.pl-th-now { height: 88px; transition: height 0.85s cubic-bezier(0.2, 0.9, 0.3, 1.25); }
+.pl-th-next { height: 110px; }
+.pl-goal-art.solo .pl-th-now { height: 122px; }
 .pl-arrow { width: 38px; height: 38px; flex: none; color: var(--accent-hi); filter: drop-shadow(0 0 8px rgba(var(--accent-rgb), 0.55)); }
+/* arrow + next Town Hall: they slide back in from the right (Strategic rush) or away to the right (Max) */
+.pl-nx { display: flex; align-items: center; gap: 1rem; margin-left: 1rem; max-width: 200px; transform: none; opacity: 1;
+  transition: max-width 0.85s cubic-bezier(0.2, 0.9, 0.3, 1.1), margin-left 0.85s cubic-bezier(0.2, 0.9, 0.3, 1.1), transform 0.85s cubic-bezier(0.2, 0.9, 0.3, 1.15), opacity 0.5s ease 0.1s; }
+.pl-goal-art.solo .pl-nx { max-width: 0; margin-left: 0; transform: translateX(190px); opacity: 0; pointer-events: none;
+  transition: max-width 0.85s cubic-bezier(0.55, 0, 0.7, 0.4), margin-left 0.85s cubic-bezier(0.55, 0, 0.7, 0.4), transform 0.85s cubic-bezier(0.55, 0, 0.7, 0.4), opacity 0.5s ease 0.25s; }
+/* first time they are on screen: blow up to full size */
+.pl-goal-art.pre .pl-thbox, .pl-goal-art.pre .pl-arrow { opacity: 0; transform: scale(0.1); }
+.pl-goal-art.pop .pl-thbox, .pl-goal-art.pop .pl-arrow { animation: pl-pop 0.85s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.pl-goal-art.pop .pl-nx .pl-arrow { animation-delay: 0.3s; }
+.pl-goal-art.pop .pl-nx .pl-thbox { animation-delay: 0.45s; }
+@keyframes pl-pop { 0% { opacity: 0; transform: scale(0.1); } 55% { opacity: 1; transform: scale(1.16); } 78% { transform: scale(0.96); } 100% { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .pl-th-now, .pl-nx { transition: none; }
+  .pl-goal-art.pre .pl-thbox, .pl-goal-art.pre .pl-arrow { opacity: 1; transform: none; }
+  .pl-goal-art.pop .pl-thbox, .pl-goal-art.pop .pl-arrow { animation: none; }
+}
 /* until a Town Hall has a picture: a gold numbered tile the same size */
 .pl-th-tile { display: grid; place-items: center; aspect-ratio: 1; border-radius: 22px; background: linear-gradient(160deg, rgba(var(--accent-rgb), 0.3), rgba(var(--accent-rgb), 0.08)); border: 2px dashed rgba(var(--accent-rgb), 0.6); filter: none; }
 .pl-th-tile b { font-family: var(--font-display); font-weight: 400; font-size: 2.6rem; color: var(--accent-pale); text-shadow: 0 2px 0 rgba(0, 0, 0, 0.4); }
-@media (max-width: 600px) { .pl-goal-art { gap: 0.6rem; } .pl-arrow { width: 28px; height: 28px; } .pl-goal-art:not(.solo) .pl-th-now { height: 70px; } .pl-goal-art:not(.solo) .pl-th-next { height: 88px; } .pl-th-now { height: 90px; } }
+@media (max-width: 600px) { .pl-goal-art { min-height: 122px; } .pl-nx { gap: 0.6rem; margin-left: 0.6rem; max-width: 150px; } .pl-arrow { width: 28px; height: 28px; } .pl-th-now { height: 70px; } .pl-th-next { height: 88px; } .pl-goal-art.solo .pl-th-now { height: 98px; } .pl-goal-art.solo .pl-nx { transform: translateX(150px); } }

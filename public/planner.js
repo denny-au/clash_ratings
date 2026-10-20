@@ -250,11 +250,15 @@
         (est.partial ? '<li>This export has very few buildings, so new buildings you have not built yet are not counted.</li>' : '') +
         '</ul></details>';
     }
-    // your Town Hall, an arrow, and the next one (just yours when you are at the top, or when the goal is "max")
+    // your Town Hall, an arrow, and the next one. In Max mode the next one slides away to the right and yours
+    // grows (CSS transitions on the .solo class). When the mode was just switched we first draw the old state,
+    // then draw() flips the class so the move plays.
     var art = '';
     if (v.th) {
-      art = '<div class="pl-goal-art' + (rush && !top ? '' : ' solo') + '"><span class="pl-thbox">' + thPic(v.th, 'pl-th-now') + '<em>TH' + v.th + '</em></span>' +
-        (rush && !top ? ARROW + '<span class="pl-thbox">' + thPic(v.th + 1, 'pl-th-next') + '<em>TH' + (v.th + 1) + '</em></span>' : '') + '</div>';
+      var solo = top || mode === 'max';
+      var shown = artFrom ? (top || artFrom === 'max') : solo;
+      art = '<div class="pl-goal-art' + (shown ? ' solo' : '') + '"><span class="pl-thbox">' + thPic(v.th, 'pl-th-now') + '<em>TH' + v.th + '</em></span>' +
+        (top ? '' : '<div class="pl-nx"' + (shown ? ' aria-hidden="true"' : '') + '>' + ARROW + '<span class="pl-thbox">' + thPic(v.th + 1, 'pl-th-next') + '<em>TH' + (v.th + 1) + '</em></span></div>') + '</div>';
     }
     return '<section class="pl-card pl-goal">' +
       '<div class="pl-goal-top">' +
@@ -405,9 +409,37 @@
   }
 
   var viewEl;
-  function draw() {
+  var artFrom = null; // the mode we are animating away from (only while drawing right after the switch)
+  var calmMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // The Town Halls blow up to full size the first time they are on screen (also when the planner opens later)
+  function popWhenSeen(art) {
+    if (calmMotion || !('IntersectionObserver' in window)) return;
+    art.classList.add('pre');
+    var io = new IntersectionObserver(function (entries) {
+      if (!entries.some(function (en) { return en.isIntersecting; })) return;
+      io.disconnect();
+      art.classList.remove('pre');
+      art.classList.add('pop');
+    }, { threshold: 0.4 });
+    io.observe(art);
+  }
+  function draw(fromMode) {
     if (!viewEl) return;
+    artFrom = fromMode || null;
     viewEl.innerHTML = village ? villageHtml(village) : '<p class="pl-intro">See who is busy, who is free and when things finish. Load your village to begin.</p>';
+    artFrom = null;
+    var art = viewEl.querySelector('.pl-goal-art');
+    if (!art) return;
+    var nx = art.querySelector('.pl-nx');
+    if (fromMode) {
+      if (!nx) return; // at the top Town Hall nothing moves
+      void art.offsetWidth; // let the old state paint, then change it so the transition runs
+      var solo = mode === 'max';
+      art.classList.toggle('solo', solo);
+      nx.setAttribute('aria-hidden', solo ? 'true' : 'false');
+    } else {
+      popWhenSeen(art);
+    }
   }
   function shell() {
     root.innerHTML = '<div id="pl-pastewrap"></div><div id="pl-view"></div>'; // "Paste a new export" sits at the top
@@ -425,9 +457,10 @@
     if (!b) return;
     var act = b.getAttribute('data-act');
     if (act === 'mode') {
+      var was = mode;
       mode = mode === 'max' ? 'rush' : 'max';
       store(KEY_MODE, mode);
-      draw();
+      draw(was);
     } else if (act === 'load') {
       var ta = document.getElementById('pl-text');
       var ok = setVillage(ta ? ta.value.trim() : '');
