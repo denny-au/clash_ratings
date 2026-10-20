@@ -52,9 +52,14 @@
     if (h < 48) return h + ' hours ago';
     return Math.floor(h / 24) + ' days ago';
   }
+  // A name from planner-data.js, else from the upgrade-time table (planner-model.js), else a generic one
+  var MODEL_GROUP = { buildings: 'b', units: 'l', heroes: 'h', pets: 'p' };
   function nameOf(group, id, fallback) {
     var t = N[group] || {};
-    return t[id] || fallback + ' #' + id;
+    if (t[id]) return t[id];
+    var M = window.CR_MODEL, g = M && M[MODEL_GROUP[group]];
+    if (g && g[id] && g[id].n) return g[id].n;
+    return fallback + ' #' + id;
   }
 
   // ---------- reading the export ----------
@@ -265,7 +270,7 @@
     var y = now.getFullYear(), m = now.getMonth();
     var first = new Date(y, m, 1);
     var days = new Date(y, m + 1, 0).getDate();
-    var lead = (first.getDay() + 6) % 7; // Monday first
+    var lead = first.getDay(); // Sunday first
     var byDay = {};
     var list = [];
     v.tasks.forEach(function (t) {
@@ -279,14 +284,14 @@
     for (i = 0; i < lead; i++) cells += '<span class="pl-day pl-blank" aria-hidden="true"></span>';
     for (i = 1; i <= days; i++) {
       var ev = byDay[i] || [];
-      var dow = (lead + i - 1) % 7;
-      var cls = 'pl-day' + (i === now.getDate() ? ' today' : '') + (dow >= 5 ? ' wkend' : '') + (ev.length ? ' has' : '');
+      var dow = (lead + i - 1) % 7; // 0 = Sunday
+      var cls = 'pl-day' + (i === now.getDate() ? ' today' : '') + (dow === 0 || dow === 6 ? ' wkend' : '') + (ev.length ? ' has' : '');
       var dots = ev.slice(0, 4).map(function (t) { return ico(t.kind); }).join('');
       var tip = ev.map(function (t) { return kindLabel(t) + ': ' + t.name + (t.from != null ? ' → lvl ' + (t.from + 1) : '') + ' (' + dateTime(t.end) + ')'; }).join('\n');
       cells += '<span class="' + cls + '"' + (tip ? ' title="' + esc(tip) + '"' : '') + '><b>' + i + '</b><span class="pl-dots">' + dots + '</span></span>';
     }
     var head = now.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-    var wk = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(function (d, k) { return '<span class="' + (k >= 5 ? 'wkend' : '') + '">' + d + '</span>'; }).join('');
+    var wk = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(function (d, k) { return '<span class="' + (k === 0 || k === 6 ? 'wkend' : '') + '">' + d + '</span>'; }).join('');
     // what finishes after this month: next month in full, and a note about anything later
     var nm = new Date(y, m + 1, 1);
     var nextList = [], laterList = [];
@@ -351,12 +356,12 @@
     for (var i = 0; i < v.builders; i++) {
       var t = builders[i];
       if (!t || t.end <= now) freeCount++;
-      brows += rowHtml('Builder ' + (i + 1), t, 'ready for a new upgrade');
+      brows += rowHtml(i >= 6 ? 'Goblin Builder' : 'Builder ' + (i + 1), t, 'ready for a new upgrade');
     }
     out += '<section class="pl-crew k-builder">' + head('builder', 'Builders', freeCount + ' of ' + v.builders + ' free') + '<ul class="pl-rows">' + brows + '</ul></section>';
 
     var res = by('research');
-    var rrows = res.length ? res.map(function (t, k) { return rowHtml(k === 0 ? 'Laboratory' : 'Lab slot ' + (k + 1), t, ''); }).join('') : rowHtml('Laboratory', null, 'nothing is being researched');
+    var rrows = res.length ? res.map(function (t, k) { return rowHtml(k === 0 ? 'Laboratory' : 'Goblin Researcher', t, ''); }).join('') : rowHtml('Laboratory', null, 'nothing is being researched');
     var resBusy = res.filter(function (t) { return t.end > now; }).length;
     out += '<section class="pl-crew k-research">' + head('research', 'Research', resBusy ? resBusy + ' running' : 'free') + '<ul class="pl-rows">' + rrows + '</ul></section>';
 
