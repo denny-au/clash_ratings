@@ -4438,9 +4438,8 @@ html.lite .planner-light { animation: pl-light-in 0.9s ease both !important; }
 .pl-goal-date { margin: 0.15rem 0 0; font-family: var(--font-display); font-size: 1.25rem; color: var(--accent-hi); }
 .pl-goal-sub { margin: 0.35rem 0 0; color: var(--muted); font-size: 0.92rem; }
 .pl-goal-more { margin: 0.45rem auto 0; max-width: 34rem; color: var(--text); font-size: 0.9rem; line-height: 1.45; }
-.pl-how { margin: 0.7rem auto 0; max-width: 34rem; text-align: left; font-size: 0.82rem; color: var(--muted); }
+.pl-how { margin: 0.7rem auto 0; max-width: 34rem; text-align: center; font-size: 0.82rem; color: var(--muted); }
 .pl-how summary { cursor: pointer; text-align: center; letter-spacing: 0.04em; text-transform: uppercase; font-size: 0.74rem; color: rgba(var(--accent-rgb), 0.85); }
-.pl-how ul { margin: 0.5rem 0 0; padding-left: 1.1rem; display: grid; gap: 0.3rem; }
 .pl-goal-note { margin: 0.5rem 0 0; font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; color: rgba(var(--accent-rgb), 0.75); }
 
 /* the calendar: just this month */

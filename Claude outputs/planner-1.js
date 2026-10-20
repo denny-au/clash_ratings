@@ -201,19 +201,6 @@
       return window.CR_CALC.estimate(v.json, { th: v.th, builders: v.builders, exportedAt: v.exportedAt, mode: mode });
     } catch (e) { return null; }
   }
-  var HOW = {
-    rush: [
-      'Like the Rush Bible: one builder stays on a hero, the others finish the Army Camps, Clan Castle and Hero Hall, then drop any new buildings you have not built yet.',
-      'At Town Hall 16 it also waits for the Eagle Artillery and the Cannons and Archer Towers that get merged.',
-      'Then it starts the Town Hall upgrade. The date is when the new Town Hall is finished.',
-    ],
-    max: [
-      'Every building, hero, troop, spell, siege machine and pet at its top level for your current Town Hall.',
-      'Builders, the lab and the pet house all work at the same time, and the slowest of them sets the date.',
-      'The lab uses two slots only if your export shows the second slot in use.',
-    ],
-  };
-
   function goalHtml(v) {
     var top = v.th && v.th >= TH_MAX;
     var rush = mode === 'rush';
@@ -223,10 +210,10 @@
       head = 'You are at the highest Town Hall!';
       sub = 'There is no higher Town Hall to move up to.';
     } else if (!est) {
-      head = rush ? (v.th ? 'Town Hall ' + (v.th + 1) : 'Next Town Hall') : 'Everything maxed';
+      head = rush ? (v.th ? 'Town Hall ' + (v.th + 1) : 'Next Town Hall') : (v.th ? 'Maxing Town Hall ' + v.th : 'Maxing');
       sub = v.th ? 'Working out the date…' : 'The date needs your Town Hall level, which this export does not show.';
     } else {
-      head = rush ? 'Town Hall ' + (v.th + 1) : 'Everything maxed at Town Hall ' + v.th;
+      head = rush ? 'Town Hall ' + (v.th + 1) : 'Maxing Town Hall ' + v.th;
       var daysFromNow = (est.date - Date.now()) / 86400000;
       dateHtml = '<p class="pl-goal-date">' + esc(longDate(est.date)) + '</p>';
       sub = (rush ? 'Estimated date you can move up' : 'Estimated date everything is done') + ' · ' +
@@ -244,11 +231,9 @@
         parts.push('Builders ' + fmtDays(p.builder), 'Lab ' + fmtDays(p.lab), 'Pets ' + fmtDays(p.pets));
         extra = '<p class="pl-goal-more">' + esc(parts.join(' · ')) + '. The ' + esc(est.bottleneck === 'builders' ? 'builders are' : est.bottleneck === 'lab' ? 'lab is' : 'pets are') + ' the slowest.</p>';
       }
-      note = '<details class="pl-how"><summary>How this is worked out</summary><ul>' +
-        HOW[mode].map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') +
-        '<li>Uses the game\'s normal upgrade times: no Gold Pass, boosts, potions, hammers or Builder\'s Apprentice, so you may be faster. Walls, traps and equipment are left out.</li>' +
-        (est.partial ? '<li>This export has very few buildings, so new buildings you have not built yet are not counted.</li>' : '') +
-        '</ul></details>';
+      // the details live in a "Breakdown" drop-down instead of a long sentence under the date
+      note = '<details class="pl-how"><summary>Breakdown</summary>' + extra + '</details>';
+      extra = '';
     }
     // your Town Hall, an arrow, and the next one. In Max mode the next one slides away to the right and yours
     // grows (CSS transitions on the .solo class). When the mode was just switched we first draw the old state,
@@ -423,11 +408,16 @@
     }, { threshold: 0.4 });
     io.observe(art);
   }
-  function draw(fromMode) {
+  // fromMode: the mode we just switched away from (plays the slide); refresh: the 30-second refresh, which must
+  // not close the Breakdown or replay the Town Hall pop-in
+  function draw(fromMode, refresh) {
     if (!viewEl) return;
+    var wasOpen = refresh && viewEl.querySelector('.pl-how[open]') !== null;
     artFrom = fromMode || null;
     viewEl.innerHTML = village ? villageHtml(village) : '<p class="pl-intro">See who is busy, who is free and when things finish. Load your village to begin.</p>';
     artFrom = null;
+    if (wasOpen) { var hw = viewEl.querySelector('.pl-how'); if (hw) hw.open = true; }
+    if (refresh) return;
     var art = viewEl.querySelector('.pl-goal-art');
     if (!art) return;
     var nx = art.querySelector('.pl-nx');
@@ -486,7 +476,7 @@
   // Keep "time left" and the free/busy badges fresh while the page is open.
   setInterval(function () {
     var page = document.getElementById('planner-page');
-    if (village && page && !page.hidden && !document.hidden) draw();
+    if (village && page && !page.hidden && !document.hidden) draw(null, true);
   }, 30000);
 
   shell();
