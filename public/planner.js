@@ -2,7 +2,7 @@
 // Everything stays in this browser (localStorage); nothing is sent anywhere.
 (function () {
   'use strict';
-  var D = window.CR_PLANNER_DATA || { estimate: { rushDays: 80, maxDays: 400 }, names: {} };
+  var D = window.CR_PLANNER_DATA || { names: {} };
   var N = D.names || {};
   var root = document.getElementById('planner-root');
   if (!root) return;
@@ -105,6 +105,7 @@
       tag: typeof j.tag === 'string' ? j.tag.replace(/[^#0-9A-Za-z]/g, '').slice(0, 14) : '',
       exportedAt: exportedAt,
       th: th,
+      json: j, // the raw export, kept in memory for the date maths (planner-calc.js)
       builders: Math.max(huts, busyBuilders),
       tasks: tasks,
       helpers: helpers,
@@ -160,35 +161,113 @@
     research: { label: 'Research', cls: 'k-research' },
     pet: { label: 'Pet', cls: 'k-pet' },
   };
+  // Little pictures instead of dots: a hammer for builders (and heroes), a spyglass for research, a cat paw for pets.
+  var SVG = {
+    builder: '<svg viewBox="0 0 24 24" focusable="false"><g transform="rotate(45 12 12)"><rect x="3.5" y="2.5" width="17" height="7" rx="1.8"/><rect x="10.4" y="8.5" width="3.2" height="14" rx="1.3"/></g></svg>',
+    research: '<svg viewBox="0 0 24 24" focusable="false"><g transform="rotate(-40 12 12)"><rect x="1.5" y="9.6" width="4.6" height="4.8" rx="1"/><rect x="6.8" y="8.6" width="6.2" height="6.8" rx="1"/><rect x="13.7" y="7.2" width="8.8" height="9.6" rx="1.4"/></g></svg>',
+    pet: '<svg viewBox="0 0 24 24" focusable="false"><ellipse cx="12" cy="16.2" rx="5.4" ry="4.4"/><ellipse cx="5" cy="11.2" rx="2" ry="2.8" transform="rotate(-22 5 11.2)"/><ellipse cx="9.2" cy="6.6" rx="2.1" ry="3" transform="rotate(-8 9.2 6.6)"/><ellipse cx="14.8" cy="6.6" rx="2.1" ry="3" transform="rotate(8 14.8 6.6)"/><ellipse cx="19" cy="11.2" rx="2" ry="2.8" transform="rotate(22 19 11.2)"/></svg>',
+  };
+  function ico(kind) { return '<span class="pl-ico ' + KINDS[kind].cls + '" aria-hidden="true">' + SVG[kind] + '</span>'; }
   function kindLabel(t) { return t.hero ? 'Hero' : KINDS[t.kind].label; }
 
   function taskText(t) {
     return (t.hero ? 'Hero · ' : '') + t.name + (t.from != null ? ' → lvl ' + (t.from + 1) : '');
   }
 
-  var TH_ART = 17; // the highest Town Hall we have a picture for (assets/th/th1.webp ... th17.webp)
-  function thArt(n, cls) {
-    if (!n || n < 1 || n > TH_ART) return '';
+  var TH_ART = 17; // the highest Town Hall we have a picture for (assets/th/th1.webp ... th17.webp); raise it when th18.webp is added
+  var TH_MAX = 18; // the highest Town Hall in the game right now
+  // a Town Hall picture, or (until there is a picture for it) a gold numbered tile in the same size
+  function thPic(n, cls) {
+    if (!n || n < 1) return '';
+    if (n > TH_ART) return '<span class="pl-th pl-th-tile ' + (cls || '') + '" role="img" aria-label="Town Hall ' + n + '"><b>' + n + '</b></span>';
     return '<img class="pl-th ' + (cls || '') + '" src="assets/th/th' + n + '.webp" alt="Town Hall ' + n + '" width="64" height="64" decoding="async" draggable="false" onerror="this.remove()" />';
   }
+  var ARROW = '<svg class="pl-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h14M12.5 5.5 19 12l-6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  // "about 3 weeks", "about 5 months", "about 2 years 3 months"
+  function fmtDays(d) {
+    d = Math.max(0, Math.round(d));
+    if (d < 1) return 'less than a day';
+    if (d < 14) return d + (d === 1 ? ' day' : ' days');
+    if (d < 70) return 'about ' + Math.round(d / 7) + ' weeks';
+    if (d < 540) return 'about ' + Math.round(d / 30.4) + ' months';
+    var y = Math.floor(d / 365.25), mo = Math.round((d - y * 365.25) / 30.4);
+    if (mo === 12) { y += 1; mo = 0; }
+    return 'about ' + y + (y === 1 ? ' year' : ' years') + (mo ? ' ' + mo + (mo === 1 ? ' month' : ' months') : '');
+  }
+  function estimateFor(v) {
+    if (!v.json || !v.th || !window.CR_CALC || !window.CR_MODEL) return null;
+    try {
+      return window.CR_CALC.estimate(v.json, { th: v.th, builders: v.builders, exportedAt: v.exportedAt, mode: mode });
+    } catch (e) { return null; }
+  }
+  var HOW = {
+    rush: [
+      'Like the Rush Bible: one builder stays on a hero, the others finish the Army Camps, Clan Castle and Hero Hall, then drop any new buildings you have not built yet.',
+      'At Town Hall 16 it also waits for the Eagle Artillery and the Cannons and Archer Towers that get merged.',
+      'Then it starts the Town Hall upgrade. The date is when the new Town Hall is finished.',
+    ],
+    max: [
+      'Every building, hero, troop, spell, siege machine and pet at its top level for your current Town Hall.',
+      'Builders, the lab and the pet house all work at the same time, and the slowest of them sets the date.',
+      'The lab uses two slots only if your export shows the second slot in use.',
+    ],
+  };
 
   function goalHtml(v) {
-    var days = mode === 'max' ? D.estimate.maxDays : D.estimate.rushDays;
-    var when = Date.now() + days * 86400000;
-    var head = mode === 'max' ? 'Everything maxed' : (v.th ? 'Town Hall ' + (v.th + 1) : 'Next Town Hall');
-    var sub = mode === 'max' ? 'Estimated date everything is done' : 'Estimated date you can move up';
-    var nextArt = mode === 'rush' && v.th ? thArt(v.th + 1, 'pl-th-next') : '';
+    var top = v.th && v.th >= TH_MAX;
+    var rush = mode === 'rush';
+    var est = top && rush ? null : estimateFor(v);
+    var head, sub, dateHtml = '', extra = '', note = '';
+    if (rush && top) {
+      head = 'You are at the highest Town Hall!';
+      sub = 'There is no higher Town Hall to move up to.';
+    } else if (!est) {
+      head = rush ? (v.th ? 'Town Hall ' + (v.th + 1) : 'Next Town Hall') : 'Everything maxed';
+      sub = v.th ? 'Working out the date…' : 'The date needs your Town Hall level, which this export does not show.';
+    } else {
+      head = rush ? 'Town Hall ' + (v.th + 1) : 'Everything maxed at Town Hall ' + v.th;
+      var daysFromNow = (est.date - Date.now()) / 86400000;
+      dateHtml = '<p class="pl-goal-date">' + esc(longDate(est.date)) + '</p>';
+      sub = (rush ? 'Estimated date you can move up' : 'Estimated date everything is done') + ' · ' +
+        (daysFromNow <= 0 ? 'this export is old, paste a new one' : fmtDays(daysFromNow));
+      if (rush) {
+        if (est.already) extra = '<p class="pl-goal-more">Your Town Hall is already being upgraded.</p>';
+        else {
+          var startAfter = (est.startDate - Date.now()) / 86400000;
+          extra = '<p class="pl-goal-more">' + (est.workLeft.upgrades
+            ? esc(est.workLeft.upgrades + (est.workLeft.upgrades === 1 ? ' upgrade' : ' upgrades') + ' to finish first (' + fmtDays(est.workLeft.builderDays) + ' of builder time), then the Town Hall upgrade itself (' + fmtDays(est.thDays) + '), starting about ' + dayLabel(est.startDate) + '.')
+            : esc('Nothing else to finish first. The Town Hall upgrade itself (' + fmtDays(est.thDays) + ') can start ' + (startAfter <= 0 ? 'now' : 'about ' + dayLabel(est.startDate)) + '.')) + '</p>';
+        }
+      } else {
+        var p = est.parts, parts = [];
+        parts.push('Builders ' + fmtDays(p.builder), 'Lab ' + fmtDays(p.lab), 'Pets ' + fmtDays(p.pets));
+        extra = '<p class="pl-goal-more">' + esc(parts.join(' · ')) + '. The ' + esc(est.bottleneck === 'builders' ? 'builders are' : est.bottleneck === 'lab' ? 'lab is' : 'pets are') + ' the slowest.</p>';
+      }
+      note = '<details class="pl-how"><summary>How this is worked out</summary><ul>' +
+        HOW[mode].map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') +
+        '<li>Uses the game\'s normal upgrade times: no Gold Pass, boosts, potions, hammers or Builder\'s Apprentice, so you may be faster. Walls, traps and equipment are left out.</li>' +
+        (est.partial ? '<li>This export has very few buildings, so new buildings you have not built yet are not counted.</li>' : '') +
+        '</ul></details>';
+    }
+    // your Town Hall, an arrow, and the next one (just yours when you are at the top, or when the goal is "max")
+    var art = '';
+    if (v.th) {
+      art = '<div class="pl-goal-art' + (rush && !top ? '' : ' solo') + '"><span class="pl-thbox">' + thPic(v.th, 'pl-th-now') + '<em>TH' + v.th + '</em></span>' +
+        (rush && !top ? ARROW + '<span class="pl-thbox">' + thPic(v.th + 1, 'pl-th-next') + '<em>TH' + (v.th + 1) + '</em></span>' : '') + '</div>';
+    }
     return '<section class="pl-card pl-goal">' +
       '<div class="pl-goal-top">' +
-        '<span class="pl-mode' + (mode === 'rush' ? ' on' : '') + '">Strategic rush</span>' +
+        '<span class="pl-mode' + (rush ? ' on' : '') + '">Strategic rush</span>' +
         '<button type="button" class="pl-switch" role="switch" aria-checked="' + (mode === 'max') + '" aria-label="Max" data-act="mode"><i></i></button>' +
         '<span class="pl-mode' + (mode === 'max' ? ' on' : '') + '">Max</span>' +
       '</div>' +
-      (nextArt ? '<div class="pl-goal-art">' + nextArt + '</div>' : '') +
+      art +
       '<p class="pl-goal-head">' + esc(head) + '</p>' +
-      '<p class="pl-goal-date">' + esc(longDate(when)) + '</p>' +
-      '<p class="pl-goal-sub">' + sub + ' · about ' + days + ' days</p>' +
-      '<p class="pl-goal-note">Placeholder estimate for now</p>' +
+      dateHtml +
+      '<p class="pl-goal-sub">' + esc(sub) + '</p>' +
+      extra +
+      note +
     '</section>';
   }
 
@@ -213,7 +292,7 @@
       var ev = byDay[i] || [];
       var dow = (lead + i - 1) % 7;
       var cls = 'pl-day' + (i === now.getDate() ? ' today' : '') + (dow >= 5 ? ' wkend' : '') + (ev.length ? ' has' : '');
-      var dots = ev.slice(0, 4).map(function (t) { return '<i class="' + KINDS[t.kind].cls + '"></i>'; }).join('');
+      var dots = ev.slice(0, 4).map(function (t) { return ico(t.kind); }).join('');
       var tip = ev.map(function (t) { return kindLabel(t) + ': ' + t.name + (t.from != null ? ' → lvl ' + (t.from + 1) : '') + ' (' + dateTime(t.end) + ')'; }).join('\n');
       cells += '<span class="' + cls + '"' + (tip ? ' title="' + esc(tip) + '"' : '') + '><b>' + i + '</b><span class="pl-dots">' + dots + '</span></span>';
     }
@@ -232,7 +311,7 @@
     if (nextList.length || laterList.length) {
       nextHtml = '<p class="pl-sub">Finishing next month <span class="pl-subm">' + esc(nm.toLocaleDateString(undefined, { month: 'long' })) + '</span></p>';
       nextHtml += nextList.length ? '<ul class="pl-events">' + nextList.map(function (t) {
-        return '<li><span class="pl-when">' + esc(dayLabel(t.end)) + '</span><i class="' + KINDS[t.kind].cls + '"></i><span>' + esc(kindLabel(t) + ': ' + t.name + (t.from != null ? ' → lvl ' + (t.from + 1) : '')) + '</span></li>';
+        return '<li><span class="pl-when">' + esc(dayLabel(t.end)) + '</span>' + ico(t.kind) + '<span>' + esc(kindLabel(t) + ': ' + t.name + (t.from != null ? ' → lvl ' + (t.from + 1) : '')) + '</span></li>';
       }).join('') + '</ul>' : '<p class="pl-empty">Nothing finishes next month.</p>';
       if (laterList.length) {
         var last = laterList[laterList.length - 1];
@@ -241,25 +320,31 @@
     }
     var rows = list.map(function (t) {
       var done = t.end <= Date.now();
-      return '<li class="' + (done ? 'done' : '') + '"><span class="pl-when">' + esc(dayLabel(t.end)) + '</span><i class="' + KINDS[t.kind].cls + '"></i><span>' + esc(kindLabel(t) + ': ' + t.name + (t.from != null ? ' → lvl ' + (t.from + 1) : '')) + '</span></li>';
+      return '<li class="' + (done ? 'done' : '') + '"><span class="pl-when">' + esc(dayLabel(t.end)) + '</span>' + ico(t.kind) + '<span>' + esc(kindLabel(t) + ': ' + t.name + (t.from != null ? ' → lvl ' + (t.from + 1) : '')) + '</span></li>';
     }).join('');
     return '<section class="pl-card pl-cal" aria-label="Calendar for ' + esc(head) + '">' +
       '<h3 class="pl-month">' + esc(head) + '</h3>' +
       '<div class="pl-weekdays" aria-hidden="true">' + wk + '</div>' +
       '<div class="pl-grid">' + cells + '</div>' +
-      '<ul class="pl-legend" aria-hidden="true"><li><i class="k-builder"></i>Builder (buildings and heroes)</li><li><i class="k-research"></i>Research</li><li><i class="k-pet"></i>Pet</li></ul>' +
-      (rows ? '<p class="pl-sub">Finishing this month</p><ul class="pl-events">' + rows + '</ul>' : '<p class="pl-empty">Nothing finishes this month.</p>') +
-      nextHtml +
+      '<ul class="pl-legend" aria-hidden="true"><li>' + ico('builder') + 'Builder (buildings and heroes)</li><li>' + ico('research') + 'Research</li><li>' + ico('pet') + 'Pet</li></ul>' +
+      '<div class="pl-lower">' +
+        '<div class="pl-lists">' +
+          (rows ? '<p class="pl-sub">Finishing this month</p><ul class="pl-events">' + rows + '</ul>' : '<p class="pl-empty">Nothing finishes this month.</p>') +
+          nextHtml +
+        '</div>' +
+        '<div class="pl-crews">' + crewHtml(v) + '</div>' +
+      '</div>' +
     '</section>';
   }
 
+  // one compact line: who, what, and either the time left (busy) or a "Free" tag
   function rowHtml(label, t, freeText) {
     var now = Date.now();
     if (!t || t.end <= now) {
-      var note = t ? taskText(t) + ' finished ' + dateTime(t.end) : freeText;
-      return '<li class="pl-row free"><span class="pl-who">' + esc(label) + '</span><span class="pl-badge free">Free</span><span class="pl-what">' + esc(note) + '</span></li>';
+      var note = t ? taskText(t) + ' finished ' + dayLabel(t.end) : freeText;
+      return '<li class="pl-mrow free"><span class="pl-who">' + esc(label) + '</span><span class="pl-what">' + esc(note) + '</span><span class="pl-badge free">Free</span></li>';
     }
-    return '<li class="pl-row busy"><span class="pl-who">' + esc(label) + '</span><span class="pl-badge busy">Busy</span>' +
+    return '<li class="pl-mrow busy"><span class="pl-who">' + esc(label) + '</span>' +
       '<span class="pl-what">' + esc(taskText(t)) + '</span><span class="pl-left">' + esc(span(t.end - now)) + ' left</span></li>';
   }
 
@@ -268,6 +353,9 @@
     var by = function (k) { return v.tasks.filter(function (t) { return t.kind === k; }); };
     var builders = by('builder');
     var out = '';
+    var head = function (kind, title, count) {
+      return '<h4 class="pl-h">' + ico(kind) + '<span class="pl-h-t">' + title + '</span><span class="pl-count">' + count + '</span></h4>';
+    };
 
     var freeCount = 0;
     var brows = '';
@@ -276,17 +364,17 @@
       if (!t || t.end <= now) freeCount++;
       brows += rowHtml('Builder ' + (i + 1), t, 'ready for a new upgrade');
     }
-    out += '<section class="pl-card pl-crew k-builder"><h3 class="pl-h">Builders <span class="pl-count">' + freeCount + ' of ' + v.builders + ' free</span></h3><ul class="pl-rows">' + brows + '</ul></section>';
+    out += '<section class="pl-crew k-builder">' + head('builder', 'Builders', freeCount + ' of ' + v.builders + ' free') + '<ul class="pl-rows">' + brows + '</ul></section>';
 
     var res = by('research');
     var rrows = res.length ? res.map(function (t, k) { return rowHtml(k === 0 ? 'Laboratory' : 'Lab slot ' + (k + 1), t, ''); }).join('') : rowHtml('Laboratory', null, 'nothing is being researched');
     var resBusy = res.filter(function (t) { return t.end > now; }).length;
-    out += '<section class="pl-card pl-crew k-research"><h3 class="pl-h">Research <span class="pl-count">' + (resBusy ? resBusy + ' running' : 'free') + '</span></h3><ul class="pl-rows">' + rrows + '</ul></section>';
+    out += '<section class="pl-crew k-research">' + head('research', 'Research', resBusy ? resBusy + ' running' : 'free') + '<ul class="pl-rows">' + rrows + '</ul></section>';
 
     var pets = by('pet');
     var prows = pets.length ? pets.map(function (t) { return rowHtml('Pet House', t, ''); }).join('') : rowHtml('Pet House', null, 'no pet is being upgraded');
     var petBusy = pets.filter(function (t) { return t.end > now; }).length;
-    out += '<section class="pl-card pl-crew k-pet"><h3 class="pl-h">Pets <span class="pl-count">' + (petBusy ? petBusy + ' running' : 'free') + '</span></h3><ul class="pl-rows">' + prows + '</ul></section>';
+    out += '<section class="pl-crew k-pet">' + head('pet', 'Pets', petBusy ? petBusy + ' running' : 'free') + '<ul class="pl-rows">' + prows + '</ul></section>';
 
     // (the helpers are read from the export and kept in v.helpers for later, but they are not part of the planner view)
     return out;
@@ -295,12 +383,12 @@
   function villageHtml(v) {
     var age = Date.now() - v.exportedAt;
     var stale = age > 6 * 3600000;
-    return '<div class="pl-bar">' + thArt(v.th, 'pl-th-now') + '<div class="pl-vinfo">' +
+    return '<div class="pl-bar"><div class="pl-vinfo">' +
         '<b>' + esc(v.tag || 'Your village') + '</b>' + (v.th ? '<span>Town Hall ' + v.th + '</span>' : '') +
         '<span>Exported ' + esc(ago(age)) + '</span></div>' +
       '</div>' +
       (stale ? '<p class="pl-stale">This export is ' + esc(span(age)) + ' old. Upgrades that have finished since are shown as free; paste a fresh export for exact times.</p>' : '') +
-      goalHtml(v) + calendarHtml(v) + '<div class="pl-crews">' + crewHtml(v) + '</div>';
+      goalHtml(v) + calendarHtml(v);
   }
 
   function pasteHtml(open) {
@@ -322,7 +410,7 @@
     viewEl.innerHTML = village ? villageHtml(village) : '<p class="pl-intro">See who is busy, who is free and when things finish. Load your village to begin.</p>';
   }
   function shell() {
-    root.innerHTML = '<div id="pl-view"></div><div id="pl-pastewrap"></div>';
+    root.innerHTML = '<div id="pl-pastewrap"></div><div id="pl-view"></div>'; // "Paste a new export" sits at the top
     viewEl = document.getElementById('pl-view');
     drawPaste(!village);
     draw();
