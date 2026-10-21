@@ -4322,7 +4322,7 @@ html.on-planner .beam i { animation-play-state: paused; }
   z-index: -1;
   pointer-events: none;
   overflow: hidden;
-  animation: pl-light-in 0.9s ease both, pl-hue 36s linear infinite;
+  animation: pl-light-in 0.9s ease both;
 }
 @keyframes pl-light-in { from { opacity: 0; } to { opacity: 1; } }
 .planner-light i {
@@ -4363,19 +4363,42 @@ html.on-planner .beam i { animation-play-state: paused; }
   animation: pl-beam var(--d, 50s) var(--o, 0s) ease-in-out infinite alternate;
 }
 /* Every colour: the whole Planner light (glows, beams and floating dots) turns slowly round the colour wheel.
-   hue-rotate is something the browser animates on its own, without redrawing anything, so it stays smooth. */
-@keyframes pl-hue { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
-html.on-planner .atm, html.on-planner #embers { animation: pl-hue 36s linear infinite; }
+   hue-rotate is something the browser does without redrawing anything; the clock in fx.js sets it about 10 times
+   a second (5 in smooth mode), one degree at a time, which looks continuous. */
 @media (prefers-reduced-motion: reduce) {
-  html.on-planner .atm, html.on-planner #embers { animation: none; }
   .planner-light { animation: pl-light-in 0.9s ease both; }
 }
-html.lite.on-planner .atm, html.lite.on-planner #embers { animation: none !important; }
-html.lite .planner-light { animation: pl-light-in 0.9s ease both !important; }
 @keyframes pl-beam {
   from { transform: rotate(calc(var(--sw) * var(--k, 1))); }
   to { transform: rotate(calc(var(--sw) * var(--k, 1) * -1)); }
 }
+
+/* The beams are drawn by fx.js onto small canvases (360x180 pixels, painted once per colour) and the browser just
+   turns those little pictures. The old way (a 2400px conic-gradient layer with a mask, turning) needed a texture of
+   millions of pixels and was the biggest single cost on phones. The old <i> layers only show if the canvas way is
+   not supported (html.beam-css). */
+.beam i, .planner-light i { display: none; }
+html.beam-css .beam i, html.beam-css .planner-light i { display: block; }
+html.beam-css .bm { display: none; }
+.bm {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 224vmax;
+  height: 112vmax;
+  margin-left: -112vmax;
+  transform-origin: 50% 0;
+  will-change: transform;
+  pointer-events: none;
+}
+/* They are turned by a small clock in fx.js (about 20 small steps a second, 12 in smooth mode) instead of a CSS
+   animation: a slow swing does not need 60 redraws of a screen-sized light every second. With reduced motion the
+   clock does not run and they rest, leaning a little to one side. */
+@media (prefers-reduced-motion: reduce) {
+  .beam .bm { transform: rotate(calc(var(--sw) * 0.3)); }
+  .planner-light .bm { transform: rotate(calc(var(--sw) * var(--k, 1) * 0.4)); }
+}
+html.lite .planner-light .bm:nth-of-type(n+3) { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .planner-light i { animation: none; transform: rotate(calc(var(--sw) * var(--k, 1) * 0.4)); }
 }

@@ -8,8 +8,47 @@
   // (null puts the original amber back). There are two copies of the lights (#atm-a / #atm-b): the new colour is
   // set on the hidden copy, which then fades in over the other. (The old way, animating the colour variables, made
   // the browser redraw the whole page on every frame of every tab change.)
+  // ---- The beams: painted once onto small canvases, then the browser only turns the little pictures ----
+  // (a 2400px conic-gradient layer with a mask, turning, needed a texture of millions of pixels: the biggest cost)
+  var canConic = !!(window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype.createConicGradient);
+  if (!canConic) document.documentElement.classList.add('beam-css'); // old CSS beams as the fallback
+  // [degrees, opacity] along the fan (0 to 60 degrees); the same shape as the old CSS gradients
+  var FAN_AMBER = [[0, 0], [2, 0.017], [4, 0.028], [6, 0.05], [8, 0.084], [10, 0.115], [12, 0.124], [14, 0.113], [16, 0.103], [18, 0.109], [20, 0.131], [22, 0.163], [24, 0.197], [26, 0.227], [28, 0.248], [30, 0.255], [32, 0.248], [34, 0.227], [36, 0.197], [38, 0.163], [40, 0.131], [42, 0.109], [44, 0.103], [46, 0.113], [48, 0.124], [50, 0.115], [52, 0.084], [54, 0.05], [56, 0.028], [58, 0.017], [60, 0]];
+  var FAN_PEARL = [[0, 0], [3, 0.018], [6, 0.037], [9, 0.068], [12, 0.084], [15, 0.081], [18, 0.088], [21, 0.116], [24, 0.151], [27, 0.179], [30, 0.19], [33, 0.179], [36, 0.151], [39, 0.116], [42, 0.088], [45, 0.081], [48, 0.084], [51, 0.068], [54, 0.037], [57, 0.018], [60, 0]];
+  // how the light fades along the beam (position 0..1 of its length, opacity): grows out of the glow, thins out
+  var FADE = [[0, 0], [0.0804, 0.35], [0.1786, 1], [0.375, 0.62], [0.6786, 0.26], [1, 0]];
+  // rgbOf(deg) gives the colour at that angle ("r, g, b")
+  function paintBeam(cv, fan, rgbOf) {
+    if (!canConic || !cv || !cv.getContext) return;
+    var c = cv.getContext('2d'), W = cv.width, H = cv.height;
+    c.globalCompositeOperation = 'source-over';
+    c.clearRect(0, 0, W, H);
+    var g = c.createConicGradient((150 - 90) * Math.PI / 180, W / 2, 0); // CSS "from 150deg" = 60deg from the canvas x axis
+    fan.forEach(function (st) { g.addColorStop(st[0] / 360, 'rgba(' + rgbOf(st[0]) + ',' + st[1] + ')'); });
+    c.fillStyle = g;
+    c.fillRect(0, 0, W, H);
+    var m = c.createRadialGradient(W / 2, 0, 0, W / 2, 0, H);
+    FADE.forEach(function (st) { m.addColorStop(st[0], 'rgba(0,0,0,' + st[1] + ')'); });
+    c.globalCompositeOperation = 'destination-in';
+    c.fillStyle = m;
+    c.fillRect(0, 0, W, H);
+  }
+  // the amber/colour beam of one light copy: gl-2 at the edges, gl-1 in the middle of the fan
+  function paintAtm(copy, c1, c2) {
+    var cv = copy && copy.querySelector('canvas.bm');
+    paintBeam(cv, FAN_AMBER, function (deg) { return deg >= 18 && deg <= 42 ? c1 : c2; });
+  }
+  var AMBER = ['255, 176, 62', '255, 104, 36'];
+  // the Planner's four pearly beams, painted once from their --c colour
+  Array.prototype.forEach.call(document.querySelectorAll('.planner-light canvas.bm'), function (cv) {
+    var col = (cv.style.getPropertyValue('--c') || '255, 214, 140').trim();
+    paintBeam(cv, FAN_PEARL, function () { return col; });
+  });
+
   var atms = [document.getElementById('atm-a'), document.getElementById('atm-b')];
   var atmCur = 0;
+  paintAtm(atms[0], AMBER[0], AMBER[1]);
+  paintAtm(atms[1], AMBER[0], AMBER[1]);
   var glowKey = '';
   function setGlow(rgb) {
     var root = document.documentElement.style;
@@ -25,6 +64,7 @@
     glowKey = key;
     var next = atms[1 - atmCur], old = atms[atmCur];
     ['--gl-1', '--gl-2', '--gl-f'].forEach(function (k) { if (vals) next.style.setProperty(k, vals[k]); else next.style.removeProperty(k); });
+    paintAtm(next, vals ? vals['--gl-1'] : AMBER[0], vals ? vals['--gl-2'] : AMBER[1]);
     next.classList.add('on');
     old.classList.remove('on');
     atmCur = 1 - atmCur;
@@ -59,7 +99,7 @@
     var running = false;
     var last = 0;
     var acc = 0;
-    var STEP = 1 / 30;
+    var STEP = 1 / 20; // ~20 fps: slow dust, and every frame costs a repaint of the whole screen layer
     var SCALE = 0.5;
 
     var DEFAULT_COLORS = [
@@ -195,6 +235,67 @@
     });
     start();
     window.CR_EMBERS = { start: start, stop: function () { running = false; ctx.clearRect(0, 0, w, h); } };
+  }
+
+
+  // ---- The light clock: turns the beams and the Planner's colour wheel in small steps ----
+  // (instead of CSS animations that ask the browser for a new picture of a screen-sized light 60 times a second).
+  // About 20 steps a second in full mode, 12 in smooth mode; the colour wheel moves 10 (5) times a second, one degree at a time.
+  if (canConic && !reduce) {
+    var htmlEl = document.documentElement;
+    var atmCv = Array.prototype.slice.call(document.querySelectorAll('.atm canvas.bm'));
+    var plWrap = document.getElementById('planner-light');
+    var plCv = plWrap ? Array.prototype.slice.call(plWrap.querySelectorAll('canvas.bm')) : [];
+    var hueEls = Array.prototype.slice.call(document.querySelectorAll('.atm')).concat([document.getElementById('embers'), plWrap]).filter(Boolean);
+    plCv.forEach(function (cv) {
+      cv._d = (parseFloat(cv.style.getPropertyValue('--d')) || 50) * 1000;
+      cv._o = (parseFloat(cv.style.getPropertyValue('--o')) || 0) * 1000;
+      cv._k = parseFloat(cv.style.getPropertyValue('--k')) || 1;
+    });
+    var sw = 32; // how far a beam swings to each side (the --sw variable: less on a tall phone screen)
+    var readSw = function () { var v = parseFloat(getComputedStyle(htmlEl).getPropertyValue('--sw')); sw = isFinite(v) ? v : 32; };
+    readSw();
+    var swTimer = null;
+    window.addEventListener('resize', function () { clearTimeout(swTimer); swTimer = setTimeout(readSw, 200); });
+    // back and forth, slowing at each end (like the old ease-in-out): +amp .. -amp
+    var swing = function (t, dur, off, amp) {
+      var p = (((t - off) / dur) % 2 + 2) % 2;
+      if (p > 1) p = 2 - p;
+      return amp * (1 - 2 * p * p * (3 - 2 * p));
+    };
+    var lastTick = 0, lastHue = 0, wasPl = false, hueStart = 0, raf = 0;
+    var update = function (now) {
+      var onPl = htmlEl.classList.contains('on-planner');
+      var lt = htmlEl.classList.contains('lite');
+      if (onPl !== wasPl) {
+        wasPl = onPl;
+        hueStart = now;
+        lastHue = 0;
+        if (!onPl) hueEls.forEach(function (el) { el.style.removeProperty('filter'); });
+      }
+      if (onPl) {
+        for (var i = 0; i < plCv.length; i++) plCv[i].style.transform = 'rotate(' + swing(now, plCv[i]._d, plCv[i]._o, sw * plCv[i]._k).toFixed(2) + 'deg)';
+        if (now - lastHue >= (lt ? 190 : 95)) {
+          lastHue = now;
+          var f = 'hue-rotate(' + (((now - hueStart) / 36000 * 360) % 360).toFixed(1) + 'deg)';
+          for (var j = 0; j < hueEls.length; j++) hueEls[j].style.filter = f;
+        }
+      } else {
+        var a = 'rotate(' + swing(now, 48000, -14000, sw).toFixed(2) + 'deg)';
+        for (var k = 0; k < atmCv.length; k++) atmCv[k].style.transform = a;
+      }
+    };
+    var tick = function (now) {
+      raf = requestAnimationFrame(tick);
+      if (now - lastTick < (htmlEl.classList.contains('lite') ? 74 : 43)) return;
+      lastTick = now;
+      update(now);
+    };
+    var startClock = function () { if (!raf && !document.hidden) { update(performance.now()); raf = requestAnimationFrame(tick); } };
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else startClock();
+    });
+    startClock();
   }
 
   // ---- Pause the podium's endless animations while the podium is off the screen ----

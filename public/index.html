@@ -47,10 +47,10 @@
 <body>
   <canvas id="embers" class="embers" aria-hidden="true"></canvas>
   <!-- The light: two copies of the same lights (top glow, swinging beam, bottom glow); a colour change fades one in over the other (see fx.js). -->
-  <div class="atm on" id="atm-a" aria-hidden="true"><div class="beam"><i></i></div></div>
-  <div class="atm" id="atm-b" aria-hidden="true"><div class="beam"><i></i></div></div>
+  <div class="atm on" id="atm-a" aria-hidden="true"><div class="beam"><canvas class="bm" width="360" height="180"></canvas><i></i></div></div>
+  <div class="atm" id="atm-b" aria-hidden="true"><div class="beam"><canvas class="bm" width="360" height="180"></canvas><i></i></div></div>
   <!-- The Planner's light: four soft beams in pearly colours that swing at different speeds (shown only on the Planner page). -->
-  <div id="planner-light" class="planner-light" aria-hidden="true" hidden><i style="--c:255,128,196;--d:47s;--o:-11s;--k:1"></i><i style="--c:112,208,255;--d:61s;--o:-33s;--k:0.82"></i><i style="--c:176,140,255;--d:53s;--o:-4s;--k:0.9"></i><i style="--c:255,214,140;--d:71s;--o:-52s;--k:0.7"></i></div>
+  <div id="planner-light" class="planner-light" aria-hidden="true" hidden><canvas class="bm" width="360" height="180" style="--c:255,128,196;--d:47s;--o:-11s;--k:1"></canvas><i style="--c:255,128,196;--d:47s;--o:-11s;--k:1"></i><canvas class="bm" width="360" height="180" style="--c:112,208,255;--d:61s;--o:-33s;--k:0.82"></canvas><i style="--c:112,208,255;--d:61s;--o:-33s;--k:0.82"></i><canvas class="bm" width="360" height="180" style="--c:176,140,255;--d:53s;--o:-4s;--k:0.9"></canvas><i style="--c:176,140,255;--d:53s;--o:-4s;--k:0.9"></i><canvas class="bm" width="360" height="180" style="--c:255,214,140;--d:71s;--o:-52s;--k:0.7"></canvas><i style="--c:255,214,140;--d:71s;--o:-52s;--k:0.7"></i></div>
   <!-- Hammer Jam meteors: blue streaks crossing the background from top right to bottom left (shown only on the Bulletin tab).
        Delete this whole div when the event is over (the styles are at the end of style.css). -->
   <div id="meteors" class="meteors" aria-hidden="true" hidden><i style="--sx:78vw;--sy:-12vh;--d:9s;--w:0s"></i><i style="--sx:104vw;--sy:6vh;--d:12s;--w:3.2s"></i><i style="--sx:62vw;--sy:-18vh;--d:10.5s;--w:6.1s"></i><i style="--sx:96vw;--sy:24vh;--d:13s;--w:8.4s"></i><i style="--sx:88vw;--sy:-6vh;--d:11s;--w:1.7s"></i></div>
