@@ -117,28 +117,6 @@
     };
   }
 
-  // A made-up village so people can see what the page does without pasting anything.
-  function sampleRaw() {
-    var h = 3600;
-    return JSON.stringify({
-      tag: '#SAMPLE',
-      timestamp: Math.floor(Date.now() / 1000) - 2 * h,
-      helpers: [{ data: 93000000, lvl: 8, helper_cooldown: 5 * h }, { data: 93000001, lvl: 12 }, { data: 93000002, lvl: 7 }, { data: 93000003, lvl: 1 }],
-      buildings: [
-        { data: 1000001, lvl: 17 },
-        { data: 1000003, lvl: 17, timer: 50 * h },
-        { data: 1000000, lvl: 12, timer: 80 * h },
-        { data: 1000000, lvl: 12, timer: 6 * h },
-        { data: 1000000, lvl: 12, timer: 118 * h },
-        { data: 1000077, lvl: 3, timer: 52 * h },
-        { data: HUT, lvl: 6, cnt: 6 },
-      ],
-      units: [{ data: 4000008, lvl: 11, timer: 90 * h }, { data: 4000132, lvl: 2, timer: 58 * h, extra: true }],
-      heroes: [{ data: 28000000, lvl: 95, timer: 126 * h }],
-      pets: [{ data: 73000009, lvl: 7, timer: 1 * h }],
-    });
-  }
-
   // ---------- state ----------
   var village = null; // the parsed export
   var mode = load(KEY_MODE) === 'max' ? 'max' : 'rush';
@@ -392,7 +370,6 @@
       '<textarea id="pl-text" rows="4" spellcheck="false" aria-label="Village export" placeholder="{&quot;tag&quot;:&quot;#...&quot;, ...}"></textarea>' +
       (pasteError ? '<p class="pl-error" role="alert">' + esc(pasteError) + '</p>' : '') +
       '<div class="pl-actions"><button type="button" class="pl-btn" data-act="load">Load village</button>' +
-      '<button type="button" class="pl-btn ghost" data-act="sample">Try a sample village</button>' +
       (village ? '<button type="button" class="pl-btn ghost" data-act="clear">Remove my village</button>' : '') + '</div>' +
       '<p class="pl-privacy">Your village stays in this browser. Nothing is sent anywhere.</p>' +
     '</details>';
@@ -465,10 +442,6 @@
         var top = document.getElementById('pl-view');
         if (top && top.scrollIntoView) top.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-    } else if (act === 'sample') {
-      setVillage(sampleRaw());
-      drawPaste(false);
-      draw();
     } else if (act === 'clear') {
       village = null;
       pasteError = '';
@@ -485,5 +458,5 @@
   }, 30000);
 
   shell();
-  window.CR_PLANNER = { parse: parse, sample: sampleRaw };
+  window.CR_PLANNER = { parse: parse };
 })();
