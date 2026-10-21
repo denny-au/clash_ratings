@@ -255,39 +255,83 @@
       else start();
     });
     start();
-    window.CR_EMBERS = { start: start, stop: function () { running = false; ctx.clearRect(0, 0, w, h); } };
+    window.CR_EMBERS = {
+      start: start,
+      stop: function () { running = false; ctx.clearRect(0, 0, w, h); },
+      // the Planner's colour wheel: new tint for the dots, no fade needed (the steps are tiny)
+      tint: function (rgb) { sprites = makeSprites(themeColors(rgb)); prevSprites = null; fade = 1; },
+    };
   }
 
 
   // ---- The Planner's colour wheel ----
-  // The beams stay still (a moving screen-sized light was the biggest cost); only the Planner's colours slowly go
-  // round the colour wheel. A small clock sets hue-rotate about 10 times a second (5 in smooth mode), one degree
-  // at a time, and only while the Planner is open.
+  // On the Planner the light slowly goes round every colour. This is NOT a CSS hue-rotate filter any more: a filter
+  // on four screen-sized layers was by far the biggest cost on the Planner (it halved the frame rate in tests). Instead
+  // a small clock works out the colour about 5 times a second (2.5 in smooth mode, 2 degrees at a time, so it still
+  // looks continuous) and repaints the small beam canvases, the glow's colour variables and the dots' tint.
+  // It only runs while the Planner is open.
+  var PINK = [255, 150, 205]; // where the wheel starts (the same pearly pink app.js asks for)
+  // the same colour maths as the CSS hue-rotate filter
+  function hueRot(c, deg) {
+    var a = deg * Math.PI / 180, co = Math.cos(a), si = Math.sin(a);
+    var r = c[0], g = c[1], b = c[2];
+    var cl = function (v) { return Math.max(0, Math.min(255, Math.round(v))); };
+    return [
+      cl((0.213 + 0.787 * co - 0.213 * si) * r + (0.715 - 0.715 * co - 0.715 * si) * g + (0.072 - 0.072 * co + 0.928 * si) * b),
+      cl((0.213 - 0.213 * co + 0.143 * si) * r + (0.715 + 0.285 * co + 0.140 * si) * g + (0.072 - 0.072 * co - 0.283 * si) * b),
+      cl((0.213 - 0.213 * co - 0.787 * si) * r + (0.715 - 0.715 * co + 0.715 * si) * g + (0.072 + 0.928 * co + 0.072 * si) * b),
+    ];
+  }
   if (!reduce) {
     var htmlEl = document.documentElement;
-    var plWrap = document.getElementById('planner-light');
-    var hueEls = Array.prototype.slice.call(document.querySelectorAll('.atm')).concat([document.getElementById('embers'), plWrap]).filter(Boolean);
-    var hueStart = 0, lastHue = 0, raf = 0;
-    var hueTick = function (now) {
-      raf = requestAnimationFrame(hueTick);
-      if (now - lastHue < (htmlEl.classList.contains('lite') ? 190 : 95)) return;
-      lastHue = now;
-      var f = 'hue-rotate(' + (((now - hueStart) / 36000 * 360) % 360).toFixed(1) + 'deg)';
-      for (var j = 0; j < hueEls.length; j++) hueEls[j].style.filter = f;
-    };
-    var syncHue = function () {
-      var onPl = htmlEl.classList.contains('on-planner');
-      if (onPl && !raf && !document.hidden) { hueStart = performance.now(); lastHue = 0; raf = requestAnimationFrame(hueTick); }
-      else if (!onPl) {
-        if (raf) { cancelAnimationFrame(raf); raf = 0; }
-        hueEls.forEach(function (el) { el.style.removeProperty('filter'); });
+    var plBeams = canConic ? Array.prototype.slice.call(document.querySelectorAll('.planner-light canvas.bm')) : [];
+    plBeams.forEach(function (cv) {
+      cv._base = (cv.style.getPropertyValue('--c') || '255, 214, 140').split(',').map(function (x) { return parseInt(x, 10) || 0; });
+    });
+    var wheelStart = 0, wheelLast = 0, wheelRaf = 0;
+    // The wheel turns once every 36 seconds. The glow + dots and the beams take turns (one per tick), so no single
+    // frame has to redo everything at once.
+    var wheelOdd = false;
+    var applyWheel = function (deg, beamsTurn) {
+      if (!beamsTurn) {
+        var rgb = hueRot(PINK, deg);
+        var deep = rgb.map(function (v) { return Math.round(v * 0.72); });
+        var copy = atms[atmCur];
+        if (copy) {
+          copy.style.setProperty('--gl-1', rgb.join(', '));
+          copy.style.setProperty('--gl-2', deep.join(', '));
+          copy.style.setProperty('--gl-f', rgb.join(', '));
+        }
+        if (window.CR_EMBERS && window.CR_EMBERS.tint) window.CR_EMBERS.tint(rgb);
+        return;
+      }
+      for (var i = 0; i < plBeams.length; i++) {
+        var col = hueRot(plBeams[i]._base, deg).join(', ');
+        paintBeam(plBeams[i], FAN_PEARL, function () { return col; }, plBeams[i]._spec ? plBeams[i]._spec.k : 0.4);
       }
     };
-    new MutationObserver(syncHue).observe(htmlEl, { attributes: true, attributeFilter: ['class'] });
+    var wheelTick = function (now) {
+      wheelRaf = requestAnimationFrame(wheelTick);
+      if (now - wheelLast < (htmlEl.classList.contains('lite') ? 500 : 250)) return;
+      wheelLast = now;
+      wheelOdd = !wheelOdd;
+      applyWheel(((now - wheelStart) / 36000 * 360) % 360, wheelOdd);
+    };
+    var syncWheel = function () {
+      var onPl = htmlEl.classList.contains('on-planner');
+      if (onPl && !wheelRaf && !document.hidden) { wheelStart = performance.now(); wheelLast = 0; wheelRaf = requestAnimationFrame(wheelTick); }
+      else if (!onPl && wheelRaf) {
+        cancelAnimationFrame(wheelRaf);
+        wheelRaf = 0;
+        // put the Planner beams back to their first colours for the next visit
+        plBeams.forEach(function (cv) { var c = cv._base.join(', '); paintBeam(cv, FAN_PEARL, function () { return c; }, cv._spec ? cv._spec.k : 0.4); });
+      }
+    };
+    new MutationObserver(syncWheel).observe(htmlEl, { attributes: true, attributeFilter: ['class'] });
     document.addEventListener('visibilitychange', function () {
-      if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else syncHue();
+      if (document.hidden) { cancelAnimationFrame(wheelRaf); wheelRaf = 0; } else syncWheel();
     });
-    syncHue();
+    syncWheel();
   }
 
   // ---- Pause the podium's endless animations while the podium is off the screen ----

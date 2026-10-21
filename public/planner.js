@@ -9,6 +9,8 @@
 
   var KEY_VILLAGE = 'cr-planner-village';
   var KEY_MODE = 'cr-planner-mode';
+  var KEY_PASS = 'cr-planner-pass';
+  var PASS_CUT = 0.17; // what a Gold Pass realistically saves (the game says 20% faster, which is about 17% less time)
   var HUT = 1000015;
   var TOWN_HALL = 1000001;
 
@@ -120,6 +122,7 @@
   // ---------- state ----------
   var village = null; // the parsed export
   var mode = load(KEY_MODE) === 'max' ? 'max' : 'rush';
+  var gold = load(KEY_PASS) === 'gold'; // Gold Pass on (card tinted gold) or Silver Pass (no boost, tinted silver)
   var pasteError = '';
 
   function setVillage(raw) {
@@ -181,9 +184,10 @@
   function estimateFor(v) {
     if (!v.json || !v.th || !window.CR_CALC || !window.CR_MODEL) return null;
     try {
-      return window.CR_CALC.estimate(v.json, { th: v.th, builders: v.builders, exportedAt: v.exportedAt, mode: mode });
+      return window.CR_CALC.estimate(v.json, { th: v.th, builders: v.builders, exportedAt: v.exportedAt, mode: mode, cut: gold ? PASS_CUT : 0 });
     } catch (e) { return null; }
   }
+  function passNote(g) { return g ? '<b class="g">Gold pass</b> · 17% realistic boost' : '<b class="s">Silver pass</b> · 0% boost'; }
   function goalHtml(v) {
     var top = v.th && v.th >= TH_MAX;
     var rush = mode === 'rush';
@@ -228,12 +232,17 @@
       art = '<div class="pl-goal-art' + (shown ? ' solo' : '') + '"><span class="pl-thbox">' + thPic(v.th, 'pl-th-now') + '<em>TH' + v.th + '</em></span>' +
         (top ? '' : '<div class="pl-nx"' + (shown ? ' aria-hidden="true"' : '') + '>' + ARROW + '<span class="pl-thbox">' + thPic(v.th + 1, 'pl-th-next') + '<em>TH' + (v.th + 1) + '</em></span></div>') + '</div>';
     }
-    return '<section class="pl-card pl-goal">' +
+    var g = passFrom != null ? passFrom : gold; // while a flip is starting we first draw the old pass
+    return '<section class="pl-card pl-goal ' + (g ? 'gold' : 'silver') + '">' +
+      '<button type="button" class="pl-pass' + (g ? ' gold' : '') + '" data-act="pass" aria-pressed="' + g + '" aria-label="Gold Pass" title="Gold Pass">' +
+        '<span class="pl-coin"><img class="pl-face front" src="assets/pass/silver.webp" alt="" width="40" height="40" decoding="async" draggable="false" /><img class="pl-face back" src="assets/pass/gold.webp" alt="" width="40" height="40" decoding="async" draggable="false" /></span>' +
+      '</button>' +
       '<div class="pl-goal-top">' +
         '<span class="pl-mode' + (rush ? ' on' : '') + '">Strategic rush</span>' +
         '<button type="button" class="pl-switch" role="switch" aria-checked="' + (mode === 'max') + '" aria-label="Max" data-act="mode"><i></i></button>' +
         '<span class="pl-mode' + (mode === 'max' ? ' on' : '') + '">Max</span>' +
       '</div>' +
+      '<p class="pl-pass-note" aria-live="polite">' + passNote(g) + '</p>' +
       art +
       '<p class="pl-goal-head">' + esc(head) + '</p>' +
       dateHtml +
@@ -376,6 +385,7 @@
   }
 
   var viewEl;
+  var passFrom = null; // the pass we are flipping away from (only while drawing right after the click)
   var artFrom = null; // the mode we are animating away from (only while drawing right after the switch)
   var calmMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   // The Town Halls blow up to full size the first time they are on screen (also when the planner opens later)
@@ -392,14 +402,19 @@
   }
   // fromMode: the mode we just switched away from (plays the slide); refresh: the 30-second refresh, which must
   // not close the Breakdown or replay the Town Hall pop-in
-  function draw(fromMode, refresh) {
+  function draw(fromMode, refresh, passWas) {
     if (!viewEl) return;
-    var wasOpen = refresh && viewEl.querySelector('.pl-how[open]') !== null;
+    var wasOpen = (refresh || passWas != null) && viewEl.querySelector('.pl-how[open]') !== null;
     artFrom = fromMode || null;
+    passFrom = passWas != null ? passWas : null;
     viewEl.innerHTML = village ? villageHtml(village) : '<p class="pl-intro">See who is busy, who is free and when things finish. Load your village to begin.</p>';
-    artFrom = null;
+    artFrom = null; passFrom = null;
+    if (passWas != null) { // old coin first, then flip it to the new one so the transition plays
+      var goal = viewEl.querySelector('.pl-goal'), coin = viewEl.querySelector('.pl-pass');
+      if (goal && coin) { void goal.offsetWidth; goal.classList.toggle('gold', gold); goal.classList.toggle('silver', !gold); coin.classList.toggle('gold', gold); coin.setAttribute('aria-pressed', gold); var pn = viewEl.querySelector('.pl-pass-note'); if (pn) pn.innerHTML = passNote(gold); coin.classList.add('hop'); setTimeout(function () { coin.classList.remove('hop'); }, 1000); }
+    }
     if (wasOpen) { var hw = viewEl.querySelector('.pl-how'); if (hw) hw.open = true; }
-    if (refresh) return;
+    if (refresh || passWas != null) return;
     var art = viewEl.querySelector('.pl-goal-art');
     if (!art) return;
     var nx = art.querySelector('.pl-nx');
@@ -433,6 +448,11 @@
       mode = mode === 'max' ? 'rush' : 'max';
       store(KEY_MODE, mode);
       draw(was);
+    } else if (act === 'pass') {
+      var wasGold = gold;
+      gold = !gold;
+      store(KEY_PASS, gold ? 'gold' : 'silver');
+      draw(null, false, wasGold);
     } else if (act === 'load') {
       var ta = document.getElementById('pl-text');
       var ok = setVillage(ta ? ta.value.trim() : '');

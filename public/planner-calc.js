@@ -3,8 +3,8 @@
 //   * "max":   when everything is maxed at your current Town Hall
 // by pretending to run your builders (and lab, and pet house) forward from the moment of the export.
 //
-// Assumptions (shown on the Planner too): the times are the game's normal times (no Gold Pass, boosts, potions,
-// hammers or Builder's Apprentice), builders and the lab never sit idle, and walls, traps and equipment are left out.
+// Assumptions (shown on the Planner too): the times are the game's normal times (no boosts, potions, hammers or
+// Builder's Apprentice) unless the Gold Pass switch is on, which takes opts.cut (17%) off every upgrade still to start, builders and the lab never sit idle, and walls, traps and equipment are left out.
 (function (root) {
   'use strict';
   var M = root.CR_MODEL;
@@ -23,9 +23,10 @@
   function num(x) { return typeof x === 'number' && isFinite(x) ? x : 0; }
 
   // a job is one thing climbing from level `from` to level `to`; step i costs t[from + i] seconds
+  var CUT = 0; // share of every new upgrade's time that a Gold Pass takes off (0 = none)
   function makeJob(kind, id, e, from, to, readyAt, first) {
     var steps = [];
-    for (var l = from; l < to; l++) steps.push(e.t[l] || 0);
+    for (var l = from; l < to; l++) steps.push((e.t[l] || 0) * (1 - CUT));
     return { kind: kind, id: id, name: e.n, steps: steps, at: 0, ready: readyAt || 0, first: !!first, left: steps.reduce(function (a, b) { return a + b; }, 0) };
   }
 
@@ -70,6 +71,7 @@
     var T = opts.th;
     if (!T || T < 1 || T > M.th.length) return null;
     var builders = Math.max(1, opts.builders || 5);
+    CUT = opts.cut > 0 && opts.cut < 1 ? opts.cut : 0; // timers already running in the export are left as they are
     var DAY = 86400;
     var mode = opts.mode === 'max' ? 'max' : 'rush';
 
@@ -148,7 +150,7 @@
         var free = Math.min.apply(null, slots);
         var start = Math.max(finishB, free);
         out.startSec = start;
-        var thTime = M.th[T] || 0; // the time to reach Town Hall T+1
+        var thTime = (M.th[T] || 0) * (1 - CUT); // the time to reach Town Hall T+1
         doneSec = start + thTime;
         out.thDays = thTime / DAY;
       }
