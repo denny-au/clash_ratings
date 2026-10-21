@@ -2039,17 +2039,20 @@ button.pod-3:hover, button.pod-3.is-open { border-color: transparent; filter: br
   to { transform: translateY(-5px); }
 }
 
+/* The name sits exactly in the middle (under the crown, over the role); the league badge hangs off its left and the
+   champion cup off its right, so a badge or a cup never pushes the name sideways. Three columns: badge | name | cup. */
 .pod-who {
   position: relative;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(30px, 1fr) minmax(0, auto) minmax(30px, 1fr);
   align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
+  width: 100%;
   max-width: 100%;
   min-width: 0;
 }
-.pod-who .league { flex: none; width: 26px; height: 26px; }
-.pod-who .champ { flex: none; width: 17px; height: 17px; }
+.pod-who .league { width: 26px; height: 26px; justify-self: end; margin-right: 0.35rem; }
+.pod-who .champ { width: 17px; height: 17px; justify-self: start; margin-left: 0.35rem; }
+.pod-slot { display: block; }
 .pod-name {
   min-width: 0;
   overflow: hidden;
@@ -2198,7 +2201,8 @@ button.pod-3:hover, button.pod-3.is-open { border-color: transparent; filter: br
   .pod .crown b { font-size: 0.82rem; }
   .pod-1 .crown { width: 48px; height: 39px; }
   .pod-1 .crown b { font-size: 1rem; }
-  .pod-who .league, .pod-who .champ { display: none; }
+  .pod-who { display: flex; justify-content: center; }
+  .pod-who .league, .pod-who .champ, .pod-slot { display: none; }
   .pod-name { font-size: 0.86rem; }
   .pod-1 .pod-name { font-size: 1rem; }
   .pod-role { font-size: 0.64rem; }
@@ -4363,7 +4367,7 @@ html.on-planner .beam i { animation-play-state: paused; }
   animation: pl-beam var(--d, 50s) var(--o, 0s) ease-in-out infinite alternate;
 }
 /* Every colour: the whole Planner light (glows, beams and floating dots) turns slowly round the colour wheel.
-   hue-rotate is something the browser does without redrawing anything; the clock in fx.js sets it about 10 times
+   hue-rotate is something the browser does without redrawing anything; fx.js sets it about 10 times
    a second (5 in smooth mode), one degree at a time, which looks continuous. */
 @media (prefers-reduced-motion: reduce) {
   .planner-light { animation: pl-light-in 0.9s ease both; }
@@ -4380,6 +4384,8 @@ html.on-planner .beam i { animation-play-state: paused; }
 .beam i, .planner-light i { display: none; }
 html.beam-css .beam i, html.beam-css .planner-light i { display: block; }
 html.beam-css .bm { display: none; }
+html.beam-css .beam i { animation: none; transform: rotate(calc(var(--sw) * 0.3)); will-change: auto; }
+html.beam-css .planner-light i { animation: none; transform: rotate(calc(var(--sw) * var(--k, 1) * 0.4)); will-change: auto; }
 .bm {
   position: absolute;
   top: 0;
@@ -4388,16 +4394,11 @@ html.beam-css .bm { display: none; }
   height: 112vmax;
   margin-left: -112vmax;
   transform-origin: 50% 0;
-  will-change: transform;
   pointer-events: none;
 }
-/* They are turned by a small clock in fx.js (about 20 small steps a second, 12 in smooth mode) instead of a CSS
-   animation: a slow swing does not need 60 redraws of a screen-sized light every second. With reduced motion the
-   clock does not run and they rest, leaning a little to one side. */
-@media (prefers-reduced-motion: reduce) {
-  .beam .bm { transform: rotate(calc(var(--sw) * 0.3)); }
-  .planner-light .bm { transform: rotate(calc(var(--sw) * var(--k, 1) * 0.4)); }
-}
+/* The beams rest, leaning a little to one side (a moving screen-sized light was the biggest cost). The lean is drawn
+   into each canvas by fx.js, so the canvas itself is not rotated at all. The Planner's four beams lean at slightly
+   different angles, so the pearly colours still overlap. */
 html.lite .planner-light .bm:nth-of-type(n+3) { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .planner-light i { animation: none; transform: rotate(calc(var(--sw) * var(--k, 1) * 0.4)); }

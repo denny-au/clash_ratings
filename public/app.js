@@ -730,7 +730,7 @@ function createLeaderboard(prefix, opts = {}) {
       <span class="pod-glow" aria-hidden="true"></span>
       ${r.rank === 1 ? '<span class="pod-ring" aria-hidden="true"><i></i></span>' : ''}
       <span class="pod-crown">${crownHtml(r.rank)}</span>
-      <span class="pod-who">${icon}<span class="pod-name">${escapeHtml(r.name)}</span>${r.champLabel ? champHtml(r.champLabel) : ''}</span>
+      <span class="pod-who">${icon || '<span class="pod-slot" aria-hidden="true"></span>'}<span class="pod-name">${escapeHtml(r.name)}</span>${r.champLabel ? champHtml(r.champLabel) : '<span class="pod-slot" aria-hidden="true"></span>'}</span>
       <span class="pod-role">${escapeHtml(label)}</span>
       ${r.champLabel ? '<span class="pod-champ">Previous month\'s champion</span>' : ''}
       <span class="pod-mr"><b data-count="${Number(r.mr) || 0}">${fmt(r.mr)}</b><i>MR</i></span>

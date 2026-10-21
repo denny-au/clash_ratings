@@ -17,13 +17,22 @@
   var FAN_PEARL = [[0, 0], [3, 0.018], [6, 0.037], [9, 0.068], [12, 0.084], [15, 0.081], [18, 0.088], [21, 0.116], [24, 0.151], [27, 0.179], [30, 0.19], [33, 0.179], [36, 0.151], [39, 0.116], [42, 0.088], [45, 0.081], [48, 0.084], [51, 0.068], [54, 0.037], [57, 0.018], [60, 0]];
   // how the light fades along the beam (position 0..1 of its length, opacity): grows out of the glow, thins out
   var FADE = [[0, 0], [0.0804, 0.35], [0.1786, 1], [0.375, 0.62], [0.6786, 0.26], [1, 0]];
-  // rgbOf(deg) gives the colour at that angle ("r, g, b")
-  function paintBeam(cv, fan, rgbOf) {
+  // --sw: how far a beam used to swing to each side (32 degrees; 17 on a tall phone screen). The resting lean is a
+  // fraction of it. The lean is drawn INTO the picture (the canvas itself is not rotated): a rotated screen-sized layer
+  // is slower for some browsers to blend than a straight one.
+  function swNow() {
+    var v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sw'));
+    return isFinite(v) ? v : 32;
+  }
+  // rgbOf(deg) gives the colour at that angle ("r, g, b"); k = how much of --sw the beam leans (clockwise)
+  function paintBeam(cv, fan, rgbOf, k) {
     if (!canConic || !cv || !cv.getContext) return;
+    cv._spec = { fan: fan, rgbOf: rgbOf, k: k };
     var c = cv.getContext('2d'), W = cv.width, H = cv.height;
     c.globalCompositeOperation = 'source-over';
     c.clearRect(0, 0, W, H);
-    var g = c.createConicGradient((150 - 90) * Math.PI / 180, W / 2, 0); // CSS "from 150deg" = 60deg from the canvas x axis
+    // CSS "from 150deg" = 60deg from the canvas x axis; leaning clockwise adds to the angle
+    var g = c.createConicGradient((150 - 90 + swNow() * k) * Math.PI / 180, W / 2, 0);
     fan.forEach(function (st) { g.addColorStop(st[0] / 360, 'rgba(' + rgbOf(st[0]) + ',' + st[1] + ')'); });
     c.fillStyle = g;
     c.fillRect(0, 0, W, H);
@@ -36,13 +45,25 @@
   // the amber/colour beam of one light copy: gl-2 at the edges, gl-1 in the middle of the fan
   function paintAtm(copy, c1, c2) {
     var cv = copy && copy.querySelector('canvas.bm');
-    paintBeam(cv, FAN_AMBER, function (deg) { return deg >= 18 && deg <= 42 ? c1 : c2; });
+    paintBeam(cv, FAN_AMBER, function (deg) { return deg >= 18 && deg <= 42 ? c1 : c2; }, 0.3);
   }
   var AMBER = ['255, 176, 62', '255, 104, 36'];
-  // the Planner's four pearly beams, painted once from their --c colour
+  // the Planner's four pearly beams, painted once from their --c colour, each leaning a little differently
   Array.prototype.forEach.call(document.querySelectorAll('.planner-light canvas.bm'), function (cv) {
     var col = (cv.style.getPropertyValue('--c') || '255, 214, 140').trim();
-    paintBeam(cv, FAN_PEARL, function () { return col; });
+    var kk = (parseFloat(cv.style.getPropertyValue('--k')) || 1) * 0.4;
+    paintBeam(cv, FAN_PEARL, function () { return col; }, kk);
+  });
+  // a phone turned sideways changes --sw: draw the leans again
+  var lastSw = swNow(), swTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(swTimer);
+    swTimer = setTimeout(function () {
+      var now = swNow();
+      if (now === lastSw) return;
+      lastSw = now;
+      Array.prototype.forEach.call(document.querySelectorAll('canvas.bm'), function (cv) { if (cv._spec) paintBeam(cv, cv._spec.fan, cv._spec.rgbOf, cv._spec.k); });
+    }, 200);
   });
 
   var atms = [document.getElementById('atm-a'), document.getElementById('atm-b')];
@@ -238,64 +259,35 @@
   }
 
 
-  // ---- The light clock: turns the beams and the Planner's colour wheel in small steps ----
-  // (instead of CSS animations that ask the browser for a new picture of a screen-sized light 60 times a second).
-  // About 20 steps a second in full mode, 12 in smooth mode; the colour wheel moves 10 (5) times a second, one degree at a time.
-  if (canConic && !reduce) {
+  // ---- The Planner's colour wheel ----
+  // The beams stay still (a moving screen-sized light was the biggest cost); only the Planner's colours slowly go
+  // round the colour wheel. A small clock sets hue-rotate about 10 times a second (5 in smooth mode), one degree
+  // at a time, and only while the Planner is open.
+  if (!reduce) {
     var htmlEl = document.documentElement;
-    var atmCv = Array.prototype.slice.call(document.querySelectorAll('.atm canvas.bm'));
     var plWrap = document.getElementById('planner-light');
-    var plCv = plWrap ? Array.prototype.slice.call(plWrap.querySelectorAll('canvas.bm')) : [];
     var hueEls = Array.prototype.slice.call(document.querySelectorAll('.atm')).concat([document.getElementById('embers'), plWrap]).filter(Boolean);
-    plCv.forEach(function (cv) {
-      cv._d = (parseFloat(cv.style.getPropertyValue('--d')) || 50) * 1000;
-      cv._o = (parseFloat(cv.style.getPropertyValue('--o')) || 0) * 1000;
-      cv._k = parseFloat(cv.style.getPropertyValue('--k')) || 1;
-    });
-    var sw = 32; // how far a beam swings to each side (the --sw variable: less on a tall phone screen)
-    var readSw = function () { var v = parseFloat(getComputedStyle(htmlEl).getPropertyValue('--sw')); sw = isFinite(v) ? v : 32; };
-    readSw();
-    var swTimer = null;
-    window.addEventListener('resize', function () { clearTimeout(swTimer); swTimer = setTimeout(readSw, 200); });
-    // back and forth, slowing at each end (like the old ease-in-out): +amp .. -amp
-    var swing = function (t, dur, off, amp) {
-      var p = (((t - off) / dur) % 2 + 2) % 2;
-      if (p > 1) p = 2 - p;
-      return amp * (1 - 2 * p * p * (3 - 2 * p));
+    var hueStart = 0, lastHue = 0, raf = 0;
+    var hueTick = function (now) {
+      raf = requestAnimationFrame(hueTick);
+      if (now - lastHue < (htmlEl.classList.contains('lite') ? 190 : 95)) return;
+      lastHue = now;
+      var f = 'hue-rotate(' + (((now - hueStart) / 36000 * 360) % 360).toFixed(1) + 'deg)';
+      for (var j = 0; j < hueEls.length; j++) hueEls[j].style.filter = f;
     };
-    var lastTick = 0, lastHue = 0, wasPl = false, hueStart = 0, raf = 0;
-    var update = function (now) {
+    var syncHue = function () {
       var onPl = htmlEl.classList.contains('on-planner');
-      var lt = htmlEl.classList.contains('lite');
-      if (onPl !== wasPl) {
-        wasPl = onPl;
-        hueStart = now;
-        lastHue = 0;
-        if (!onPl) hueEls.forEach(function (el) { el.style.removeProperty('filter'); });
-      }
-      if (onPl) {
-        for (var i = 0; i < plCv.length; i++) plCv[i].style.transform = 'rotate(' + swing(now, plCv[i]._d, plCv[i]._o, sw * plCv[i]._k).toFixed(2) + 'deg)';
-        if (now - lastHue >= (lt ? 190 : 95)) {
-          lastHue = now;
-          var f = 'hue-rotate(' + (((now - hueStart) / 36000 * 360) % 360).toFixed(1) + 'deg)';
-          for (var j = 0; j < hueEls.length; j++) hueEls[j].style.filter = f;
-        }
-      } else {
-        var a = 'rotate(' + swing(now, 48000, -14000, sw).toFixed(2) + 'deg)';
-        for (var k = 0; k < atmCv.length; k++) atmCv[k].style.transform = a;
+      if (onPl && !raf && !document.hidden) { hueStart = performance.now(); lastHue = 0; raf = requestAnimationFrame(hueTick); }
+      else if (!onPl) {
+        if (raf) { cancelAnimationFrame(raf); raf = 0; }
+        hueEls.forEach(function (el) { el.style.removeProperty('filter'); });
       }
     };
-    var tick = function (now) {
-      raf = requestAnimationFrame(tick);
-      if (now - lastTick < (htmlEl.classList.contains('lite') ? 74 : 43)) return;
-      lastTick = now;
-      update(now);
-    };
-    var startClock = function () { if (!raf && !document.hidden) { update(performance.now()); raf = requestAnimationFrame(tick); } };
+    new MutationObserver(syncHue).observe(htmlEl, { attributes: true, attributeFilter: ['class'] });
     document.addEventListener('visibilitychange', function () {
-      if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else startClock();
+      if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else syncHue();
     });
-    startClock();
+    syncHue();
   }
 
   // ---- Pause the podium's endless animations while the podium is off the screen ----
@@ -343,7 +335,7 @@
         if (d < 400) { n++; sum += d; if (d > 40) slow++; } // a long gap means the tab was hidden or busy loading, not choppy
         if (now - t0 < 2000 && !document.hidden) { requestAnimationFrame(f); return; }
         sampling = false; lastBurst = performance.now(); checks++;
-        if (n >= 30 && (slow / n > 0.3 || sum / n > 28)) strikes++; else if (n >= 30) strikes = Math.max(0, strikes - 1);
+        if (n >= 8 && (slow / n > 0.3 || sum / n > 28)) strikes++; else if (n >= 8) strikes = Math.max(0, strikes - 1); // (a very slow device gets few frames in 2s: still counts)
         if (strikes >= 3) { setLite(true, true); }
       })(t0);
     };
