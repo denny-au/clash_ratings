@@ -10,6 +10,7 @@
   var KEY_VILLAGE = 'cr-planner-village';
   var KEY_MODE = 'cr-planner-mode';
   var KEY_PASS = 'cr-planner-pass';
+  var KEY_GOAL = 'cr-planner-goal';
   var PASS_CUT = 0.17; // what a Gold Pass realistically saves (the game says 20% faster, which is about 17% less time)
   var HUT = 1000015;
   var TOWN_HALL = 1000001;
@@ -122,6 +123,16 @@
   // ---------- state ----------
   var village = null; // the parsed export
   var mode = load(KEY_MODE) === 'max' ? 'max' : 'rush';
+  // Extra goals next to the Strategic rush / Max switch: pick one and the card shows the date for just that part.
+  var GOALS = {
+    heroes: { label: 'Heroes', kind: 'builder', head: 'Maxing heroes' },
+    lab: { label: 'Lab', kind: 'research', head: 'Finishing the lab' },
+    pets: { label: 'Pets', kind: 'pet', head: 'Maxing pets' },
+    defenses: { label: 'Defenses', kind: 'builder', head: 'Maxing defenses' },
+  };
+  var GOAL_ORDER = ['heroes', 'defenses', 'lab', 'pets'];
+  var goal = GOALS[load(KEY_GOAL)] ? load(KEY_GOAL) : null; // null = just the Strategic rush / Max switch
+  function eff() { return goal || mode; } // what the card is working out right now
   var gold = load(KEY_PASS) === 'gold'; // Gold Pass on (card tinted gold) or Silver Pass (no boost, tinted silver)
   var pasteError = '';
 
@@ -184,51 +195,73 @@
   function estimateFor(v) {
     if (!v.json || !v.th || !window.CR_CALC || !window.CR_MODEL) return null;
     try {
-      return window.CR_CALC.estimate(v.json, { th: v.th, builders: v.builders, exportedAt: v.exportedAt, mode: mode, cut: gold ? PASS_CUT : 0 });
+      return window.CR_CALC.estimate(v.json, { th: v.th, builders: v.builders, exportedAt: v.exportedAt, mode: eff(), cut: gold ? PASS_CUT : 0 });
     } catch (e) { return null; }
   }
   function passNote(g) { return g ? '<b class="g">Gold pass</b> · 17% realistic boost' : '<b class="s">Silver pass</b> · 0% boost'; }
+  function bullet(kind, text) { return '<li>' + ico(kind) + '<span>' + esc(text) + '</span></li>'; }
+  function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+  // the Breakdown: one line per point, each with the builder / lab / pet symbol for the kind of work
+  function breakdownHtml(est, m, v) {
+    var w = est.workLeft || {}, li = [];
+    if (m === 'rush') {
+      if (est.already) li.push(bullet('builder', 'Your Town Hall is already being upgraded.'));
+      else {
+        var startAfter = (est.startDate - Date.now()) / 86400000;
+        if (w.upgrades) li.push(bullet('builder', plural(w.upgrades, 'upgrade', 'upgrades') + ' to finish first · ' + fmtDays(w.builderDays) + ' of builder time'));
+        else li.push(bullet('builder', 'Nothing else to finish first'));
+        li.push(bullet('builder', 'Town Hall upgrade itself · ' + fmtDays(est.thDays)));
+        li.push(bullet('builder', startAfter <= 0 ? 'Can start now' : 'Starts about ' + dayLabel(est.startDate)));
+      }
+    } else if (m === 'max') {
+      var p = est.parts, slow = est.bottleneck;
+      li.push(bullet('builder', 'Builders · ' + fmtDays(p.builder) + (slow === 'builders' ? ' · slowest' : '')));
+      li.push(bullet('research', 'Lab · ' + fmtDays(p.lab) + (slow === 'lab' ? ' · slowest' : '')));
+      li.push(bullet('pet', 'Pets · ' + fmtDays(p.pets) + (slow === 'pets' ? ' · slowest' : '')));
+    } else if (m === 'heroes' || m === 'defenses') {
+      var what = m === 'heroes' ? ['hero upgrade', 'hero upgrades'] : ['defense upgrade', 'defense upgrades'];
+      li.push(bullet('builder', plural(w.upgrades, what[0], what[1]) + ' · ' + fmtDays(w.builderDays) + (m === 'heroes' ? ' of hero time' : ' of builder time')));
+      li.push(bullet('builder', m === 'heroes' ? 'Each hero upgrades one level at a time, so the slowest hero sets the date' : 'Shared across your ' + est.builders + ' builders'));
+    } else if (m === 'lab') {
+      li.push(bullet('research', plural(w.labUpgrades, 'lab upgrade', 'lab upgrades') + ' · ' + fmtDays(w.labDays) + ' of lab time'));
+      li.push(bullet('research', est.labSlots === 2 ? 'Both lab slots working through them' : 'One lab slot working through them'));
+    } else {
+      li.push(bullet('pet', plural(w.petUpgrades, 'pet upgrade', 'pet upgrades') + ' · ' + fmtDays(w.petDays) + ' of pet time'));
+      li.push(bullet('pet', 'The Pet House does one at a time'));
+    }
+    return '<details class="pl-how"><summary>Breakdown</summary><ul class="pl-how-list">' + li.join('') + '</ul></details>';
+  }
   function goalHtml(v) {
+    var m = eff();
     var top = v.th && v.th >= TH_MAX;
-    var rush = mode === 'rush';
+    var rush = m === 'rush';
     var est = top && rush ? null : estimateFor(v);
     var head, sub, dateHtml = '', extra = '', note = '';
+    var headFor = function () { return goal ? GOALS[goal].head : (rush ? (v.th ? 'Town Hall ' + (v.th + 1) : 'Next Town Hall') : (v.th ? 'Maxing Town Hall ' + v.th : 'Maxing')); };
     if (rush && top) {
       head = 'You are at the highest Town Hall!';
       sub = 'There is no higher Town Hall to move up to.';
     } else if (!est) {
-      head = rush ? (v.th ? 'Town Hall ' + (v.th + 1) : 'Next Town Hall') : (v.th ? 'Maxing Town Hall ' + v.th : 'Maxing');
+      head = headFor();
       sub = v.th ? 'Working out the date…' : 'The date needs your Town Hall level, which this export does not show.';
+    } else if (!rush && est.doneSec <= 0) {
+      head = headFor();
+      sub = 'Nothing left to upgrade here at your Town Hall level.';
     } else {
-      head = rush ? 'Town Hall ' + (v.th + 1) : 'Maxing Town Hall ' + v.th;
+      head = rush ? 'Town Hall ' + (v.th + 1) : headFor();
       var daysFromNow = (est.date - Date.now()) / 86400000;
       dateHtml = '<p class="pl-goal-date">' + esc(longDate(est.date)) + '</p>';
-      sub = (rush ? 'Estimated date you can move up' : 'Estimated date everything is done') + ' · ' +
+      sub = (rush ? 'Estimated date you can move up' : goal ? 'Estimated date this is done' : 'Estimated date everything is done') + ' · ' +
         (daysFromNow <= 0 ? 'this export is old, paste a new one' : fmtDays(daysFromNow));
-      if (rush) {
-        if (est.already) extra = '<p class="pl-goal-more">Your Town Hall is already being upgraded.</p>';
-        else {
-          var startAfter = (est.startDate - Date.now()) / 86400000;
-          extra = '<p class="pl-goal-more">' + (est.workLeft.upgrades
-            ? esc(est.workLeft.upgrades + (est.workLeft.upgrades === 1 ? ' upgrade' : ' upgrades') + ' to finish first (' + fmtDays(est.workLeft.builderDays) + ' of builder time), then the Town Hall upgrade itself (' + fmtDays(est.thDays) + '), starting about ' + dayLabel(est.startDate) + '.')
-            : esc('Nothing else to finish first. The Town Hall upgrade itself (' + fmtDays(est.thDays) + ') can start ' + (startAfter <= 0 ? 'now' : 'about ' + dayLabel(est.startDate)) + '.')) + '</p>';
-        }
-      } else {
-        var p = est.parts, parts = [];
-        parts.push('Builders ' + fmtDays(p.builder), 'Lab ' + fmtDays(p.lab), 'Pets ' + fmtDays(p.pets));
-        extra = '<p class="pl-goal-more">' + esc(parts.join(' · ')) + '. The ' + esc(est.bottleneck === 'builders' ? 'builders are' : est.bottleneck === 'lab' ? 'lab is' : 'pets are') + ' the slowest.</p>';
-      }
-      // the details live in a "Breakdown" drop-down instead of a long sentence under the date
-      note = '<details class="pl-how"><summary>Breakdown</summary>' + extra + '</details>';
-      extra = '';
+      note = breakdownHtml(est, m, v);
     }
     // your Town Hall, an arrow, and the next one. In Max mode the next one slides away to the right and yours
     // grows (CSS transitions on the .solo class). When the mode was just switched we first draw the old state,
     // then draw() flips the class so the move plays.
     var art = '';
     if (v.th) {
-      var solo = top || mode === 'max';
-      var shown = artFrom ? (top || artFrom === 'max') : solo;
+      var solo = top || !rush;
+      var shown = artFrom ? (top || artFrom !== 'rush') : solo;
       art = '<div class="pl-goal-art' + (shown ? ' solo' : '') + '"><span class="pl-thbox">' + thPic(v.th, 'pl-th-now') + '<em>TH' + v.th + '</em></span>' +
         (top ? '' : '<div class="pl-nx"' + (shown ? ' aria-hidden="true"' : '') + '>' + ARROW + '<span class="pl-thbox">' + thPic(v.th + 1, 'pl-th-next') + '<em>TH' + (v.th + 1) + '</em></span></div>') + '</div>';
     }
@@ -239,9 +272,12 @@
       '</button>' +
       '<div class="pl-goal-top">' +
         '<span class="pl-mode' + (rush ? ' on' : '') + '">Strategic rush</span>' +
-        '<button type="button" class="pl-switch" role="switch" aria-checked="' + (mode === 'max') + '" aria-label="Max" data-act="mode"><i></i></button>' +
-        '<span class="pl-mode' + (mode === 'max' ? ' on' : '') + '">Max</span>' +
+        '<button type="button" class="pl-switch' + (goal ? ' mid' : '') + '" role="switch" aria-checked="' + (m === 'max') + '" aria-label="Max" data-act="mode"><i></i></button>' +
+        '<span class="pl-mode' + (m === 'max' ? ' on' : '') + '">Max</span>' +
       '</div>' +
+      '<div class="pl-chips" role="group" aria-label="Other goals">' + GOAL_ORDER.map(function (id) {
+        return '<button type="button" class="pl-chip k-' + GOALS[id].kind + (goal === id ? ' on' : '') + '" aria-pressed="' + (goal === id) + '" data-act="goal" data-goal="' + id + '">' + ico(GOALS[id].kind) + '<span>' + GOALS[id].label + '</span></button>';
+      }).join('') + '</div>' +
       '<p class="pl-pass-note" aria-live="polite">' + passNote(g) + '</p>' +
       art +
       '<p class="pl-goal-head">' + esc(head) + '</p>' +
@@ -421,7 +457,7 @@
     if (fromMode) {
       if (!nx) return; // at the top Town Hall nothing moves
       void art.offsetWidth; // let the old state paint, then change it so the transition runs
-      var solo = mode === 'max';
+      var solo = eff() !== 'rush';
       art.classList.toggle('solo', solo);
       nx.setAttribute('aria-hidden', solo ? 'true' : 'false');
     } else {
@@ -444,10 +480,18 @@
     if (!b) return;
     var act = b.getAttribute('data-act');
     if (act === 'mode') {
-      var was = mode;
-      mode = mode === 'max' ? 'rush' : 'max';
+      var was = eff();
+      if (goal) { goal = null; mode = 'rush'; } // from an extra goal the switch goes back to Strategic rush
+      else mode = mode === 'max' ? 'rush' : 'max';
       store(KEY_MODE, mode);
+      store(KEY_GOAL, null);
       draw(was);
+    } else if (act === 'goal') {
+      var wasG = eff();
+      var pick = b.getAttribute('data-goal');
+      goal = goal === pick ? null : pick; // tap the lit one again to go back to the switch
+      store(KEY_GOAL, goal);
+      draw(wasG);
     } else if (act === 'pass') {
       var wasGold = gold;
       gold = !gold;

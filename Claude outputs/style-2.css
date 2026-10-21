@@ -4699,3 +4699,15 @@ html.zoomed *, html.zoomed *::before, html.zoomed *::after {
   animation-play-state: paused !important;
   will-change: auto !important;
 }
+
+/* Extra goals under the Strategic rush / Max switch, and the Breakdown as a list with builder / lab / pet symbols */
+.pl-switch.mid i { transform: translateX(12px); opacity: 0.7; }
+.pl-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; margin: 0.1rem auto 0.55rem; max-width: 26rem; }
+.pl-chip { display: inline-flex; align-items: center; gap: 0.38rem; padding: 0.28rem 0.7rem 0.28rem 0.55rem; border-radius: 999px; border: 1px solid rgba(var(--kc), 0.32); background: rgba(var(--kc), 0.06); color: var(--muted); font-family: var(--font-display); font-size: 0.84rem; cursor: pointer; transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease; -webkit-tap-highlight-color: transparent; }
+.pl-chip .pl-ico { width: 14px; height: 14px; filter: none; }
+.pl-chip:hover { color: var(--text); border-color: rgba(var(--kc), 0.6); }
+.pl-chip.on { color: var(--text); background: rgba(var(--kc), 0.22); border-color: rgb(var(--kc)); box-shadow: 0 0 14px rgba(var(--kc), 0.28); }
+.pl-chip:focus-visible { outline: 2px solid var(--accent-hi); outline-offset: 2px; }
+.pl-how-list { list-style: none; margin: 0.55rem auto 0; padding: 0; width: fit-content; max-width: 100%; display: grid; gap: 0.45rem; text-align: left; }
+.pl-how-list li { display: flex; align-items: flex-start; gap: 0.55rem; color: var(--text); font-size: 0.9rem; line-height: 1.4; }
+.pl-how-list .pl-ico { width: 17px; height: 17px; margin-top: 0.12em; }

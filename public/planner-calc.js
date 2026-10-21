@@ -27,7 +27,7 @@
   function makeJob(kind, id, e, from, to, readyAt, first) {
     var steps = [];
     for (var l = from; l < to; l++) steps.push((e.t[l] || 0) * (1 - CUT));
-    return { kind: kind, id: id, name: e.n, steps: steps, at: 0, ready: readyAt || 0, first: !!first, left: steps.reduce(function (a, b) { return a + b; }, 0) };
+    return { kind: kind, id: id, name: e.n, cat: e.cat, steps: steps, at: 0, ready: readyAt || 0, first: !!first, left: steps.reduce(function (a, b) { return a + b; }, 0) };
   }
 
   // Run the jobs on the given slots (each slot = a builder or a lab, with the time it is next free).
@@ -73,11 +73,12 @@
     var builders = Math.max(1, opts.builders || 5);
     CUT = opts.cut > 0 && opts.cut < 1 ? opts.cut : 0; // timers already running in the export are left as they are
     var DAY = 86400;
-    var mode = opts.mode === 'max' ? 'max' : 'rush';
+    var mode = { max: 1, heroes: 1, lab: 1, pets: 1, defenses: 1 }[opts.mode] ? opts.mode : 'rush'; // rush, max, or one part of maxing: heroes / lab / pets / defenses
 
     // ----- builder side -----
     var owned = {};     // how many of each building you have
     var busyB = [];     // builders working right now (seconds from the export until they are free)
+    var busyDef = [];   // ...the ones of them that are upgrading a defence
     var jobsB = [];
     var thBusy = null;  // the Town Hall itself is being upgraded
     (j.buildings || []).forEach(function (b) {
@@ -91,7 +92,7 @@
       owned[b.data] = (owned[b.data] || 0) + cnt;
       var cap = capLevel(e, T);
       var from = timer > 0 ? lvl + 1 : lvl; // an upgrade in progress ends one level higher
-      if (timer > 0) busyB.push(timer);
+      if (timer > 0) { busyB.push(timer); if (e.cat === 'defenses') busyDef.push(timer); }
       var gate = mode === 'rush' ? (RUSH_FIRST[b.data] || (T === 16 && TH16_STOP[b.data])) : true;
       if (!gate || from >= cap) return;
       for (var c = 0; c < cnt; c++) jobsB.push(makeJob('b', b.data, e, from, cap, timer > 0 ? timer : 0, true));
@@ -124,7 +125,7 @@
       if (timer > 0) heroBusy.push(timer);
       if (from < cap) { heroOpen = true; heroJobs.push(makeJob('h', h.data, e, from, cap, timer > 0 ? timer : 0, false)); }
     });
-    if (mode === 'max') {
+    if (mode !== 'rush') {
       Object.keys(M.h).forEach(function (id) {
         var e = M.h[id];
         if (heroOwed[id] || e.r[0] > hallLvl) return;
@@ -157,9 +158,10 @@
       out.workLeft = { upgrades: steps(jobsB), builderDays: sum(jobsB) / DAY, jobs: anyRushJobs };
     } else {
       heroJobs.forEach(function (hj) { hj.first = true; }); // heroes are long chains, so they start early
-      var all = jobsB.concat(heroJobs);
+      var wantB = mode === 'max' || mode === 'heroes' || mode === 'defenses';
+      var all = mode === 'max' ? jobsB.concat(heroJobs) : mode === 'heroes' ? heroJobs : mode === 'defenses' ? jobsB.filter(function (jb) { return jb.cat === 'defenses'; }) : [];
       var slotsM = slotsFrom(busyB.concat(heroBusy), builders);
-      finishB = run(all, slotsM);
+      finishB = wantB ? run(all, slotsM) : 0;
       // lab: troops, spells and siege machines (one at a time, two while the second slot is in use)
       var labBusy = [], labSeen = {}, labJobs = [], extra = false;
       ['units', 'spells', 'siege_machines'].forEach(function (k) {
@@ -198,11 +200,20 @@
         if (cap > 1) petJobs.push(makeJob('p', +id, e, 1, cap, 0, false));
       });
       var finishP = run(petJobs, slotsFrom(petBusy, 1));
-      doneSec = Math.max(finishB, finishL, finishP, busyB.length || heroBusy.length || labBusy.length || petBusy.length ? Math.max.apply(null, busyB.concat(heroBusy, labBusy, petBusy)) : 0);
-      out.parts = { builder: finishB / DAY, lab: finishL / DAY, pets: finishP / DAY };
-      out.bottleneck = finishL >= finishB && finishL >= finishP ? 'lab' : finishP > finishB ? 'pets' : 'builders';
+      var mx = function (a) { return a.length ? Math.max.apply(null, a) : 0; };
+      if (mode === 'max') {
+        doneSec = Math.max(finishB, finishL, finishP, mx(busyB.concat(heroBusy, labBusy, petBusy)));
+        out.parts = { builder: finishB / DAY, lab: finishL / DAY, pets: finishP / DAY };
+        out.bottleneck = finishL >= finishB && finishL >= finishP ? 'lab' : finishP > finishB ? 'pets' : 'builders';
+      } else if (mode === 'heroes') doneSec = Math.max(finishB, mx(heroBusy));
+      else if (mode === 'defenses') doneSec = Math.max(finishB, mx(busyDef));
+      else if (mode === 'lab') doneSec = Math.max(finishL, mx(labBusy));
+      else doneSec = Math.max(finishP, mx(petBusy));
+      out.labSlots = extra ? 2 : 1;
       out.workLeft = {
-        upgrades: steps(all), builderDays: sum(all) / DAY, labDays: sum(labJobs) / DAY, petDays: sum(petJobs) / DAY,
+        upgrades: steps(all), builderDays: sum(all) / DAY,
+        labUpgrades: steps(labJobs), labDays: sum(labJobs) / DAY,
+        petUpgrades: steps(petJobs), petDays: sum(petJobs) / DAY,
       };
     }
     out.doneSec = doneSec;
