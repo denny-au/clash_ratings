@@ -236,7 +236,7 @@
     };
 
     function start() {
-      if (running || document.documentElement.classList.contains('lite') || document.documentElement.classList.contains('on-planner')) return;
+      if (running || document.documentElement.classList.contains('lite') || document.documentElement.classList.contains('on-planner') || document.documentElement.classList.contains('zoomed')) return;
       running = true;
       last = performance.now();
       acc = 0;
@@ -270,11 +270,30 @@
     var htmlEl = document.documentElement;
     var sync = function () {
       if (!window.CR_EMBERS) return;
-      if (htmlEl.classList.contains('on-planner')) window.CR_EMBERS.stop();
+      if (htmlEl.classList.contains('on-planner') || htmlEl.classList.contains('zoomed')) window.CR_EMBERS.stop();
       else if (!htmlEl.classList.contains('lite')) window.CR_EMBERS.start();
     };
     new MutationObserver(sync).observe(htmlEl, { attributes: true, attributeFilter: ['class'] });
     sync();
+  })();
+
+  // ---- Pinch-zoom safety (phones) ----
+  // While the page is pinched in, Safari redraws every layer at the bigger size, and on a phone that can run it out of
+  // memory (the tab then reloads or goes white). So while zoomed in (`html.zoomed`) the heavy extras are switched off:
+  // the glow, beams, dots, meteors, every filter / drop-shadow / blur, and endless animations are paused. They all
+  // come back when you zoom out. Nothing changes the page layout, so nothing jumps.
+  (function () {
+    var vv = window.visualViewport;
+    if (!vv) return;
+    var on = false;
+    var check = function () {
+      var z = vv.scale > 1.05;
+      if (z === on) return;
+      on = z;
+      document.documentElement.classList.toggle('zoomed', z);
+    };
+    vv.addEventListener('resize', check);
+    check();
   })();
 
   // ---- Pause the podium's endless animations while the podium is off the screen ----
