@@ -4711,3 +4711,10 @@ html.zoomed *, html.zoomed *::before, html.zoomed *::after {
 .pl-how-list { list-style: none; margin: 0.55rem auto 0; padding: 0; width: fit-content; max-width: 100%; display: grid; gap: 0.45rem; text-align: left; }
 .pl-how-list li { display: flex; align-items: flex-start; gap: 0.55rem; color: var(--text); font-size: 0.9rem; line-height: 1.4; }
 .pl-how-list .pl-ico { width: 17px; height: 17px; margin-top: 0.12em; }
+
+/* an extra goal is on: the Strategic rush / Max switch is greyed out (tap it to go back) */
+.pl-goal-top.off .pl-mode { color: rgba(146, 152, 173, 0.5); text-shadow: none; }
+.pl-goal-top.off .pl-switch { background: rgba(120, 126, 145, 0.14); border-color: rgba(146, 152, 173, 0.3); }
+.pl-goal-top.off .pl-switch i { background: linear-gradient(180deg, #8b91a6, #5d6378); box-shadow: none; opacity: 0.8; }
+.pl-chip:disabled { opacity: 0.38; cursor: not-allowed; filter: grayscale(1); }
+.pl-chip:disabled:hover { color: var(--muted); border-color: rgba(var(--kc), 0.32); }

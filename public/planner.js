@@ -126,7 +126,7 @@
   // Extra goals next to the Strategic rush / Max switch: pick one and the card shows the date for just that part.
   var GOALS = {
     heroes: { label: 'Heroes', kind: 'builder', head: 'Maxing heroes' },
-    lab: { label: 'Lab', kind: 'research', head: 'Finishing the lab' },
+    lab: { label: 'Lab', kind: 'research', head: 'Maxing lab' },
     pets: { label: 'Pets', kind: 'pet', head: 'Maxing pets' },
     defenses: { label: 'Defenses', kind: 'builder', head: 'Maxing defenses' },
   };
@@ -217,22 +217,32 @@
       var p = est.parts, slow = est.bottleneck;
       li.push(bullet('builder', 'Builders · ' + fmtDays(p.builder) + (slow === 'builders' ? ' · slowest' : '')));
       li.push(bullet('research', 'Lab · ' + fmtDays(p.lab) + (slow === 'lab' ? ' · slowest' : '')));
-      li.push(bullet('pet', 'Pets · ' + fmtDays(p.pets) + (slow === 'pets' ? ' · slowest' : '')));
-    } else if (m === 'heroes' || m === 'defenses') {
-      var what = m === 'heroes' ? ['hero upgrade', 'hero upgrades'] : ['defense upgrade', 'defense upgrades'];
-      li.push(bullet('builder', plural(w.upgrades, what[0], what[1]) + ' · ' + fmtDays(w.builderDays) + (m === 'heroes' ? ' of hero time' : ' of builder time')));
-      li.push(bullet('builder', m === 'heroes' ? 'Each hero upgrades one level at a time, so the slowest hero sets the date' : 'Shared across your ' + est.builders + ' builders'));
+      li.push(est.petsLocked ? bullet('pet', 'Pet House not built yet · pets left out') : bullet('pet', 'Pets · ' + fmtDays(p.pets) + (slow === 'pets' ? ' · slowest' : '')));
+    } else if (m === 'heroes') {
+      li.push(bullet('builder', plural(w.upgrades, 'hero upgrade', 'hero upgrades') + ' · ' + fmtDays(w.builderDays) + ' of hero time'));
+      // every hero with the time it finishes: the last one is what the date waits for
+      (est.heroes || []).forEach(function (h, i) { li.push(bullet('builder', h.name + ' · ' + fmtDays(h.days) + (i === 0 ? ' · slowest' : ''))); });
+    } else if (m === 'defenses') {
+      li.push(bullet('builder', plural(w.upgrades, 'defense upgrade', 'defense upgrades') + ' · ' + fmtDays(w.builderDays) + ' of builder time'));
+      li.push(bullet('builder', 'Shared across your ' + est.builders + (est.builders === 1 ? ' builder' : ' builders')));
     } else if (m === 'lab') {
       li.push(bullet('research', plural(w.labUpgrades, 'lab upgrade', 'lab upgrades') + ' · ' + fmtDays(w.labDays) + ' of lab time'));
-      li.push(bullet('research', est.labSlots === 2 ? 'Both lab slots working through them' : 'One lab slot working through them'));
+      li.push(bullet('research', 'One lab slot working through them'));
     } else {
       li.push(bullet('pet', plural(w.petUpgrades, 'pet upgrade', 'pet upgrades') + ' · ' + fmtDays(w.petDays) + ' of pet time'));
       li.push(bullet('pet', 'The Pet House does one at a time'));
     }
     return '<details class="pl-how"><summary>Breakdown</summary><ul class="pl-how-list">' + li.join('') + '</ul></details>';
   }
+  // goals that cannot be used yet (the button is greyed out and says why)
+  function lockedGoals(v) {
+    var out = {};
+    if (window.CR_CALC && window.CR_CALC.petHouseBuilt && v && v.json && window.CR_CALC.petHouseBuilt(v.json) === false) out.pets = 'Build the Pet House to unlock pets';
+    return out;
+  }
   function goalHtml(v) {
     var m = eff();
+    var locked = lockedGoals(v);
     var top = v.th && v.th >= TH_MAX;
     var rush = m === 'rush';
     var est = top && rush ? null : estimateFor(v);
@@ -270,13 +280,13 @@
       '<button type="button" class="pl-pass' + (g ? ' gold' : '') + '" data-act="pass" aria-pressed="' + g + '" aria-label="Gold Pass" title="Gold Pass">' +
         '<span class="pl-coin"><img class="pl-face front" src="assets/pass/silver.webp" alt="" width="40" height="40" decoding="async" draggable="false" /><img class="pl-face back" src="assets/pass/gold.webp" alt="" width="40" height="40" decoding="async" draggable="false" /></span>' +
       '</button>' +
-      '<div class="pl-goal-top">' +
+      '<div class="pl-goal-top' + (goal ? ' off' : '') + '">' +
         '<span class="pl-mode' + (rush ? ' on' : '') + '">Strategic rush</span>' +
         '<button type="button" class="pl-switch' + (goal ? ' mid' : '') + '" role="switch" aria-checked="' + (m === 'max') + '" aria-label="Max" data-act="mode"><i></i></button>' +
         '<span class="pl-mode' + (m === 'max' ? ' on' : '') + '">Max</span>' +
       '</div>' +
       '<div class="pl-chips" role="group" aria-label="Other goals">' + GOAL_ORDER.map(function (id) {
-        return '<button type="button" class="pl-chip k-' + GOALS[id].kind + (goal === id ? ' on' : '') + '" aria-pressed="' + (goal === id) + '" data-act="goal" data-goal="' + id + '">' + ico(GOALS[id].kind) + '<span>' + GOALS[id].label + '</span></button>';
+        return '<button type="button" class="pl-chip ' + KINDS[GOALS[id].kind].cls + (goal === id ? ' on' : '') + '" aria-pressed="' + (goal === id) + '" data-act="goal" data-goal="' + id + '"' + (locked[id] ? ' disabled title="' + esc(locked[id]) + '"' : '') + '>' + ico(GOALS[id].kind) + '<span>' + GOALS[id].label + '</span></button>';
       }).join('') + '</div>' +
       '<p class="pl-pass-note" aria-live="polite">' + passNote(g) + '</p>' +
       art +
@@ -440,6 +450,7 @@
   // not close the Breakdown or replay the Town Hall pop-in
   function draw(fromMode, refresh, passWas) {
     if (!viewEl) return;
+    if (goal === 'pets' && village && lockedGoals(village).pets) { goal = null; store(KEY_GOAL, null); } // no Pet House: back to the switch
     var wasOpen = (refresh || passWas != null) && viewEl.querySelector('.pl-how[open]') !== null;
     artFrom = fromMode || null;
     passFrom = passWas != null ? passWas : null;

@@ -9,7 +9,7 @@
   'use strict';
   var M = root.CR_MODEL;
 
-  var TOWN_HALL = 1000001, HUT = 1000015;
+  var TOWN_HALL = 1000001, HUT = 1000015, PET_HOUSE = 1000068;
   // Rush Bible: before moving up, finish Army Camps, Clan Castle, Hero Hall and drop the new buildings
   var RUSH_FIRST = { 1000000: 1, 1000014: 1, 1000071: 1 };
   // TH16 is the one mandatory stop: Eagle Artillery plus the Cannons and Archer Towers that get merged
@@ -51,10 +51,18 @@
       var step = pick.steps[pick.at++];
       pick.left -= step;
       pick.ready = slots[s] = t + step;
+      pick.end = pick.ready; // when this job's last finished step ends
       if (pick.ready > finish) finish = pick.ready;
       if (pick.at >= pick.steps.length) open.splice(open.indexOf(pick), 1);
     }
     return finish;
+  }
+
+  // is the Pet House built? true / false, or null when the export is too short to tell
+  function petHouseBuilt(j) {
+    var list = (j && j.buildings) || [];
+    if (list.length < 15) return true; // a very short export: do not guess
+    return list.some(function (b) { return b && b.data === PET_HOUSE && (num(b.lvl) >= 1 || !(num(b.timer) > 0)); }); // built, unless it is still being put up (level 0 with a timer)
   }
 
   function slotsFrom(busy, count) {
@@ -81,13 +89,14 @@
     var busyDef = [];   // ...the ones of them that are upgrading a defence
     var jobsB = [];
     var thBusy = null;  // the Town Hall itself is being upgraded
+    var petHouse = petHouseBuilt(j);
     (j.buildings || []).forEach(function (b) {
       if (!b || typeof b !== 'object' || b.data === HUT) return;
       var e = M.b[b.data];
       var cnt = Math.max(1, num(b.cnt) || 1);
       var lvl = num(b.lvl);
       var timer = num(b.timer);
-      if (b.data === TOWN_HALL) { if (timer > 0) thBusy = timer; return; }
+      if (b.data === TOWN_HALL) { if (timer > 0) { thBusy = timer; if (mode !== 'rush') busyB.push(timer); } return; } // (outside Strategic rush the Town Hall upgrade keeps one builder busy)
       if (!e) { if (timer > 0) busyB.push(timer); return; }
       owned[b.data] = (owned[b.data] || 0) + cnt;
       var cap = capLevel(e, T);
@@ -116,6 +125,7 @@
     var heroBusy = [];
     var heroOwed = {};
     var heroJobs = [];
+    var heroRows = []; // one per hero: its name, a running upgrade's timer, and its job (for the bottleneck)
     var heroOpen = false;
     (j.heroes || []).forEach(function (h) {
       var e = h && M.h[h.data];
@@ -123,14 +133,16 @@
       heroOwed[h.data] = 1;
       var cap = capLevel(e, hallLvl), timer = num(h.timer), from = timer > 0 ? num(h.lvl) + 1 : num(h.lvl);
       if (timer > 0) heroBusy.push(timer);
-      if (from < cap) { heroOpen = true; heroJobs.push(makeJob('h', h.data, e, from, cap, timer > 0 ? timer : 0, false)); }
+      var hjob = null;
+      if (from < cap) { heroOpen = true; hjob = makeJob('h', h.data, e, from, cap, timer > 0 ? timer : 0, false); heroJobs.push(hjob); }
+      heroRows.push({ name: e.n, timer: timer, job: hjob });
     });
     if (mode !== 'rush') {
       Object.keys(M.h).forEach(function (id) {
         var e = M.h[id];
         if (heroOwed[id] || e.r[0] > hallLvl) return;
         var cap = capLevel(e, hallLvl);
-        if (cap > 1) { heroOpen = true; heroJobs.push(makeJob('h', +id, e, 1, cap, 0, false)); }
+        if (cap > 1) { heroOpen = true; var mj = makeJob('h', +id, e, 1, cap, 0, false); heroJobs.push(mj); heroRows.push({ name: e.n, timer: 0, job: mj }); }
       });
     }
 
@@ -160,6 +172,8 @@
       heroJobs.forEach(function (hj) { hj.first = true; }); // heroes are long chains, so they start early
       var wantB = mode === 'max' || mode === 'heroes' || mode === 'defenses';
       var all = mode === 'max' ? jobsB.concat(heroJobs) : mode === 'heroes' ? heroJobs : mode === 'defenses' ? jobsB.filter(function (jb) { return jb.cat === 'defenses'; }) : [];
+      builders = Math.max(builders, busyB.length + heroBusy.length); // (never more work at once than builders)
+      out.builders = builders;
       var slotsM = slotsFrom(busyB.concat(heroBusy), builders);
       finishB = wantB ? run(all, slotsM) : 0;
       // lab: troops, spells and siege machines (one at a time, two while the second slot is in use)
@@ -181,10 +195,12 @@
         var cap = capLevel(e, T);
         if (cap > 1) labJobs.push(makeJob('l', +id, e, 1, cap, 0, false));
       });
-      var labSlots = slotsFrom(labBusy, extra ? 2 : 1);
+      // only ONE lab slot is counted (the second one is not always there); anything already running just goes first
+      var labSlots = [labBusy.reduce(function (a, b) { return a + b; }, 0)];
       var finishL = run(labJobs, labSlots);
       // pets
       var petBusy = [], petSeen = {}, petJobs = [];
+      // (pets that are already being upgraded show up in the export, so the Pet House must exist)
       (j.pets || []).forEach(function (p) {
         var e = p && M.p[p.data];
         if (!e) return;
@@ -199,8 +215,14 @@
         var cap = capLevel(e, T);
         if (cap > 1) petJobs.push(makeJob('p', +id, e, 1, cap, 0, false));
       });
-      var finishP = run(petJobs, slotsFrom(petBusy, 1));
+      if (!petHouse) petJobs = []; // no Pet House yet: pets cannot be upgraded, so they are left out
+      var finishP = run(petJobs, [petBusy.reduce(function (a, b) { return a + b; }, 0)]);
+      out.petsLocked = !petHouse;
       var mx = function (a) { return a.length ? Math.max.apply(null, a) : 0; };
+      out.heroes = heroRows.map(function (h) {
+        var end = h.job && h.job.steps.length ? h.job.end : h.timer;
+        return { name: h.name, days: end / DAY };
+      }).filter(function (h) { return h.days > 0; }).sort(function (a, b) { return b.days - a.days; });
       if (mode === 'max') {
         doneSec = Math.max(finishB, finishL, finishP, mx(busyB.concat(heroBusy, labBusy, petBusy)));
         out.parts = { builder: finishB / DAY, lab: finishL / DAY, pets: finishP / DAY };
@@ -209,7 +231,7 @@
       else if (mode === 'defenses') doneSec = Math.max(finishB, mx(busyDef));
       else if (mode === 'lab') doneSec = Math.max(finishL, mx(labBusy));
       else doneSec = Math.max(finishP, mx(petBusy));
-      out.labSlots = extra ? 2 : 1;
+      out.labSlots = 1;
       out.workLeft = {
         upgrades: steps(all), builderDays: sum(all) / DAY,
         labUpgrades: steps(labJobs), labDays: sum(labJobs) / DAY,
@@ -223,6 +245,6 @@
     return out;
   }
 
-  root.CR_CALC = { estimate: estimate, _capLevel: capLevel, _run: run };
+  root.CR_CALC = { estimate: estimate, petHouseBuilt: petHouseBuilt, _capLevel: capLevel, _run: run };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.CR_CALC;
 })(typeof window !== 'undefined' ? window : globalThis);
