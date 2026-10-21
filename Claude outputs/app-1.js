@@ -197,8 +197,7 @@ const slideMs = 280;
 const slideInMs = 480;
 const reducedMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
 
-// The Planner's light starts pearly pink and then fx.js slowly turns every colour through the whole rainbow
-// (it repaints the glow, beams and floating dots a couple of times a second; no CSS filter). JS here only picks the start colour.
+// The Planner's light is a still pearly pink (one beam and the glow; fx.js switches the floating dots off while it is open).
 const IRID = [[255, 150, 205], [140, 205, 255], [185, 160, 255], [140, 240, 215], [255, 215, 150]];
 function startIrid() {
   const c = IRID[0];
@@ -231,8 +230,7 @@ function showPlanner(open, { instant = false, restoreScroll = true } = {}) {
       entering.classList.add(inCls);
       setTimeout(() => entering.classList.remove(inCls), slideInMs);
     }
-    // The Planner's light is iridescent: the beams are pearly pink, blue, violet and gold, and the glow and the
-    // floating dots drift through the same colours. Leaving goes back to the tab's own colour.
+    // The Planner's light is pearly pink. Leaving goes back to the tab's own colour.
     document.documentElement.classList.toggle('on-planner', open);
     const plLight = $('planner-light');
     if (plLight) plLight.hidden = !open;
