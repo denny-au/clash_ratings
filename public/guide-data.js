@@ -320,6 +320,14 @@ window.GUIDE_DATA = {
           title: 'Focus on Frosty, Diggy and the Unicorn',
           text: 'The new Sneezy is a decent pet, but other than that, put all of your time and investment into Frosty, Diggy and the Unicorn.',
         },
+        {
+          title: 'Hold off on Spell Tower level 4',
+          text: 'Do not upgrade the Spell Tower to level 4 right away. The Earthquake Spell it brings is useless.',
+        },
+        {
+          title: 'Attacks are harder from here on',
+          text: 'Be prepared: bases at TH17 and above are stronger overall. Say goodbye to the days of one or two strong, centralized compartments. Now you have to be careful with every step of the attack.',
+        },
       ],
     },
   ],
