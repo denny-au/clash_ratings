@@ -45,6 +45,20 @@ window.CR_BULLETIN = [
         text: 'It works a lot like the Heroic Torch. Troops inside the spell circle phase through walls and get more damage and more defense for a short time.',
       },
       {
+        title: 'Massive nerf to the Life Gem and Rage Gem',
+        text: [
+          'Both of these equipment were actually the best hidden gems that no one was talking about in the lower town halls. Unfortunately, they were so strong that Supercell has super nerfed them to bring them in line with the other common equipment.',
+          'Only 260 troops, heroes included, can have the effect now. Every other troop is left out.',
+        ],
+      },
+      {
+        title: 'Daily star bonus',
+        text: [
+          'Every day you get a bonus when you attack for 2 stars, and a bigger one, the Magic Snack, when you attack for 5 stars.',
+          'You are handed some really good boosts that help you earn more loot while needing to play less in Clash of Clans.',
+        ],
+      },
+      {
         title: 'Cheaper and faster upgrades',
         text: 'All the reductions in cost and time apply to every town hall below 19, not just to TH19.',
       },
