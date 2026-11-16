@@ -161,3 +161,4 @@ Natural next additions from here: a proper "top players" leaderboard combining t
 - **Guide**: the TH17 asterisk and footnote were removed (the `footnote` / `star: true` system still exists in `guide.js` for other town halls). The "Attacks are harder" tip now also says you need a few epic equipment.
 - **Awards**: Star Collector removed (server `warTracker.js` no longer sends it and the page ignores it if an older server does); 5 awards show 3 + 2 on wide screens.
 - **Podium on phones**: no glow filter on the names, and no filter on the silver/bronze cards when tapped (an iPhone showed a block behind the names).
+- **Guide: TH18**: added as a "coming soon" card (`soon: true` in `guide-data.js`, picture `assets/th/th18.webp`). Tapping it shows "Sorry, the Town Hall 18 guide is still a work in progress. Check back soon!" (`soonHtml` in `guide.js`). Remove `soon: true` and add `armies` / `bases` / `tips` when the guide is written.

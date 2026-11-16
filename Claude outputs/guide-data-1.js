@@ -327,5 +327,11 @@ window.GUIDE_DATA = {
         },
       ],
     },
+    {
+      level: 18,
+      image: 'assets/th/th18.webp',
+      theme: [64, 200, 205], // teal
+      soon: true, // no guide yet: tapping it says it is a work in progress
+    },
   ],
 };

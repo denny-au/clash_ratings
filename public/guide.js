@@ -193,7 +193,7 @@
   }
 
   function soonHtml(th) {
-    return '<section class="g-card g-soon"><p class="g-empty">The Town Hall ' + esc(th.level) + ' guide is still being written. Check back soon.</p></section>';
+    return '<section class="g-card g-soon"><p class="g-empty">Sorry, the Town Hall ' + esc(th.level) + ' guide is still a work in progress. Check back soon!</p></section>';
   }
 
   // The note under a town hall that has asterisks (th.footnote).
