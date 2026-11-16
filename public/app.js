@@ -147,7 +147,7 @@ function activateTab(name, { updateHash = true } = {}) {
   // the Bulletin is a soft blue, the War tab a fiery red, and the Leaderboard stays the original amber.
   const theme = plannerOpen ? null : name === 'guide' ? (window.CR_GUIDE ? window.CR_GUIDE.themeRgb() : null) : TAB_GLOW[name] || null;
   const meteors = $('meteors');
-  if (meteors) meteors.hidden = name !== 'bulletin'; // the Hammer Jam meteor shower only shows on the Bulletin
+  if (meteors) meteors.hidden = true; // the blue meteor shower was for Hammer Jam, which is over; use `name !== 'bulletin'` to bring it back for the next event
   window.CR_THEME_PENDING = theme;
   if (window.CR_FX) window.CR_FX.setTheme(theme);
   if (boardReplays[name]) boardReplays[name]();
@@ -1354,7 +1354,6 @@ function renderSummary(sum) {
 const AWARD_ICONS = {
   champion: '<path d="M7 3h10v4a5 5 0 0 1-10 0V3Z"/><path d="M7 4H3.5v1.5A3.5 3.5 0 0 0 7 9M17 4h3.5v1.5A3.5 3.5 0 0 1 17 9" fill="none" stroke-width="1.6"/><rect x="10.5" y="12" width="3" height="4"/><rect x="7.5" y="17" width="9" height="3" rx="1"/>',
   donor: '<path d="M12 20.5s-7.5-4.6-7.5-10A4.2 4.2 0 0 1 12 8a4.2 4.2 0 0 1 7.5 2.5c0 5.4-7.5 10-7.5 10Z"/>',
-  stars: '<path d="m12 2.8 2.7 5.6 6.1.8-4.5 4.3 1.1 6.1L12 16.6 6.6 19.6l1.1-6.1L3.2 9.2l6.1-.8L12 2.8Z"/>',
   conqueror: '<path d="M3 18 2 7l5.5 4L12 3.5l4.5 7.5L22 7l-1 11Z"/><rect x="3" y="19.5" width="18" height="2.2" rx="1"/>',
   challenger: '<path d="M4 4l11 11M20 4 9 15" stroke-width="2.2" stroke-linecap="round" fill="none"/><path d="M13 17l4-4M7 13l4 4" stroke-width="2.2" stroke-linecap="round" fill="none"/><path d="M16 16l3 3M8 16l-3 3" stroke-width="2.2" stroke-linecap="round" fill="none"/><circle cx="20" cy="20" r="1.4"/><circle cx="4" cy="20" r="1.4"/>',
   sharpshooter: '<circle cx="12" cy="12" r="8.5" fill="none" stroke-width="1.8"/><circle cx="12" cy="12" r="4.6" fill="none" stroke-width="1.8"/><circle cx="12" cy="12" r="1.6"/>',
@@ -1364,7 +1363,6 @@ const AWARD_ICONS = {
 const AWARD_TINTS = {
   champion: '242,193,78',
   donor: '255,138,168',
-  stars: '255,150,48',
   conqueror: '176,140,255',
   sharpshooter: '111,216,238',
   challenger: '255,82,110',
@@ -1376,15 +1374,15 @@ const AWARD_SLOTS = [
   { key: 'champion', title: 'Champion', hint: 'Needs a Mastery Rating above 0' },
   { key: 'conqueror', title: 'Conqueror', hint: 'Goes to the top of the Warboard' },
   { key: 'donor', title: 'Provider', hint: 'Needs at least 1 troop donated' },
-  { key: 'stars', title: 'Star Collector', hint: 'Needs at least 1 war star' },
   { key: 'sharpshooter', title: 'Sharpshooter', hint: 'Needs 2+ war attacks' },
   { key: 'challenger', title: 'Challenger', hint: 'Most attacks on higher town halls' },
 ];
 
 function awardsHtml(awards, { when = 'month' } = {}) {
-  const byKey = new Map((awards || []).map((a) => [a.key, a]));
+  awards = (awards || []).filter((a) => a.key !== 'stars'); // Star Collector was removed (it is the same as Conqueror); an older server may still send it
+  const byKey = new Map(awards.map((a) => [a.key, a]));
   const list = AWARD_SLOTS.map((slot) => byKey.get(slot.key) || { key: slot.key, title: slot.title, empty: true, hint: slot.hint });
-  for (const a of awards || []) if (!AWARD_SLOTS.some((s) => s.key === a.key)) list.push(a); // future awards still show
+  for (const a of awards) if (!AWARD_SLOTS.some((s) => s.key === a.key)) list.push(a); // future awards still show
   return list
     .map((a, i) => {
       if (a.empty) {

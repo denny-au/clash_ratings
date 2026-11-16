@@ -568,7 +568,6 @@ function computeAwards(rows, conqueror = null) {
       pick: conqueror && conqueror.stars > 0 ? { row: conqueror, value: conqueror.stars } : null,
     },
     { key: 'donor', title: 'Provider', unit: 'troops donated', pick: best((r) => r.donated || 0) },
-    { key: 'stars', title: 'Star Collector', unit: 'war stars', pick: best((r) => r.warStars || 0) },
     {
       key: 'sharpshooter',
       title: 'Sharpshooter',

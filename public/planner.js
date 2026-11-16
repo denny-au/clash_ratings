@@ -246,7 +246,7 @@
     var top = v.th && v.th >= TH_MAX;
     var rush = m === 'rush';
     var est = top && rush ? null : estimateFor(v);
-    var head, sub, dateHtml = '', extra = '', note = '';
+    var head, sub, dateHtml = '', extra = '', note = '', foot = '';
     var headFor = function () { return goal ? GOALS[goal].head : (rush ? (v.th ? 'Town Hall ' + (v.th + 1) : 'Next Town Hall') : (v.th ? 'Maxing Town Hall ' + v.th : 'Maxing')); };
     if (rush && top) {
       head = 'You are at the highest Town Hall!';
@@ -260,7 +260,8 @@
     } else {
       head = rush ? 'Town Hall ' + (v.th + 1) : headFor();
       var daysFromNow = (est.date - Date.now()) / 86400000;
-      dateHtml = '<p class="pl-goal-date">' + esc(longDate(est.date)) + '</p>';
+      dateHtml = '<p class="pl-goal-date">' + esc(longDate(est.date)) + '<span class="pl-ast" aria-hidden="true">*</span></p>';
+      foot = '<p class="pl-foot"><span class="pl-ast">*</span> These dates do not include the reduced upgrade costs and times from the TH19 update yet. They will be added later.</p>';
       sub = (rush ? 'Estimated date you can move up' : goal ? 'Estimated date this is done' : 'Estimated date everything is done') + ' · ' +
         (daysFromNow <= 0 ? 'this export is old, paste a new one' : fmtDays(daysFromNow));
       note = breakdownHtml(est, m, v);
@@ -295,6 +296,7 @@
       '<p class="pl-goal-sub">' + esc(sub) + '</p>' +
       extra +
       note +
+      foot +
     '</section>';
   }
 

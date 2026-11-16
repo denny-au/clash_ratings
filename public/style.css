@@ -1988,7 +1988,7 @@ button.pod:focus-visible { outline: 2px solid var(--hi); outline-offset: 3px; }
     var(--edge) border-box;
 }
 button.pod-2:hover, button.pod-2.is-open,
-button.pod-3:hover, button.pod-3.is-open { border-color: transparent; filter: brightness(1.12); }
+button.pod-3:hover, button.pod-3.is-open { border-color: transparent; } /* (no filter here: a filter on the card with another filter on the name inside drew a block behind the name on iPhones) */
 
 /* Rotating light on the gold card's edge: a big conic gradient that spins by
    transform (cheap) inside a ring-shaped mask, instead of animating a gradient
@@ -2203,7 +2203,7 @@ button.pod-3:hover, button.pod-3.is-open { border-color: transparent; filter: br
   .pod-1 .crown b { font-size: 1rem; }
   .pod-who { display: flex; justify-content: center; }
   .pod-who .league, .pod-who .champ, .pod-slot { display: none; }
-  .pod-name { font-size: 0.86rem; }
+  .pod-name { font-size: 0.86rem; filter: none; } /* phones: no glow on the name (a filter on a clipped text box shows up as a block on iPhones) */
   .pod-1 .pod-name { font-size: 1rem; }
   .pod-role { font-size: 0.64rem; }
   .pod-mr b { font-size: 1.4rem; }
@@ -2720,8 +2720,12 @@ body.modal-open { overflow: hidden; }
 .award-rare .award-medal { width: 52px; height: 52px; }
 .award-rare .award-medal svg { width: 28px; height: 28px; }
 .award-rare .award-name { font-size: 1.3rem; }
-/* On wide screens the six awards fill a tidy 3 + 3 grid. */
+/* On wide screens the five awards fill a tidy 3 + 2 grid (the two on the bottom row sit in the middle). */
 @media (min-width: 700px) {
+  .awards:has(> .award:nth-child(5):last-child) { grid-template-columns: repeat(6, 1fr); }
+  .awards:has(> .award:nth-child(5):last-child) > .award { grid-column: span 2; }
+  .awards:has(> .award:nth-child(5):last-child) > .award:nth-child(4) { grid-column: 2 / span 2; }
+  .awards:has(> .award:nth-child(5):last-child) > .award:nth-child(5) { grid-column: 4 / span 2; }
   .awards:has(> .award:nth-child(6):last-child) { grid-template-columns: repeat(6, 1fr); }
   .awards:has(> .award:nth-child(6):last-child) > .award { grid-column: span 2; }
 }
@@ -4718,3 +4722,9 @@ html.zoomed *, html.zoomed *::before, html.zoomed *::after {
 .pl-goal-top.off .pl-switch i { background: linear-gradient(180deg, #8b91a6, #5d6378); box-shadow: none; opacity: 0.8; }
 .pl-chip:disabled { opacity: 0.38; cursor: not-allowed; filter: grayscale(1); }
 .pl-chip:disabled:hover { color: var(--muted); border-color: rgba(var(--kc), 0.32); }
+
+/* the asterisk on the Planner's dates, and its note at the bottom of the card */
+.pl-ast { color: var(--accent-hi); margin-left: 0.08em; }
+.pl-goal-date .pl-ast { font-size: 0.8em; vertical-align: 0.25em; }
+.pl-foot { margin: 0.8rem auto 0; max-width: 30rem; font-size: 0.76rem; line-height: 1.4; color: var(--muted); }
+.pl-foot .pl-ast { margin: 0 0.2rem 0 0; }

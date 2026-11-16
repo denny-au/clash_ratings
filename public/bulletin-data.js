@@ -22,87 +22,31 @@
 // Plain text only (no HTML). Keep every item inside quotes and end each with a comma.
 window.CR_BULLETIN = [
   {
-    title: 'Hammer Jam',
-    date: '2026-11',
-    label: 'Event',
-    image: 'assets/bulletin/hammer-jam.jpg',
-    imageAlt: 'Hammer Jam event art: a Builder raising a glowing blue hammer while meteors streak across the sky',
+    title: 'TH19 Update',
+    date: '2026-11-16',
+    label: 'Update',
     sections: [
       {
-        title: 'Builder Potions are king',
-        podium: [
-          { image: 'assets/bulletin/potion-builder.png', label: 'Builder Potion' },
-          { image: 'assets/bulletin/potion-research.png', label: 'Research Potion' },
-          { image: 'assets/bulletin/potion-pet.png', label: 'Pet Potion' },
-        ],
+        title: 'Squads',
         text: [
-          'Invest in these potions in this order: Builder Potion first, then Research Potion, then Pet Potion.',
-          'During Hammer Jam, Builder Potions are so overpowered that choosing another potion without a good reason could set you back weeks of progress. If you are below TH17, use nothing but Builder Potions to rush.',
+          'A new attack mechanic is here! With squads, you tap a single squad icon and it summons several troops at once: either multiple troops of the same type, or a mix of troops that work well together. Every squad also comes with a nice bonus.',
+          'Squads are WAY better than summoning single troops multiple times in a row.',
         ],
       },
       {
-        title: 'Save your CWL medals',
-        art: {
-          image: 'assets/bulletin/cwl-medal.png',
-          alt: 'Clan War League medal',
-          behind: [
-            { image: 'assets/bulletin/builder-hammer.png', alt: 'Hammer' },
-            { image: 'assets/bulletin/potion-builder.png', alt: 'Builder Potion' },
-          ],
-        },
+        title: 'Firecracker Tower and Spiky Tower',
         text: [
-          'Only spend your Clan War League (CWL) medals during Hammer Jam, and spend them on Builder Potions above all. They are the most useful item you can buy.',
-          'Many players buy 1 hammer before the event starts, but think carefully: that means saying goodbye to 4 Builder Potions, or about 18 days of progress.',
+          'The Firecracker Tower deals an explosion, followed by piercing damage that trails after the first blast (a bit like Clash Royale).',
+          'The Spiky Tower attacks whichever troop attacks the building. Think of it as a mix of the Revenge Deck and the Monolith, with its percentage-style damage.',
         ],
       },
       {
-        title: 'Save your raid medals',
-        art: {
-          image: 'assets/bulletin/raid-medal.png',
-          alt: 'Raid medal',
-          behind: [
-            { image: 'assets/bulletin/potion-research.png', alt: 'Research Potion' },
-            { image: 'assets/bulletin/potion-pet.png', alt: 'Pet Potion' },
-          ],
-        },
-        text: [
-          'Save your raid medals the same way you save your CWL medals. The only things worth buying with them are Research Potions and Pet Potions.',
-          'Prioritize Research Potions over Pet Potions, unless you desperately need a certain level on one of your pets (Spirit Fox level 10, for example).',
-        ],
+        title: 'Heroic Spell',
+        text: 'It works a lot like the Heroic Torch. Troops inside the spell circle phase through walls and get more damage and more defense for a short time.',
       },
       {
-        title: 'Goblin Builder / Goblin Researcher',
-        art: {
-          image: 'assets/bulletin/goblin.png',
-          alt: 'Goblin',
-          beside: { image: 'assets/bulletin/gem-chest.png', alt: 'Chest of gems' },
-        },
-        text: [
-          'If you plan on using a goblin, expect to spend around 1,000-2,000 gems to keep it working throughout the event. Running both the Goblin Builder and the Goblin Researcher means paying that much twice.',
-          'If you can only choose one, go with the Goblin Builder. The Goblin Researcher is only a decent pick once you reach a higher town hall level.',
-        ],
-      },
-      {
-        title: 'Is your pocket feeling breezy?',
-        art: { image: 'assets/bulletin/barbarian.png', alt: 'Barbarian scratching his chin' },
-        text: [
-          'If you have been spending, your Supercell ID Rewards stack up on [id.supercell.com](https://id.supercell.com). Be sure to buy potions on that site before you buy more bundle deals in the shop.',
-          'Keep in mind that the more you spend, the more Supercell may charge you for the next bundle. For example, if you spend $5-10 a week, they may start charging $15-20 and ramp up slowly from there. Be careful with how you spend your money.',
-          'A good rule of thumb for telling a deal from a scam: value every potion at 50 cents and every book at 2 dollars. If you get 5 builder potions for 1 dollar, that is pretty good. If you have to pay 5 dollars for 2 builder potions and 1 book of heroes, that is a scam.',
-        ],
-      },
-      {
-        title: 'The 6th builder, B.O.B. the Builder',
-        art: { image: 'assets/bulletin/bob.png', alt: 'B.O.B. the Builder' },
-        text: [
-          'You will need to rush your Builder Base for him. It normally takes about 2-3 months to unlock him.',
-          'Here is a helpful guide: [Video guide by DrewTookMyName](https://www.youtube.com/watch?v=1_-3_C3wI2M)',
-        ],
-      },
-      {
-        title: 'Your resources will drain fast',
-        art: { image: 'assets/bulletin/collectors.png', alt: 'Gold mine, Elixir collector and Dark Elixir drill' },
-        text: 'During the event you will run out of resources extremely quickly. Use any fun army you like, or go with sneaky goblin or E-dragon armies. Do not be afraid to 1-star: your time in Hammer Jam is all about improving your base!',
+        title: 'Cheaper and faster upgrades',
+        text: 'All the reductions in cost and time apply to every town hall below 19, not just to TH19.',
       },
     ],
   },

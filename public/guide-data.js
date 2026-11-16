@@ -288,9 +288,6 @@ window.GUIDE_DATA = {
       image: 'assets/th/th17.webp',
       theme: [92, 120, 255], // royal blue
       onlyOwnTips: true,
-      // Shows a gold * beside "TH17" in the picker and this note under the guide. Put `star: true` on any
-      // army, base or tip you are still unsure about and it gets its own * too.
-      footnote: "I'm a TH17 player, but I'm still learning everything about it, so this guide may change as I learn more.",
       bases: [
         { name: 'Village base', note: '', by: 'COC Layouts', image: 'assets/bases/th17-village.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH17%3AHV%3AAAAAVwAAAAHXtOcMJ1KXJEqkkaMTNO1s' },
         { name: 'War base', note: '', by: 'Call Me Smoker', image: 'assets/bases/th17-war.jpg', link: 'https://link.clashofclans.com/en/?action=OpenLayout&id=TH17%3AWB%3AAAAAWAAAAAH2s5fzvyn8MG3sy_CB-NhC' },
@@ -326,7 +323,7 @@ window.GUIDE_DATA = {
         },
         {
           title: 'Attacks are harder from here on',
-          text: 'Be prepared: bases at TH17 and above are stronger overall. Say goodbye to the days of one or two strong, centralized compartments. Now you have to be careful with every step of the attack.',
+          text: "Yes, attacks are harder, and it is unlike anything you experienced in the other town halls. Bases at TH17 and above are stronger overall, so say goodbye to the days of one or two strong, centralized compartments: you now have to be careful with every step of the attack. You need a few epic equipment to deal with this town hall and any town hall above it.",
         },
       ],
     },
